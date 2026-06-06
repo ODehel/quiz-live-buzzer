@@ -1,0 +1,57 @@
+Etat,Code,Déclencheur,Bouton A,Bouton B,Bouton C,Bouton D,Buzzer,LED A,LED B,LED C,LED D,Détail LED bouton A-D,Ecran LCD
+InitialState,INIT,Code C++,Inactif,Inactif,Inactif,Inactif,Inactif,Intermittente,Intermittente,Intermittente,Intermittente,Idée : les faire clignoter une par une,Idée : Afficher le logo du buzzer
+SimpleQuestionBeginningState,SIQBG,API,Inactif,Inactif,Inactif,Inactif,Inactif,Eteinte,Eteinte,Eteinte,Eteinte,,"Afficher ""Question 0"""
+SimpleQuestionDisplayQuestionState,SIQDQ,API,Inactif,Inactif,Inactif,Inactif,Inactif,Eteinte,Eteinte,Eteinte,Eteinte,,Afficher le libellé de la question
+SimpleQuestionDisplayAnswerAState,SIQDAA,API,Inactif,Inactif,Inactif,Inactif,Inactif,Allumée,Eteinte,Eteinte,Eteinte,,+ Afficher la réponse A
+SimpleQuestionDisplayAnswerBState,SIQDAB,API,Inactif,Inactif,Inactif,Inactif,Inactif,Allumée,Allumée,Eteinte,Eteinte,,+ Afficher la réponse B
+SimpleQuestionDisplayAnswerCState,SIQDAC,API,Inactif,Inactif,Inactif,Inactif,Inactif,Allumée,Allumée,Allumée,Eteinte,,+ Afficher la réponse C
+SimpleQuestionDisplayAnswerDState,SIQDAD,API,Inactif,Inactif,Inactif,Inactif,Inactif,Allumée,Allumée,Allumée,Allumée,,+ Afficher la réponse D
+SimpleQuestionPlayTimeState,SIQPT,API,Actif,Actif,Actif,Actif,Inactif,Allumée,Allumée,Allumée,Allumée,,
+SimpleQuestionPlayerAnsweredState,SIQPA,Bouton,Inactif,Inactif,Inactif,Inactif,Inactif,Allumée,Allumée,Allumée,Allumée,,Entoure la réponse du joueur
+SimpleQuestionTimeOutState,SIQTO,API,Inactif,Inactif,Inactif,Inactif,Inactif,Eteinte,Eteinte,Eteinte,Eteinte,,"Affiche ""Trop tard"" si pas de réponse"
+SimpleQuestionDisplayAllAnswers,SIQDAA,API,Inactif,Inactif,Inactif,Inactif,Inactif,Eteinte,Eteinte,Eteinte,Eteinte,,Donne le nombre de personnes par réponse
+SimpleQuestionDisplayRightAnswerAState,SIQDRAA,API,Inactif,Inactif,Inactif,Inactif,Inactif,Intermittente,Intermittente,Intermittente,Intermittente,Fait clignoter la LED du bouton de la bonne réponse,Entoure la bonne réponse et éventuellement la mauvaise du joueur
+SimpleQuestionDisplayRightAnswerBState,SIQDRAB,API,Inactif,Inactif,Inactif,Inactif,Inactif,Intermittente,Intermittente,Intermittente,Intermittente,Fait clignoter la LED du bouton de la bonne réponse,Entoure la bonne réponse et éventuellement la mauvaise du joueur
+SimpleQuestionDisplayRightAnswerCState,SIQDRAC,API,Inactif,Inactif,Inactif,Inactif,Inactif,Intermittente,Intermittente,Intermittente,Intermittente,Fait clignoter la LED du bouton de la bonne réponse,Entoure la bonne réponse et éventuellement la mauvaise du joueur
+SimpleQuestionDisplayRightAnswerDState,SIQDRAD,API,Inactif,Inactif,Inactif,Inactif,Inactif,Intermittente,Intermittente,Intermittente,Intermittente,Fait clignoter la LED du bouton de la bonne réponse,Entoure la bonne réponse et éventuellement la mauvaise du joueur
+DisplayWinningRankingState,DISWRKG,API,Inactif,Inactif,Inactif,Inactif,Inactif,Intermittente,Intermittente,Intermittente,Intermittente,Fait clignoter les LED si premier,Affiche le classement
+DisplayStandardRankingState,DISSRKG,API,Inactif,Inactif,Inactif,Inactif,Inactif,Eteinte,Eteinte,Eteinte,Eteinte,,Affiche le classement
+SpeedQuestionBeginningState,SPQBG,API,Inactif,Inactif,Inactif,Inactif,Inactif,Eteinte,Eteinte,Eteinte,Eteinte,,"Afficher ""Question n"""
+SpeedQuestionDisplayQuestionState,SPQDQ,API,Inactif,Inactif,Inactif,Inactif,Inactif,Eteinte,Eteinte,Eteinte,Eteinte,,Afficher le libellé de la question
+SpeedQuestionPlayTimeState,SPQPT,API,Inactif,Inactif,Inactif,Inactif,Actif,Eteinte,Eteinte,Eteinte,Eteinte,,Affiche la question + le chronomètre
+SpeedQuestionPlayerAnsweredState,SPQPA,Buzzer,Inactif,Inactif,Inactif,Inactif,Inactif,Intermittente,Intermittente,Intermittente,Intermittente,Fait clignoter les LED,Fige le chronomètre
+SpeedQuestionOtherPlayerAnsweredState,SPQOPA,API,Inactif,Inactif,Inactif,Inactif,Inactif,Eteinte,Eteinte,Eteinte,Eteinte,,
+SpeedQuestionWrongAnswerRevealState,SPQWAR,API,Inactif,Inactif,Inactif,Inactif,Inactif,Eteinte,Eteinte,Eteinte,Eteinte,,Affiche une croix rouge
+SpeedQuestionRightAnswerRevealState,SPQRAR,API,Inactif,Inactif,Inactif,Inactif,Inactif,Intermittente,Intermittente,Intermittente,Intermittente,Clignotement,Affiche un emoji validation
+SpeedQuestionTimeOutState,SPQTO,API,Inactif,Inactif,Inactif,Inactif,Inactif,Eteinte,Eteinte,Eteinte,Eteinte,,"Affiche ""Trop tard"""
+RevealWinnerState,REVWIN,API,Inactif,Inactif,Inactif,Inactif,Inactif,Intermittente,Intermittente,Intermittente,Intermittente,Clignotement,Affiche le classement
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
+,,API,,,,,,,,,,,
