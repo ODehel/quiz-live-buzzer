@@ -69,7 +69,7 @@ Le buzzer possède **4 modes** (et non les 26 « états » du premier brouillon 
 ### 4.1 Mode Inerte
 
 - Mode par défaut, le plus fréquent.
-- **Aucune décision** côté buzzer : exécution purement mécanique des commandes d'affichage reçues du serveur (via la table de rendu, §7).
+- **Aucune décision** côté buzzer : exécution purement mécanique des commandes d'affichage reçues du serveur (via la table de rendu, §8.2).
 - Tout appui (bouton ou buzz) est **détecté mais écarté** : aucun effet, aucun envoi.
 
 ### 4.2 & 4.3 Modes armés (MCQ et SPEED) — un patron commun
@@ -88,10 +88,15 @@ Les deux modes armés sont **deux variantes d'un même patron**. Patron commun :
 |---|---|---|
 | Famille armée | Boutons A–D | Gros bouton buzz |
 | Valeur transmise | La lettre choisie (A/B/C/D) | Aucune (le buzz n'a pas de variante) |
+| Message émis | `answer { value }` | `buzz` |
 | Appui hors famille | Ignoré (ex. buzz pendant MCQ) | Ignoré (ex. bouton A pendant SPEED) |
 | Second appui après verrou | Ignoré | Ignoré |
+| Chemins d'armement | `question_choices` | `question_open`, `buzz_unlocked` |
+| Désarmement sans appui | `timer_end` | `timer_end` |
 
 **Test de référence déjà identifié** : « étant donné un mode MCQ armé, quand deux appuis successifs arrivent, alors un seul message est envoyé au serveur » (force l'existence du verrouillage lock-first).
+
+> **Note SPEED réentrant** : le mode SPEED peut être ré-armé plusieurs fois sur une même question. Après un buzze invalidé par le maître, le serveur renvoie `buzz_unlocked` aux buzzers non invalidés (US-012), ce qui les ré-arme (Inerte → SPEED armé). Le cycle `SPEED armé → Inerte → SPEED armé` peut donc se répéter. Les deux chemins d'armement (`question_open`, `buzz_unlocked`) produisent **la même transition** — un seul comportement, deux déclencheurs.
 
 ### 4.4 Mode Éliminé
 
@@ -112,25 +117,48 @@ Règle issue du `VISION.md` (« tentatives 1 à 3 : reconnexion auto ; après 3 
 - Le compteur compte les **échecs consécutifs**. La **perte initiale** de connexion ne compte pas comme un échec : ce sont les **tentatives de reconnexion infructueuses** qui sont comptées.
 - Au **3ᵉ échec consécutif exactement** → bascule en mode **Éliminé** (terminal).
 
-Cette logique est un **pur compteur**, totalement ignorant du matériel → **meilleur candidat pour le premier cycle TDD** (zéro abstraction à mocker, juste deux signaux et un compteur).
+### Complément — Armement du compteur au premier `auth_success`
+
+Le compteur d'échecs consécutifs est **inactif tant que le buzzer n'a pas reçu son premier `auth_success`**. La phase d'initialisation (mise sous tension → WiFi → WebSocket → première authentification, voir §10) n'est **pas** soumise au compteur : un buzzer qui n'a jamais été connecté ne peut pas être éliminé. Le compteur est armé (et mis à 0) au premier `auth_success`, puis suit la règle ci-dessus : échec de reconnexion → +1 ; succès → remise à 0 ; 3 échecs consécutifs → Éliminé.
+
+> Conséquence pour le TDD : la logique de reconnexion a **trois** entrées et non deux — un signal « connexion réussie » qui arme (et remet à 0), un signal « échec » qui n'incrémente **que si le compteur est armé**, et le seuil (3) qui déclenche Éliminé. Le premier test devient « un compteur non armé ignore les échecs » avant « 3 échecs → éliminé ».
+
+Cette logique est un **pur compteur**, totalement ignorant du matériel → **meilleur candidat pour le premier cycle TDD** (zéro abstraction à mocker, juste des signaux et un compteur).
 
 ---
 
-## 6. Synthèse du cycle de vie
+## 6. Synthèse du cycle de vie — Table de transitions
 
-```
-[Inerte] ←─── (commandes d'affichage du serveur, exécution mécanique)
-   │
-   ├── serveur arme MCQ ──→ [MCQ armé] ──(appui A-D)──→ lock → feedback local → envoi → [Inerte]
-   │
-   ├── serveur arme SPEED ─→ [SPEED armé] ─(appui buzz)─→ lock → feedback local → envoi → [Inerte]
-   │
-   └── 3 échecs reco. consécutifs ──→ [Éliminé] (terminal, sortie = reboot physique uniquement)
-```
+La logique d'état du buzzer se réduit à cette table. Chaque ligne est un comportement testable (`lib/`, sans dépendance matérielle). Les colonnes « Action locale » et « Émission » ne concernent que les transitions ; l'affichage associé relève de la table de rendu (§8.2).
+
+| État source | Déclencheur | État cible | Action locale | Émission |
+|---|---|---|---|---|
+| Inerte | `question_choices` | MCQ armé | — | — |
+| Inerte | `question_open` | SPEED armé | — | — |
+| Inerte | `buzz_unlocked` | SPEED armé | — | — |
+| MCQ armé | appui A–D | Inerte | lock-first → feedback local | `answer {value}` |
+| MCQ armé | `timer_end` | Inerte | — | — |
+| MCQ armé | appui buzz | MCQ armé | ignoré (hors famille) | — |
+| SPEED armé | appui buzz | Inerte | lock-first → feedback local | `buzz` |
+| SPEED armé | `timer_end` | Inerte | — | — |
+| SPEED armé | appui A–D | SPEED armé | ignoré (hors famille) | — |
+| *(tout mode armé)* | second appui après lock | inchangé | ignoré (déjà verrouillé) | — |
+| Inerte | tout appui | Inerte | ignoré | — |
+| Inerte | 3ᵉ échec reco. WiFi consécutif | Éliminé | — | — |
+| *(tout sauf Éliminé)* | 3ᵉ échec reco. WiFi consécutif | Éliminé | — | — |
+| Éliminé | tout | Éliminé | ignoré (terminal) | — |
+
+Règles transverses (rappel) :
+
+- **Armement** : un message arme un mode ssi un appui devient pertinent après réception (§8.1).
+- **Désarmement par expiration** : `timer_end` désarme le mode armé courant s'il en existe un ; sinon affichage seul.
+- **Lock-first** : le verrou est posé synchroniquement *avant* feedback et émission, garantissant qu'un second appui ultra-rapide tombe sur un buzzer déjà inerte.
+- **Élimination** : atteinte par la seule initiative du buzzer (3 échecs WiFi consécutifs, §5), terminale, sortie par reboot physique uniquement.
+- Tout message non listé ou hors contexte est ignoré silencieusement (§3).
 
 ---
 
-## 7. Table de rendu (commande serveur → affichage)
+## 7. Recadrage du CSV (origine de la spécification)
 
 Le fichier CSV existant (`Quiz_Buzzer_Game_-_Liste_des_états.csv`) contient **26 lignes**. Recadrage acté :
 
@@ -138,29 +166,135 @@ Le fichier CSV existant (`Quiz_Buzzer_Game_-_Liste_des_états.csv`) contient **2
 - Seules **2 lignes** ont un déclencheur local (`SimpleQuestionPlayerAnsweredState` = Bouton, `SpeedQuestionPlayerAnsweredState` = Buzzer) : elles correspondent aux **modes armés** du §4.
 - Plusieurs « états » ne diffèrent que par une **donnée** et non par un comportement (ex. `DisplayAnswerA/B/C/D` → une seule logique paramétrée par la lettre).
 
-**Conséquence (SRP appliqué à la spec)** : séparer deux préoccupations en deux artefacts distincts —
-1. la **logique d'état** (§4–5),
-2. la **table de rendu** (le CSV, à réorganiser en « commande reçue → configuration LEDs + LCD »).
+**Conséquence (SRP appliqué à la spec)** : deux préoccupations en deux artefacts distincts —
+1. la **logique d'état** (§4–6) ;
+2. la **table de rendu** (§8.2 : « message reçu → configuration LEDs + LCD »).
 
-> **À DÉCIDER** : réorganisation effective du CSV au format « commande → affichage ».
+> ⚠️ **Écart CSV vs hub réel acté** : le CSV décrivait un affichage **progressif** des réponses MCQ (`DisplayAnswerA/B/C/D`, une par une). Le contrat hub réel (US-011) envoie les 4 propositions **simultanément** dans `question_choices`. L'affichage progressif est donc **abandonné** : les 4 LEDs passent à leur état cible en une fois.
 
 ---
 
-## 8. Points non tranchés (À DÉCIDER)
+## 8. Protocole de messages et table de rendu
+
+Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (voir historique en fin de section). Le protocole est **dérivé** du contrat serveur défini dans les US-009 à US-021 du hub : le firmware ne le définit pas, il s'y conforme.
+
+### 8.1 Protocole de messages WebSocket
+
+> Transport : WebSocket sur `ws://<ip>:<port>/ws`. Sérialisation : JSON (messages texte). Le buzzer s'authentifie par JWT obtenu via `POST /api/v1/token`, transmis en premier message ; le serveur résout lui-même `sub → participant` (US-010), le firmware n'a donc **pas** connaissance de son numéro de participant.
+
+**Principe directeur de la table** : un message **arme** un mode ssi un appui devient pertinent après réception. Un message **désarme** s'il rend un appui de nouveau sans effet. Tout le reste est affichage, son, session ou accusé — sans effet sur la logique d'état (`lib/`). Règle unifiée du désarmement par expiration : `timer_end` désarme le mode armé courant s'il en existe un ; sinon il est affichage seul.
+
+#### Messages reçus (hub → buzzer)
+
+| Message | Mode(s) pertinents | Effet sur le mode | Émission vers le hub | Catégorie |
+|---|---|---|---|---|
+| `auth_success` | tout | aucun | — | Session |
+| `token_expiring_soon` | tout | aucun | `auth_refresh` (renouvellement JWT) | Session |
+| `token_expired` | tout | aucun (la connexion est fermée par le serveur) | — | Session |
+| `game_resumed` | tout | aucun (resynchro d'affichage) | — | Session |
+| `question_title` | Inerte | aucun (affichage seul, reste Inerte) | — | Affichage |
+| `question_choices` | Inerte | **Inerte → MCQ armé** | — | Armement |
+| `question_open` | Inerte | **Inerte → SPEED armé** | — | Armement |
+| `timer_tick` | tout | aucun | — | Affichage |
+| `timer_end` | MCQ armé / SPEED armé | **mode armé courant → Inerte** ; sinon aucun | — | Désarmement |
+| `answer_received` | Inerte (post-appui) | aucun (accusé de l'`answer` émis) | — | Accusé |
+| `buzz_accepted` | Inerte (post-appui) | aucun (accusé du `buzz` émis) | — | Accusé |
+| `buzz_locked` | Inerte | aucun (un autre a buzzé ; ce buzzer est déjà passif) | — | Affichage |
+| `buzz_invalidated` | Inerte (post-buzz) | aucun — déjà Inerte ; écran d'élimination (rendu §8.2) | — | Affichage |
+| `buzz_unlocked` | Inerte | **Inerte → SPEED armé** (ré-armement ; serveur ne l'envoie qu'aux non-invalidés) | — | Armement |
+| `question_result` | Inerte | aucun (affichage du résultat) | — | Affichage |
+| `play_sound_url` | tout | aucun | requête HTTP GET du fichier | Son |
+| `play_system_sound` | tout | aucun | — | Son |
+
+#### Messages émis (buzzer → hub)
+
+| Message | Déclencheur | Mode requis | Contenu |
+|---|---|---|---|
+| `auth` | connexion établie | tout | `{ type, token }` |
+| `auth_refresh` | réception de `token_expiring_soon` | tout | `{ type, token }` |
+| `answer` | appui A–D pertinent (lock-first) | MCQ armé | `{ type, value: "A"\|"B"\|"C"\|"D" }` |
+| `buzz` | appui buzz pertinent (lock-first) | SPEED armé | `{ type }` |
+
+### 8.2 Table de rendu (message reçu → affichage)
+
+> Rendu mécanique exécuté à la réception de chaque message, indépendamment de la logique d'état (§6).
+> **Vocabulaire LED** : `Toutes éteintes` / `Toutes allumées` / `Toutes clignotantes` / `Clignoter LED(x)` (x = contenu du message).
+> **Vocabulaire LCD** : description abstraite du contenu, exemple de libellé entre parenthèses (texte exact = détail d'implémentation).
+> Seuls `timer_end` et `question_result` ont un rendu **conditionnel** ; tous les autres messages sont inconditionnels.
+
+| Message | Condition | LED | LCD | Son |
+|---|---|---|---|---|
+| *(init, §10)* | — | Toutes clignotantes (une par une) | Logo | — |
+| `auth_success` | — | Toutes éteintes | Attente (« Connecté ») | — |
+| `game_resumed` | — | Toutes éteintes | Attente (« Partie en cours ») | — |
+| `question_title` | — | Toutes éteintes | Libellé question (« Question N : … ») | — |
+| `question_choices` | — | Toutes allumées | Les 4 propositions A/B/C/D | — |
+| `question_open` (SPEED) | — | Toutes éteintes | Titre + chrono | — |
+| `timer_tick` | — | inchangé | Chrono (« N s ») | — |
+| `timer_end` | mode armé courant | Toutes éteintes | Temps écoulé (« Trop tard ») | — |
+| `timer_end` | Inerte | inchangé | inchangé | — |
+| `answer_received` | — | Toutes éteintes | Réponse prise en compte (« Réponse enregistrée ») | — |
+| `buzz_accepted` | — | Toutes clignotantes | Tu as buzzé (« À toi ! ») | — |
+| `buzz_locked` | — | Toutes éteintes | Un autre a buzzé (« Buzzé par X ») | — |
+| `buzz_invalidated` | — | Toutes éteintes | Éliminé pour la question (« Raté ») | — |
+| `buzz_unlocked` | — | Toutes éteintes | À nouveau possible de buzzer | — |
+| `question_result` | `correct_answer` = lettre A–D (MCQ) | Clignoter LED(correct_answer) | Résultat (bonne réponse + réponse joueur) | — |
+| `question_result` | sinon (SPEED), `correct: true` | Toutes clignotantes | Résultat (validé) | — |
+| `question_result` | sinon (SPEED), `correct: false` | Toutes éteintes | Résultat (raté) | — |
+| `play_sound_url` | — | inchangé | inchangé | fichier distant (HTTP GET) |
+| `play_system_sound` | — | inchangé | inchangé | son préchargé (selon `sound_id`) |
+
+> **Distinction MCQ/SPEED pour `question_result`** : déduite du **contenu** du message (pas d'un état mémorisé). Si `correct_answer` est une lettre A–D → MCQ (clignoter la LED correspondante) ; sinon → SPEED (toutes clignotantes si `correct: true`, toutes éteintes sinon). Le contrat hub garantit cette discrimination : MCQ renvoie une lettre, SPEED renvoie un texte de réponse.
+
+> **Sons et messages métier** : le hub déclenche les sons système via des messages `play_system_sound` **distincts** des messages métier (US-018 : « message métier d'abord, son système ensuite »). La colonne Son n'est donc renseignée que sur les lignes `play_sound_url` / `play_system_sound` ; les sons associés aux événements (buzz, résultat, timer) arrivent par ces messages séparés.
+
+---
+
+## 9. Démarrage et connexion initiale
+
+> Cette phase vit entièrement dans `src/` (adaptateurs matériels et réseau). Elle est **hors de la machine à états de jeu** (§6) : les 4 modes ne s'appliquent qu'à partir du premier `auth_success`. Aucune logique testable en natif n'y réside, à l'exception de l'armement du compteur de reconnexion (§5), couvert par le premier cycle TDD.
+
+### Séquence d'initialisation
+
+1. Mise sous tension. Affichage du rendu d'init (logo + LEDs clignotantes — voir §8.2).
+2. Connexion au réseau WiFi local.
+3. Ouverture de la connexion WebSocket sur `ws://<ip>:<port>/ws`.
+4. Envoi du message d'authentification `{ "type": "auth", "token": "<JWT>" }`.
+5. Réception de `auth_success` → **fin de la phase d'init**, entrée en mode Inerte (la machine à états de jeu démarre).
+
+La séquence est linéaire : chaque étape déclenche la suivante, sans décision métier. La temporisation, les tentatives et la gestion des erreurs réseau sont déléguées à la couche réseau (`src/`), cohérent avec §5.
+
+### Articulation avec le compteur d'élimination (§5)
+
+Le compteur d'échecs consécutifs est **inactif pendant toute cette phase**. Il n'est armé qu'au **premier `auth_success`** (voir complément §5). Conséquence : un buzzer qui n'a jamais réussi à se connecter tente indéfiniment sans jamais s'auto-éliminer ; le rendu d'init reste affiché tant que la connexion n'est pas établie. La logique d'armement est testable et fait partie du premier cycle TDD (compteur de reconnexion).
+
+### Appui pendant l'init
+
+Aucune écoute active de mode n'existe avant l'entrée en Inerte : un appui pendant l'init est sans effet (rien à émettre, pas de connexion).
+
+---
+
+## 10. Points encore ouverts (À DÉCIDER)
 
 | # | Sujet | Détail |
 |---|---|---|
-| 1 | **Protocole de messages** | Structure exacte des commandes reçues et des événements envoyés (format, champs, sérialisation). À spécifier quand le TDD l'exigera. |
-| 2 | **Table de rendu détaillée** | Réorganisation du CSV en « commande → affichage ». |
-| 3 | **Paramétrage NFC** | Frontière avec l'app mobile ; non traité. |
-| 4 | **Démarrage / connexion initiale** | Comportement avant le premier « connecté » (l'`InitialState` du CSV évoque logo + LEDs clignotantes), non spécifié. |
+| 1 | **Paramétrage NFC** | Frontière avec l'app mobile ; non traité dans cette session. |
+
+> Les anciens points « Protocole de messages », « Table de rendu détaillée », « Démarrage / connexion initiale » et la classification de `buzz_invalidated` / `timer_end` sont désormais **tranchés** (§8.1, §8.2, §9) et ne figurent plus comme ouverts.
 
 ---
 
-## 9. Prochaine étape TDD
+## 11. Prochaine étape TDD
 
-Premier cycle red/green recommandé : la **logique de reconnexion WiFi** (§5) — pur compteur, zéro mock.
+Premier cycle red/green recommandé : la **logique de reconnexion WiFi** (§5) — pur compteur, zéro mock — enrichie de l'**armement au premier `auth_success`**.
 
-Premier baby-step pressenti : l'état initial du compteur, ou le comportement après un unique échec. À démarrer en supprimant le smoke test `Smoke.ToolchainWorks` et en créant la première vraie assertion dans `test/test_reconnection/`.
+Premiers baby-steps pressentis (dans l'ordre) :
+1. Un compteur **non armé** ignore un échec (reste à 0, pas d'élimination).
+2. Après un premier `auth_success`, le compteur est armé (et à 0).
+3. Un échec sur compteur armé incrémente.
+4. Un succès remet à 0.
+5. 3 échecs consécutifs → Éliminé.
+
+À démarrer en supprimant le smoke test `Smoke.ToolchainWorks` et en créant la première vraie assertion dans `test/test_reconnection/`.
 
 Rappel méthode : Claude **ne code pas** la production ; il guide par questions, valide les pas, et laisse Olivier écrire. Baby-steps stricts (tiniest test → tiniest implémentation → refactor). Principes : SOLID, DRY, KISS, YAGNI.
