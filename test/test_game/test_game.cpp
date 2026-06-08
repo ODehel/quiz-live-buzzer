@@ -58,6 +58,23 @@ TEST_F(BuzzerBehaviorTest, SpeedArmedBuzzerSendsBuzzOnBuzzPress)
     buzzerBehavior.OnButtonPressed(ButtonFamily::Buzz, '\0');
 }
 
+TEST_F(BuzzerBehaviorTest, BuzzUnlockedSendsBuzzOnBuzzPress)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    buzzerBehavior.OnBuzzUnlocked();
+    buzzerBehavior.OnButtonPressed(ButtonFamily::Buzz, '\0');
+}
+
+TEST_F(BuzzerBehaviorTest, TimerEndDisarmsSpeedArmedBuzzer)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnTimerEnd();
+    buzzerBehavior.OnButtonPressed(ButtonFamily::Buzz, '\0');
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

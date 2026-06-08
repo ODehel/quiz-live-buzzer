@@ -21,6 +21,10 @@ class BuzzerBehavior
 private:
     Mode mode = Mode::Inert;
     HubMessageSender &hubMessageSender;
+    void ArmSpeed()
+    {
+        mode = Mode::SpeedArmed;
+    }
 
 public:
     BuzzerBehavior(HubMessageSender &hubMessageSender) : hubMessageSender(hubMessageSender)
@@ -48,12 +52,17 @@ public:
 
     void OnQuestionOpen()
     {
-        mode = Mode::SpeedArmed;
+        ArmSpeed();
     }
 
     void OnTimerEnd()
     {
         mode = Mode::Inert;
+    }
+
+    void OnBuzzUnlocked()
+    {
+        ArmSpeed();
     }
 };
 
