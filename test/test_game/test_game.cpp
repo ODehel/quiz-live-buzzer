@@ -1,31 +1,32 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include "AnswerSender.h"
+#include "HubMessageSender.h"
 #include "BuzzerBehavior.h"
 
-class MockAnswerSender : public AnswerSender 
+class MockHubMessageSender : public HubMessageSender 
 {
 public:
     MOCK_METHOD(void, SendAnswer, (char), (override));
+    MOCK_METHOD(void, SendBuzz, (), (override));
 };
 
 class BuzzerBehaviorTest : public ::testing::Test
 {
 protected:
-    MockAnswerSender mockAnswerSender;
-    BuzzerBehavior buzzerBehavior{mockAnswerSender};
+    MockHubMessageSender mockHubMessageSender;
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender};
 };
 
 TEST_F(BuzzerBehaviorTest, InertBuzzerDoesNotSendAnswerOnButtonPress)
 {
-    EXPECT_CALL(mockAnswerSender, SendAnswer(::testing::_)).Times(0);
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
 
     buzzerBehavior.OnButtonPressed(ButtonFamily::Mcq, 'A');
 }
 
 TEST_F(BuzzerBehaviorTest, ArmedBuzzerSendsAnswerOnceOnDoubleButtonPress)
 {
-    EXPECT_CALL(mockAnswerSender, SendAnswer('A')).Times(1);
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('A')).Times(1);
 
     buzzerBehavior.OnQuestionChoices();
     buzzerBehavior.OnButtonPressed(ButtonFamily::Mcq, 'A');
@@ -34,7 +35,7 @@ TEST_F(BuzzerBehaviorTest, ArmedBuzzerSendsAnswerOnceOnDoubleButtonPress)
 
 TEST_F(BuzzerBehaviorTest, McqArmedBuzzerIgnoresBuzzPress)
 {
-    EXPECT_CALL(mockAnswerSender, SendAnswer(::testing::_)).Times(0);
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
 
     buzzerBehavior.OnQuestionChoices();
     buzzerBehavior.OnButtonPressed(ButtonFamily::Buzz, '\0');
@@ -42,11 +43,19 @@ TEST_F(BuzzerBehaviorTest, McqArmedBuzzerIgnoresBuzzPress)
 
 TEST_F(BuzzerBehaviorTest, TimerEndDisarmsMcqArmedBuzzer)
 {
-    EXPECT_CALL(mockAnswerSender, SendAnswer(::testing::_)).Times(0);
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
 
     buzzerBehavior.OnQuestionChoices();
     buzzerBehavior.OnTimerEnd();
     buzzerBehavior.OnButtonPressed(ButtonFamily::Mcq, 'A');
+}
+
+TEST_F(BuzzerBehaviorTest, SpeedArmedBuzzerSendsBuzzOnBuzzPress)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnButtonPressed(ButtonFamily::Buzz, '\0');
 }
 
 int main(int argc, char **argv)

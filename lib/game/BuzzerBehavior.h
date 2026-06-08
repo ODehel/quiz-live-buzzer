@@ -1,12 +1,13 @@
 #ifndef BUZZER_BEHAVIOR_H
 #define BUZZER_BEHAVIOR_H
 
-#include "AnswerSender.h"
+#include "HubMessageSender.h"
 
 enum class Mode
 {
     Inert,
-    McqArmed
+    McqArmed,
+    SpeedArmed
 };
 
 enum class ButtonFamily
@@ -19,10 +20,10 @@ class BuzzerBehavior
 {
 private:
     Mode mode = Mode::Inert;
-    AnswerSender &answerSender;
+    HubMessageSender &hubMessageSender;
 
 public:
-    BuzzerBehavior(AnswerSender &answerSender) : answerSender(answerSender)
+    BuzzerBehavior(HubMessageSender &hubMessageSender) : hubMessageSender(hubMessageSender)
     {
     }
 
@@ -30,7 +31,12 @@ public:
     {
         if (mode == Mode::McqArmed && buttonFamily == ButtonFamily::Mcq)
         {
-            answerSender.SendAnswer(value);
+            hubMessageSender.SendAnswer(value);
+            mode = Mode::Inert;
+        }
+        else if (mode == Mode::SpeedArmed && buttonFamily == ButtonFamily::Buzz)
+        {
+            hubMessageSender.SendBuzz();
             mode = Mode::Inert;
         }
     }
@@ -38,6 +44,11 @@ public:
     void OnQuestionChoices()
     {
         mode = Mode::McqArmed;
+    }
+
+    void OnQuestionOpen()
+    {
+        mode = Mode::SpeedArmed;
     }
 
     void OnTimerEnd()
