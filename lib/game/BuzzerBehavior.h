@@ -3,25 +3,46 @@
 
 #include "AnswerSender.h"
 
+enum class Mode
+{
+    Inert,
+    McqArmed
+};
+
+enum class ButtonFamily
+{
+    Mcq,
+    Buzz
+};
+
 class BuzzerBehavior
 {
 private:
-    bool isArmed = false;
-    AnswerSender& answerSender;
+    Mode mode = Mode::Inert;
+    AnswerSender &answerSender;
+
 public:
-    BuzzerBehavior(AnswerSender& answerSender) : answerSender(answerSender)
+    BuzzerBehavior(AnswerSender &answerSender) : answerSender(answerSender)
     {
     }
 
-    void OnButtonPressed(char value)
+    void OnButtonPressed(ButtonFamily buttonFamily, char value)
     {
-        if (isArmed)
-            answerSender.SendAnswer(value); 
+        if (mode == Mode::McqArmed && buttonFamily == ButtonFamily::Mcq)
+        {
+            answerSender.SendAnswer(value);
+            mode = Mode::Inert;
+        }
     }
 
-    void Arm()
+    void OnQuestionChoices()
     {
-        isArmed = true;
+        mode = Mode::McqArmed;
+    }
+
+    void OnTimerEnd()
+    {
+        mode = Mode::Inert;
     }
 };
 
