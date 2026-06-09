@@ -33,6 +33,24 @@ TEST_F(BuzzerBehaviorTest, ArmedBuzzerSendsAnswerOnceOnDoubleButtonPress)
     buzzerBehavior.OnButtonPressed(ButtonFamily::Mcq, 'A');
 }
 
+TEST_F(BuzzerBehaviorTest,  SpeedArmedBuzzerSendBuzzOnceOnDoubleBuzzPress)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnButtonPressed(ButtonFamily::Buzz, '\0');
+    buzzerBehavior.OnButtonPressed(ButtonFamily::Buzz, '\0');
+}
+
+TEST_F(BuzzerBehaviorTest, SpeedArmedBuzzerIgnoresMcqPress)
+{
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnButtonPressed(ButtonFamily::Mcq, 'A');
+}
+
 TEST_F(BuzzerBehaviorTest, McqArmedBuzzerIgnoresBuzzPress)
 {
     EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
@@ -66,7 +84,7 @@ TEST_F(BuzzerBehaviorTest, BuzzUnlockedSendsBuzzOnBuzzPress)
     buzzerBehavior.OnButtonPressed(ButtonFamily::Buzz, '\0');
 }
 
-TEST_F(BuzzerBehaviorTest, TimerEndDisarmsSpeedArmedBuzzer)
+TEST_F(BuzzerBehaviorTest, TimerEndDisarmsBuzzArmedBuzzer)
 {
     EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
 
