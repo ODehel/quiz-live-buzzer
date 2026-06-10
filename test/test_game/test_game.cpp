@@ -2,6 +2,7 @@
 #include <gmock/gmock.h>
 #include "HubMessageSender.h"
 #include "BuzzerBehavior.h"
+#include "LocalFeedback.h"
 
 class MockHubMessageSender : public HubMessageSender 
 {
@@ -10,11 +11,18 @@ public:
     MOCK_METHOD(void, SendBuzz, (), (override));
 };
 
+class MockLocalFeedback : public LocalFeedback
+{
+public:
+    MOCK_METHOD(void, Acknowledge, (), (override));
+};
+
 class BuzzerBehaviorTest : public ::testing::Test
 {
 protected:
     MockHubMessageSender mockHubMessageSender;
-    BuzzerBehavior buzzerBehavior{mockHubMessageSender};
+    MockLocalFeedback mockLocalFeedback;
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
 };
 
 TEST_F(BuzzerBehaviorTest, InertBuzzerDoesNotSendAnswerOnButtonPress)
@@ -33,7 +41,7 @@ TEST_F(BuzzerBehaviorTest, ArmedBuzzerSendsAnswerOnceOnDoubleButtonPress)
     buzzerBehavior.OnButtonPressed(ButtonFamily::Mcq, 'A');
 }
 
-TEST_F(BuzzerBehaviorTest,  SpeedArmedBuzzerSendBuzzOnceOnDoubleBuzzPress)
+TEST_F(BuzzerBehaviorTest, SpeedArmedBuzzerSendsBuzzOnceOnDoubleBuzzPress)
 {
     EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
 
@@ -91,6 +99,32 @@ TEST_F(BuzzerBehaviorTest, TimerEndDisarmsBuzzArmedBuzzer)
     buzzerBehavior.OnQuestionOpen();
     buzzerBehavior.OnTimerEnd();
     buzzerBehavior.OnButtonPressed(ButtonFamily::Buzz, '\0');
+}
+
+TEST_F(BuzzerBehaviorTest, EliminatedBuzzerIgnoresButtonPress)
+{
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnEliminated();
+    buzzerBehavior.OnButtonPressed(ButtonFamily::Mcq, 'A');
+}
+
+TEST_F(BuzzerBehaviorTest, EliminatedBuzzerIgnoresBuzzPress)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnEliminated();
+    buzzerBehavior.OnButtonPressed(ButtonFamily::Buzz, '\0');
+}
+
+TEST_F(BuzzerBehaviorTest, ArmedBuzzerAcknowledgesOnButtonPress)
+{
+    EXPECT_CALL(mockLocalFeedback, Acknowledge()).Times(1);
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnButtonPressed(ButtonFamily::Mcq, 'A');
 }
 
 int main(int argc, char **argv)
