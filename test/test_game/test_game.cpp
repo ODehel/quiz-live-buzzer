@@ -127,6 +127,14 @@ TEST_F(BuzzerBehaviorTest, ArmedBuzzerAcknowledgesOnButtonPress)
     buzzerBehavior.OnButtonPressed(ButtonFamily::Mcq, 'A');
 }
 
+TEST_F(BuzzerBehaviorTest, ArmedBuzzerAcknowledgesOnBuzzPress)
+{
+    EXPECT_CALL(mockLocalFeedback, Acknowledge()).Times(1);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnButtonPressed(ButtonFamily::Buzz, '\0');
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

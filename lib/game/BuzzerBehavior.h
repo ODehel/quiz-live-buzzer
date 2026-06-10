@@ -48,6 +48,7 @@ public:
         else if (mode == Mode::SpeedArmed && buttonFamily == ButtonFamily::Buzz)
         {
             hubMessageSender.SendBuzz();
+            localFeedback.Acknowledge();
             mode = Mode::Inert;
         }
     }
