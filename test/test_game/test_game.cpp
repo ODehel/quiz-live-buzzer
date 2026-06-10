@@ -135,6 +135,28 @@ TEST_F(BuzzerBehaviorTest, ArmedBuzzerAcknowledgesOnBuzzPress)
     buzzerBehavior.OnButtonPressed(ButtonFamily::Buzz, '\0');
 }
 
+TEST_F(BuzzerBehaviorTest, ArmedBuzzerAcknowledgesBeforeSendingAnswer)
+{
+    testing::InSequence seq;
+
+    EXPECT_CALL(mockLocalFeedback, Acknowledge());
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('A'));
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnButtonPressed(ButtonFamily::Mcq, 'A');
+} 
+
+TEST_F(BuzzerBehaviorTest, ArmedBuzzerAcknowledgesBeforeSendingBuzz)
+{
+    testing::InSequence seq;
+
+    EXPECT_CALL(mockLocalFeedback, Acknowledge());
+    EXPECT_CALL(mockHubMessageSender, SendBuzz());
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnButtonPressed(ButtonFamily::Buzz, '\0');
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

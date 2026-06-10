@@ -41,14 +41,14 @@ public:
             
         if (mode == Mode::McqArmed && buttonFamily == ButtonFamily::Mcq)
         {
-            hubMessageSender.SendAnswer(value);
             localFeedback.Acknowledge();
+            hubMessageSender.SendAnswer(value);
             mode = Mode::Inert;
         }
         else if (mode == Mode::SpeedArmed && buttonFamily == ButtonFamily::Buzz)
         {
-            hubMessageSender.SendBuzz();
             localFeedback.Acknowledge();
+            hubMessageSender.SendBuzz();
             mode = Mode::Inert;
         }
     }
