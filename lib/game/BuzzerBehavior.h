@@ -38,18 +38,22 @@ public:
     {
         if (isEliminated)
             return;
-            
-        if (mode == Mode::McqArmed && buttonFamily == ButtonFamily::Mcq)
+
+        if ((mode == Mode::McqArmed && buttonFamily == ButtonFamily::Mcq) ||
+            (mode == Mode::SpeedArmed && buttonFamily == ButtonFamily::Buzz))
         {
-            localFeedback.Acknowledge();
-            hubMessageSender.SendAnswer(value);
+            Mode lastMode = mode;
             mode = Mode::Inert;
-        }
-        else if (mode == Mode::SpeedArmed && buttonFamily == ButtonFamily::Buzz)
-        {
             localFeedback.Acknowledge();
-            hubMessageSender.SendBuzz();
-            mode = Mode::Inert;
+
+            if (lastMode == Mode::McqArmed)
+            {
+                hubMessageSender.SendAnswer(value);
+            }
+            else
+            {
+                hubMessageSender.SendBuzz();
+            }
         }
     }
 
