@@ -11,12 +11,6 @@ enum class Mode
     SpeedArmed
 };
 
-enum class ButtonFamily
-{
-    Mcq,
-    Buzz
-};
-
 class BuzzerBehavior
 {
 private:

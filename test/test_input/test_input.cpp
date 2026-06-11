@@ -5,7 +5,7 @@
 #include "LocalFeedback.h"
 #include "ButtonPressTranslator.h"
 
-class MockHubMessageSender : public HubMessageSender 
+class MockHubMessageSender : public HubMessageSender
 {
 public:
     MOCK_METHOD(void, SendAnswer, (char), (override));

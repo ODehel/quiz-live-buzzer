@@ -24,17 +24,10 @@ private:
             return 'C';
         }
     }
-    ButtonFamily GetButtonFamilyFromPhysicalButton(PhysicalButton physicalButton)
+    
+    bool IsBuzz(PhysicalButton physicalButton)
     {
-        switch (physicalButton)
-        {
-        case PhysicalButton::Buzz :
-            return ButtonFamily::Buzz;
-        
-        case PhysicalButton::A :
-        case PhysicalButton::C :
-            return ButtonFamily::Mcq;
-        }
+        return physicalButton == PhysicalButton::Buzz;
     }
 
 public:
@@ -44,14 +37,9 @@ public:
 
     void TranslateButtonPress(PhysicalButton physicalButton)
     {
-        if (GetButtonFamilyFromPhysicalButton(physicalButton) == ButtonFamily::Buzz)
-        {
-            buzzerBehavior.OnBuzzPressed();
-        }
-        else
-        {
-            buzzerBehavior.OnMcqPressed(GetLetterFromPhysicalButton(physicalButton));
-        }
+        IsBuzz(physicalButton)
+            ? buzzerBehavior.OnBuzzPressed()
+            : buzzerBehavior.OnMcqPressed(GetLetterFromPhysicalButton(physicalButton));
     }
 };
 
