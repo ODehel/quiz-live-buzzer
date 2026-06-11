@@ -34,26 +34,29 @@ public:
     {
     }
 
-    void OnButtonPressed(ButtonFamily buttonFamily, char value)
+    void OnMcqPressed(char value)
     {
         if (isEliminated)
             return;
 
-        if ((mode == Mode::McqArmed && buttonFamily == ButtonFamily::Mcq) ||
-            (mode == Mode::SpeedArmed && buttonFamily == ButtonFamily::Buzz))
+        if (mode == Mode::McqArmed)
         {
-            Mode lastMode = mode;
             mode = Mode::Inert;
             localFeedback.Acknowledge();
+            hubMessageSender.SendAnswer(value);
+        }
+    }
 
-            if (lastMode == Mode::McqArmed)
-            {
-                hubMessageSender.SendAnswer(value);
-            }
-            else
-            {
-                hubMessageSender.SendBuzz();
-            }
+    void OnBuzzPressed()
+    {
+        if (isEliminated)
+            return;
+
+        if (mode == Mode::SpeedArmed)
+        {
+            mode = Mode::Inert;
+            localFeedback.Acknowledge();
+            hubMessageSender.SendBuzz();
         }
     }
 

@@ -46,11 +46,11 @@ public:
     {
         if (GetButtonFamilyFromPhysicalButton(physicalButton) == ButtonFamily::Buzz)
         {
-            buzzerBehavior.OnButtonPressed(ButtonFamily::Buzz, '\0');
+            buzzerBehavior.OnBuzzPressed();
         }
         else
         {
-            buzzerBehavior.OnButtonPressed(ButtonFamily::Mcq, GetLetterFromPhysicalButton(physicalButton));
+            buzzerBehavior.OnMcqPressed(GetLetterFromPhysicalButton(physicalButton));
         }
     }
 };
