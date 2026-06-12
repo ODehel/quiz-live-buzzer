@@ -57,6 +57,19 @@ TEST(ButtonPressTranslatorTest, BuzzButtonPressSendsBuzz)
     buttonPressTranslator.TranslateButtonPress(PhysicalButton::Buzz);
 }
 
+TEST(ButtonPressTranslatorTest, UnknownButtonPressSendsNothing)
+{
+    MockHubMessageSender mockHubMessageSender;
+    MockLocalFeedback mockLocalFeedback;
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    ButtonPressTranslator buttonPressTranslator{buzzerBehavior};
+    buzzerBehavior.OnQuestionChoices();
+
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
+
+    buttonPressTranslator.TranslateButtonPress(PhysicalButton::Unknown);
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

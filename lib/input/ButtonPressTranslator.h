@@ -7,28 +7,14 @@ enum class PhysicalButton
 {
     A,
     C,
-    Buzz
+    Buzz,
+    Unknown
 };
 
 class ButtonPressTranslator
 {
 private:
     BuzzerBehavior &buzzerBehavior;
-    char GetLetterFromPhysicalButton(PhysicalButton physicalButton)
-    {
-        switch (physicalButton)
-        {
-        case PhysicalButton::A:
-            return 'A';
-        case PhysicalButton::C:
-            return 'C';
-        }
-    }
-    
-    bool IsBuzz(PhysicalButton physicalButton)
-    {
-        return physicalButton == PhysicalButton::Buzz;
-    }
 
 public:
     ButtonPressTranslator(BuzzerBehavior &buzzerBehavior) : buzzerBehavior(buzzerBehavior)
@@ -37,9 +23,20 @@ public:
 
     void TranslateButtonPress(PhysicalButton physicalButton)
     {
-        IsBuzz(physicalButton)
-            ? buzzerBehavior.OnBuzzPressed()
-            : buzzerBehavior.OnMcqPressed(GetLetterFromPhysicalButton(physicalButton));
+        switch (physicalButton)
+        {
+        case PhysicalButton::A:
+            buzzerBehavior.OnMcqPressed('A');
+            break;
+        case PhysicalButton::C:
+            buzzerBehavior.OnMcqPressed('C');
+            break;
+        case PhysicalButton::Buzz:
+            buzzerBehavior.OnBuzzPressed();
+            break;
+        case PhysicalButton::Unknown:
+            break;
+        }
     }
 };
 
