@@ -23,10 +23,20 @@ public:
 
     PhysicalButton DeduceButton()
     {
+        PhysicalButton candidate = PhysicalButton::Unknown;
+        int highCount = 0;
         for (ButtonPin &buttonPin : buttonPins)
+        {
             if (buttonPin.reader.Read())
-                return buttonPin.button;
-        return PhysicalButton::Unknown;
+            {
+                highCount++;
+                candidate = buttonPin.button;
+            }
+        }
+
+        return highCount == 1
+                   ? candidate
+                   : PhysicalButton::Unknown;
     }
 };
 

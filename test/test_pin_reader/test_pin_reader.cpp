@@ -47,6 +47,19 @@ TEST(PhysicalButtonReaderTest, HighDigitalPinDeducesPhysicalButtonB)
     EXPECT_EQ(physicalButtonReader.DeduceButton(), PhysicalButton::B);
 }
 
+TEST(PhysicalButtonReaderTest, MultiplePressedPinsDeducesPhysicalButtonUnknown)
+{
+    MockGpioPinReader mockGpioPinAReader;
+    MockGpioPinReader mockGpioPinBReader;
+    std::vector<ButtonPin> buttonPins{{mockGpioPinAReader, PhysicalButton::A}, {mockGpioPinBReader, PhysicalButton::B}};
+    PhysicalButtonReader physicalButtonReader{buttonPins};
+
+    EXPECT_CALL(mockGpioPinAReader, Read()).WillOnce(testing::Return(true));
+    EXPECT_CALL(mockGpioPinBReader, Read()).WillOnce(testing::Return(true));
+
+    EXPECT_EQ(physicalButtonReader.DeduceButton(), PhysicalButton::Unknown);
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
