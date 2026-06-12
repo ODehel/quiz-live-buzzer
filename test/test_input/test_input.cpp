@@ -31,6 +31,19 @@ TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerA)
     buttonPressTranslator.TranslateButtonPress(PhysicalButton::A);
 }
 
+TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerB)
+{
+    MockHubMessageSender mockHubMessageSender;
+    MockLocalFeedback mockLocalFeedback;
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    ButtonPressTranslator buttonPressTranslator{buzzerBehavior};
+    buzzerBehavior.OnQuestionChoices();
+
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('B')).Times(1);
+
+    buttonPressTranslator.TranslateButtonPress(PhysicalButton::B);
+}
+
 TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerC)
 {
     MockHubMessageSender mockHubMessageSender;
@@ -42,6 +55,19 @@ TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerC)
     EXPECT_CALL(mockHubMessageSender, SendAnswer('C')).Times(1);
 
     buttonPressTranslator.TranslateButtonPress(PhysicalButton::C);
+}
+
+TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerD)
+{
+    MockHubMessageSender mockHubMessageSender;
+    MockLocalFeedback mockLocalFeedback;
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    ButtonPressTranslator buttonPressTranslator{buzzerBehavior};
+    buzzerBehavior.OnQuestionChoices();
+
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('D')).Times(1);
+
+    buttonPressTranslator.TranslateButtonPress(PhysicalButton::D);
 }
 
 TEST(ButtonPressTranslatorTest, BuzzButtonPressSendsBuzz)

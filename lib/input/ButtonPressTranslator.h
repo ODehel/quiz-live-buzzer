@@ -6,7 +6,9 @@
 enum class PhysicalButton
 {
     A,
+    B,
     C,
+    D,
     Buzz,
     Unknown
 };
@@ -28,8 +30,14 @@ public:
         case PhysicalButton::A:
             buzzerBehavior.OnMcqPressed('A');
             break;
+        case PhysicalButton::B:
+            buzzerBehavior.OnMcqPressed('B');
+            break;
         case PhysicalButton::C:
             buzzerBehavior.OnMcqPressed('C');
+            break;
+        case PhysicalButton::D:
+            buzzerBehavior.OnMcqPressed('D');
             break;
         case PhysicalButton::Buzz:
             buzzerBehavior.OnBuzzPressed();
