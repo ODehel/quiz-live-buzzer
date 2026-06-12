@@ -2,16 +2,7 @@
 #define BUTTON_PRESS_TRANSLATOR_H
 
 #include "BuzzerBehavior.h"
-
-enum class PhysicalButton
-{
-    A,
-    B,
-    C,
-    D,
-    Buzz,
-    Unknown
-};
+#include "PhysicalButton.h"
 
 class ButtonPressTranslator
 {

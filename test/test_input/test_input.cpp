@@ -4,6 +4,7 @@
 #include "BuzzerBehavior.h"
 #include "LocalFeedback.h"
 #include "ButtonPressTranslator.h"
+#include "PhysicalButton.h"
 
 class MockHubMessageSender : public HubMessageSender
 {
