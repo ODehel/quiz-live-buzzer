@@ -3,7 +3,7 @@
 #include "HubMessageSender.h"
 #include "BuzzerBehavior.h"
 #include "LocalFeedback.h"
-#include "ButtonPressTranslator.h"
+#include "BuzzerButtonPressTranslator.h"
 #include "PhysicalButton.h"
 
 class MockHubMessageSender : public HubMessageSender
@@ -24,7 +24,7 @@ TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerA)
     MockHubMessageSender mockHubMessageSender;
     MockLocalFeedback mockLocalFeedback;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    ButtonPressTranslator buttonPressTranslator{buzzerBehavior};
+    BuzzerButtonPressTranslator buttonPressTranslator{buzzerBehavior};
     buzzerBehavior.OnQuestionChoices();
 
     EXPECT_CALL(mockHubMessageSender, SendAnswer('A')).Times(1);
@@ -37,7 +37,7 @@ TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerB)
     MockHubMessageSender mockHubMessageSender;
     MockLocalFeedback mockLocalFeedback;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    ButtonPressTranslator buttonPressTranslator{buzzerBehavior};
+    BuzzerButtonPressTranslator buttonPressTranslator{buzzerBehavior};
     buzzerBehavior.OnQuestionChoices();
 
     EXPECT_CALL(mockHubMessageSender, SendAnswer('B')).Times(1);
@@ -50,7 +50,7 @@ TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerC)
     MockHubMessageSender mockHubMessageSender;
     MockLocalFeedback mockLocalFeedback;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    ButtonPressTranslator buttonPressTranslator{buzzerBehavior};
+    BuzzerButtonPressTranslator buttonPressTranslator{buzzerBehavior};
     buzzerBehavior.OnQuestionChoices();
 
     EXPECT_CALL(mockHubMessageSender, SendAnswer('C')).Times(1);
@@ -63,7 +63,7 @@ TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerD)
     MockHubMessageSender mockHubMessageSender;
     MockLocalFeedback mockLocalFeedback;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    ButtonPressTranslator buttonPressTranslator{buzzerBehavior};
+    BuzzerButtonPressTranslator buttonPressTranslator{buzzerBehavior};
     buzzerBehavior.OnQuestionChoices();
 
     EXPECT_CALL(mockHubMessageSender, SendAnswer('D')).Times(1);
@@ -76,7 +76,7 @@ TEST(ButtonPressTranslatorTest, BuzzButtonPressSendsBuzz)
     MockHubMessageSender mockHubMessageSender;
     MockLocalFeedback mockLocalFeedback;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    ButtonPressTranslator buttonPressTranslator{buzzerBehavior};
+    BuzzerButtonPressTranslator buttonPressTranslator{buzzerBehavior};
     buzzerBehavior.OnQuestionOpen();
 
     EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
@@ -89,7 +89,7 @@ TEST(ButtonPressTranslatorTest, UnknownButtonPressSendsNothing)
     MockHubMessageSender mockHubMessageSender;
     MockLocalFeedback mockLocalFeedback;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    ButtonPressTranslator buttonPressTranslator{buzzerBehavior};
+    BuzzerButtonPressTranslator buttonPressTranslator{buzzerBehavior};
     buzzerBehavior.OnQuestionChoices();
 
     EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
