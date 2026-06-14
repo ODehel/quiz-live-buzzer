@@ -20,7 +20,7 @@ public:
     {
         PhysicalButton currentButton = reader.DeduceButton();
 
-        if (currentButton != lastButton)
+        if (currentButton != lastButton && currentButton != PhysicalButton::Unknown)
             translator.TranslateButtonPress(currentButton);
 
         lastButton = currentButton;
