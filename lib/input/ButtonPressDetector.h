@@ -7,6 +7,7 @@
 class ButtonPressDetector
 {
 private:
+    PhysicalButton lastButton = PhysicalButton::Unknown;
     PhysicalButtonReader &reader;
     ButtonPressTranslator &translator;
 
@@ -17,7 +18,12 @@ public:
 
     void Poll()
     {
-        translator.TranslateButtonPress(reader.DeduceButton());
+        PhysicalButton currentButton = reader.DeduceButton();
+
+        if (currentButton != lastButton)
+            translator.TranslateButtonPress(currentButton);
+
+        lastButton = currentButton;
     }
 };
 
