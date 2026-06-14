@@ -5,7 +5,7 @@
 #include "LocalFeedback.h"
 #include "BuzzerBehavior.h"
 #include "BuzzerButtonPressTranslator.h"
-#include "GpioPinReader.h"
+#include "../mocks/MockGpioPinReader.h"
 #include "PhysicalButton.h"
 #include "PhysicalButtonReader.h"
 #include "ButtonPressDetector.h"
@@ -21,12 +21,6 @@ class MockLocalFeedback : public LocalFeedback
 {
 public:
     MOCK_METHOD(void, Acknowledge, (), (override));
-};
-
-class MockGpioPinReader : public GpioPinReader
-{
-public:
-    MOCK_METHOD(bool, Read, (), (override));
 };
 
 class MockButtonPressTranslator : public ButtonPressTranslator

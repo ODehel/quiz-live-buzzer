@@ -3,14 +3,9 @@
 
 #include <vector>
 #include "PhysicalButton.h"
-#include "GpioPinReader.h"
 #include "PhysicalButtonReader.h"
+#include "../mocks/MockGpioPinReader.h"
 
-class MockGpioPinReader : public GpioPinReader
-{
-public:
-    MOCK_METHOD(bool, Read, (), (override));
-};
 
 TEST(PhysicalButtonReaderTest, HighDigitalPinDeducesPhysicalButtonA)
 {
