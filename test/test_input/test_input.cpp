@@ -1,23 +1,9 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include "HubMessageSender.h"
+#include "../mocks/GameMocks.h"
 #include "BuzzerBehavior.h"
-#include "LocalFeedback.h"
 #include "BuzzerButtonPressTranslator.h"
 #include "PhysicalButton.h"
-
-class MockHubMessageSender : public HubMessageSender
-{
-public:
-    MOCK_METHOD(void, SendAnswer, (char), (override));
-    MOCK_METHOD(void, SendBuzz, (), (override));
-};
-
-class MockLocalFeedback : public LocalFeedback
-{
-public:
-    MOCK_METHOD(void, Acknowledge, (), (override));
-};
 
 TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerA)
 {

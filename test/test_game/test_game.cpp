@@ -1,21 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include "HubMessageSender.h"
 #include "BuzzerBehavior.h"
-#include "LocalFeedback.h"
-
-class MockHubMessageSender : public HubMessageSender 
-{
-public:
-    MOCK_METHOD(void, SendAnswer, (char), (override));
-    MOCK_METHOD(void, SendBuzz, (), (override));
-};
-
-class MockLocalFeedback : public LocalFeedback
-{
-public:
-    MOCK_METHOD(void, Acknowledge, (), (override));
-};
+#include "../mocks/GameMocks.h"
 
 class BuzzerBehaviorTest : public ::testing::Test
 {
