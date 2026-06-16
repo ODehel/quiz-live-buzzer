@@ -45,6 +45,19 @@ TEST(HubMessageDispatcherTest, TimerEndDisarmsArmedBuzzer)
     buzzerBehavior.OnBuzzPressed();
 }
 
+TEST(HubMessageDispatcherTest, BuzzUnlockedArmsSpeed)
+{
+    MockHubMessageSender mockHubMessageSender;
+    MockLocalFeedback mockLocalFeedback;
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    HubMessageDispatcher dispatcher{buzzerBehavior};
+
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    dispatcher.Dispatch("buzz_unlocked");
+    buzzerBehavior.OnBuzzPressed();
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

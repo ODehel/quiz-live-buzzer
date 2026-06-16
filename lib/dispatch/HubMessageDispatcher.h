@@ -22,6 +22,8 @@ public:
             buzzerBehavior.OnQuestionChoices();
         else if (type == "timer_end")
             buzzerBehavior.OnTimerEnd();
+        else if (type == "buzz_unlocked")
+            buzzerBehavior.OnBuzzUnlocked();
     }
 };
 
