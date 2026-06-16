@@ -16,7 +16,10 @@ public:
 
     void Dispatch(const std::string &type)
     {
-        buzzerBehavior.OnQuestionOpen();
+        if (type == "question_open")
+            buzzerBehavior.OnQuestionOpen();
+        else if (type == "question_choices")
+            buzzerBehavior.OnQuestionChoices();
     }
 };
 
