@@ -31,6 +31,20 @@ TEST(HubMessageDispatcherTest, QuestionChoicesArmsMcq)
     buzzerBehavior.OnMcqPressed('A');
 }
 
+TEST(HubMessageDispatcherTest, TimerEndDisarmsArmedBuzzer)
+{
+    MockHubMessageSender mockHubMessageSender;
+    MockLocalFeedback mockLocalFeedback;
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    HubMessageDispatcher dispatcher{buzzerBehavior};
+
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+    
+    dispatcher.Dispatch("question_open");
+    dispatcher.Dispatch("timer_end");
+    buzzerBehavior.OnBuzzPressed();
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

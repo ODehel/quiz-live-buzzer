@@ -20,6 +20,8 @@ public:
             buzzerBehavior.OnQuestionOpen();
         else if (type == "question_choices")
             buzzerBehavior.OnQuestionChoices();
+        else if (type == "timer_end")
+            buzzerBehavior.OnTimerEnd();
     }
 };
 
