@@ -1,3 +1,5 @@
+#ifndef RECONNECTION_POLICY_H
+#define RECONNECTION_POLICY_H
 class ReconnectionPolicy
 {
 private:
@@ -27,3 +29,5 @@ public:
         return isEliminated;
     }
 };
+
+#endif
