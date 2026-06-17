@@ -5,15 +5,19 @@
 #include "BuzzerBehavior.h"
 #include "HubMessageDispatcher.h"
 
-TEST(ConnectionEventHandlerTest, BuzzerEliminatedAfterAThreeTimesDisconnection)
+class ConnectionEventHandlerTest : public ::testing::Test
 {
+protected:
     MockHubMessageSender mockHubMessageSender;
     MockLocalFeedback mockLocalFeedback;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
-    ConnectionEventHandler handler(policy, dispatcher);
-    
+    ConnectionEventHandler handler{policy, dispatcher};
+};
+
+TEST_F(ConnectionEventHandlerTest, BuzzerEliminatedAfterAThreeTimesDisconnection)
+{    
     policy.OnAuthSuccess();
 
     handler.OnConnectionLost();
@@ -23,15 +27,8 @@ TEST(ConnectionEventHandlerTest, BuzzerEliminatedAfterAThreeTimesDisconnection)
     EXPECT_TRUE(policy.IsEliminated());
 }
 
-TEST(ConnectionEventHandlerTest, SpeedBuzzArmedOnQuestionOpenMessageReceived)
+TEST_F(ConnectionEventHandlerTest, SpeedBuzzArmedOnQuestionOpenMessageReceived)
 {
-    MockHubMessageSender mockHubMessageSender;
-    MockLocalFeedback mockLocalFeedback;
-    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    HubMessageDispatcher dispatcher{buzzerBehavior};
-    ReconnectionPolicy policy;
-    ConnectionEventHandler handler(policy, dispatcher);
-
     EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
 
     handler.OnMessageReceived("{\"type\":\"question_open\"}");
