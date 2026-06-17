@@ -35,6 +35,17 @@ TEST_F(ConnectionEventHandlerTest, SpeedBuzzArmedOnQuestionOpenMessageReceived)
     buzzerBehavior.OnBuzzPressed();
 }
 
+TEST_F(ConnectionEventHandlerTest, AuthSuccessMessageArmsThePolicy)
+{    
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+
+    handler.OnConnectionLost();
+    handler.OnConnectionLost();
+    handler.OnConnectionLost();
+
+    EXPECT_TRUE(policy.IsEliminated());
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

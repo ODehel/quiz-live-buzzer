@@ -26,7 +26,11 @@ public:
 
     void OnMessageReceived(const std::string &message)
     {
-        hubMessageDispatcher.Dispatch(messageDeserializer.ExtractType(message));
+        std::string type = messageDeserializer.ExtractType(message);
+        if (type == "auth_success")
+            reconnectionPolicy.OnAuthSuccess();
+        else
+            hubMessageDispatcher.Dispatch(type);
     }
 };
 
