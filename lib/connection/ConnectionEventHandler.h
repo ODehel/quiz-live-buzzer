@@ -4,6 +4,7 @@
 #include <string>
 #include "ReconnectionPolicy.h"
 #include "HubMessageDispatcher.h"
+#include "SessionMessageSender.h"
 #include "MessageDeserializer.h"
 
 class ConnectionEventHandler
@@ -11,11 +12,12 @@ class ConnectionEventHandler
 private:
     ReconnectionPolicy &reconnectionPolicy;
     HubMessageDispatcher &hubMessageDispatcher;
+    SessionMessageSender &sessionMessageSender;
     MessageDeserializer messageDeserializer;
 
 public:
-    ConnectionEventHandler(ReconnectionPolicy &reconnectionPolicy, HubMessageDispatcher &hubMessageDispatcher)
-        : reconnectionPolicy(reconnectionPolicy), hubMessageDispatcher(hubMessageDispatcher)
+    ConnectionEventHandler(ReconnectionPolicy &reconnectionPolicy, HubMessageDispatcher &hubMessageDispatcher, SessionMessageSender &sessionMessageSender)
+        : reconnectionPolicy(reconnectionPolicy), hubMessageDispatcher(hubMessageDispatcher), sessionMessageSender(sessionMessageSender)
     {
     }
 
@@ -29,6 +31,8 @@ public:
         std::string type = messageDeserializer.ExtractType(message);
         if (type == "auth_success")
             reconnectionPolicy.OnAuthSuccess();
+        else if (type == "token_expiring_soon")
+            sessionMessageSender.SendAuthRefresh();
         else
             hubMessageDispatcher.Dispatch(type);
     }

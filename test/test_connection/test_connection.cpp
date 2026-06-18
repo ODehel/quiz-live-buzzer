@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 #include "../mocks/GameMocks.h"
+#include "../mocks/SessionMocks.h"
 #include "ReconnectionPolicy.h"
 #include "ConnectionEventHandler.h"
+#include "SessionMessageSender.h"
 #include "BuzzerBehavior.h"
 #include "HubMessageDispatcher.h"
 
@@ -10,14 +12,15 @@ class ConnectionEventHandlerTest : public ::testing::Test
 protected:
     MockHubMessageSender mockHubMessageSender;
     MockLocalFeedback mockLocalFeedback;
+    MockSessionMessageSender mockSessionMessageSender;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
-    ConnectionEventHandler handler{policy, dispatcher};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender};
 };
 
 TEST_F(ConnectionEventHandlerTest, BuzzerEliminatedAfterAThreeTimesDisconnection)
-{    
+{
     policy.OnAuthSuccess();
 
     handler.OnConnectionLost();
@@ -36,7 +39,7 @@ TEST_F(ConnectionEventHandlerTest, SpeedBuzzArmedOnQuestionOpenMessageReceived)
 }
 
 TEST_F(ConnectionEventHandlerTest, AuthSuccessMessageArmsThePolicy)
-{    
+{
     handler.OnMessageReceived("{\"type\":\"auth_success\"}");
 
     handler.OnConnectionLost();
@@ -44,6 +47,13 @@ TEST_F(ConnectionEventHandlerTest, AuthSuccessMessageArmsThePolicy)
     handler.OnConnectionLost();
 
     EXPECT_TRUE(policy.IsEliminated());
+}
+
+TEST_F(ConnectionEventHandlerTest, TokenExpiringSoonTriggersAuthRefresh)
+{
+    EXPECT_CALL(mockSessionMessageSender, SendAuthRefresh()).Times(1);
+
+    handler.OnMessageReceived("{\"type\":\"token_expiring_soon\"}");
 }
 
 int main(int argc, char **argv)
