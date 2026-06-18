@@ -7,6 +7,7 @@ class MessageDeserializer
 {
 public:
     std::string ExtractType(const std::string &json) const;
+    std::string ExtractToken(const std::string &json) const;
 };
 
 #endif
