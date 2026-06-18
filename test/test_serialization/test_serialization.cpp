@@ -19,6 +19,12 @@ TEST(MessageSerializerTest, AnswerBMessageCarriesTheValue)
     EXPECT_EQ(serializer.SerializeAnswer('B'), "{\"type\":\"answer\",\"value\":\"B\"}");
 }
 
+TEST(MessageSerializerTest, AuthRefreshMessageCarriesTheToken)
+{
+    MessageSerializer serializer;
+    EXPECT_EQ(serializer.SerializeAuthRefresh("any-token"), "{\"type\":\"auth_refresh\",\"token\":\"any-token\"}");
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

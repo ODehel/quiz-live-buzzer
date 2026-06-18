@@ -15,6 +15,11 @@ public:
     {
         return std::string("{\"type\":\"answer\",\"value\":\"") + value + "\"}";
     }
+
+    std::string SerializeAuthRefresh(const std::string &token) const
+    {
+        return std::string("{\"type\":\"auth_refresh\",\"token\":\"") + token + "\"}";
+    }
 };
 
 #endif
