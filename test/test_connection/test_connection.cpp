@@ -7,6 +7,7 @@
 #include "BuzzerBehavior.h"
 #include "HubMessageDispatcher.h"
 #include "BuzzerEventTranslator.h"
+#include "BuzzerEventType.h"
 
 class ConnectionEventHandlerTest : public ::testing::Test
 {
@@ -70,11 +71,21 @@ TEST_F(ConnectionEventHandlerTest, DisconnectedEventTriggersConnectionLost)
     BuzzerEventTranslator translator{handler};
     policy.OnAuthSuccess();
 
-    translator.TranslateBuzzerEvent(BuzzerEvent::Disconnected);
-    translator.TranslateBuzzerEvent(BuzzerEvent::Disconnected);
-    translator.TranslateBuzzerEvent(BuzzerEvent::Disconnected);
+    translator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, ""});
+    translator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, ""});
+    translator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, ""});
 
     EXPECT_TRUE(policy.IsEliminated());
+}
+
+TEST_F(ConnectionEventHandlerTest, TextReceivedEventTriggersSpeedBuzzArmed)
+{
+    BuzzerEventTranslator translator{handler};
+
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    translator.TranslateBuzzerEvent({BuzzerEventType::TextReceived, "{\"type\":\"question_open\"}"});
+    buzzerBehavior.OnBuzzPressed();
 }
 
 int main(int argc, char **argv)

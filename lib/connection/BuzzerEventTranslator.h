@@ -1,8 +1,15 @@
 #ifndef BUZZER_EVENT_TRANSLATOR_H
 #define BUZZER_EVENT_TRANSLATOR_H
 
-#include "BuzzerEvent.h"
+#include <string>
+#include "BuzzerEventType.h"
 #include "ConnectionEventHandler.h"
+
+struct BuzzerEvent
+{
+    BuzzerEventType type;
+    std::string payload;
+};
 
 class BuzzerEventTranslator
 {
@@ -16,10 +23,13 @@ public:
 
     void TranslateBuzzerEvent(BuzzerEvent buzzerEvent)
     {
-        switch (buzzerEvent)
+        switch (buzzerEvent.type)
         {
-        case BuzzerEvent::Disconnected:
+        case BuzzerEventType::Disconnected:
             connectionEventHandler.OnConnectionLost();
+            break;
+        case BuzzerEventType::TextReceived:
+            connectionEventHandler.OnMessageReceived(buzzerEvent.payload);
             break;
         }
     }
