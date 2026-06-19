@@ -6,6 +6,7 @@
 #include "SessionMessageSender.h"
 #include "BuzzerBehavior.h"
 #include "HubMessageDispatcher.h"
+#include "BuzzerEventTranslator.h"
 
 class ConnectionEventHandlerTest : public ::testing::Test
 {
@@ -62,6 +63,18 @@ TEST_F(ConnectionEventHandlerTest, AuthSuccessTriggersUpdateToken)
     EXPECT_CALL(mockTokenReceiver, UpdateToken("any-token")).Times(1);
 
     handler.OnMessageReceived("{\"type\":\"auth_success\",\"token\":\"any-token\"}");
+}
+
+TEST_F(ConnectionEventHandlerTest, DisconnectedEventTriggersConnectionLost)
+{
+    BuzzerEventTranslator translator{handler};
+    policy.OnAuthSuccess();
+
+    translator.TranslateBuzzerEvent(BuzzerEvent::Disconnected);
+    translator.TranslateBuzzerEvent(BuzzerEvent::Disconnected);
+    translator.TranslateBuzzerEvent(BuzzerEvent::Disconnected);
+
+    EXPECT_TRUE(policy.IsEliminated());
 }
 
 int main(int argc, char **argv)
