@@ -5,8 +5,9 @@
 #include "SessionMessageSender.h"
 #include "PayloadSocketWriter.h"
 #include "MessageSerializer.h"
+#include "TokenReceiver.h"
 
-class TokenSessionMessageSender : public SessionMessageSender
+class TokenSessionMessageSender : public SessionMessageSender, public TokenReceiver
 {
 private:
     PayloadSocketWriter &payloadSocketWriter;
@@ -24,7 +25,7 @@ public:
         payloadSocketWriter.Write(messageSerializer.SerializeAuthRefresh(token));
     }
 
-    void UpdateToken(const std::string &token)
+    void UpdateToken(const std::string &token) override
     {
         this->token = token;
     }
