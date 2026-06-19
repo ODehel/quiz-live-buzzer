@@ -10,13 +10,14 @@
 class ConnectionEventHandlerTest : public ::testing::Test
 {
 protected:
+    MockTokenReceiver mockTokenReceiver;
     MockHubMessageSender mockHubMessageSender;
     MockLocalFeedback mockLocalFeedback;
     MockSessionMessageSender mockSessionMessageSender;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
-    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, mockTokenReceiver};
 };
 
 TEST_F(ConnectionEventHandlerTest, BuzzerEliminatedAfterAThreeTimesDisconnection)
@@ -54,6 +55,13 @@ TEST_F(ConnectionEventHandlerTest, TokenExpiringSoonTriggersAuthRefresh)
     EXPECT_CALL(mockSessionMessageSender, SendAuthRefresh()).Times(1);
 
     handler.OnMessageReceived("{\"type\":\"token_expiring_soon\"}");
+}
+
+TEST_F(ConnectionEventHandlerTest, AuthSuccessTriggersUpdateToken)
+{
+    EXPECT_CALL(mockTokenReceiver, UpdateToken("any-token")).Times(1);
+
+    handler.OnMessageReceived("{\"type\":\"auth_success\",\"token\":\"any-token\"}");
 }
 
 int main(int argc, char **argv)

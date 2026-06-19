@@ -6,6 +6,7 @@
 #include "HubMessageDispatcher.h"
 #include "SessionMessageSender.h"
 #include "MessageDeserializer.h"
+#include "TokenReceiver.h"
 
 class ConnectionEventHandler
 {
@@ -13,11 +14,12 @@ private:
     ReconnectionPolicy &reconnectionPolicy;
     HubMessageDispatcher &hubMessageDispatcher;
     SessionMessageSender &sessionMessageSender;
+    TokenReceiver &tokenReceiver;
     MessageDeserializer messageDeserializer;
 
 public:
-    ConnectionEventHandler(ReconnectionPolicy &reconnectionPolicy, HubMessageDispatcher &hubMessageDispatcher, SessionMessageSender &sessionMessageSender)
-        : reconnectionPolicy(reconnectionPolicy), hubMessageDispatcher(hubMessageDispatcher), sessionMessageSender(sessionMessageSender)
+    ConnectionEventHandler(ReconnectionPolicy &reconnectionPolicy, HubMessageDispatcher &hubMessageDispatcher, SessionMessageSender &sessionMessageSender, TokenReceiver &tokenReceiver)
+        : reconnectionPolicy(reconnectionPolicy), hubMessageDispatcher(hubMessageDispatcher), sessionMessageSender(sessionMessageSender), tokenReceiver(tokenReceiver)
     {
     }
 
@@ -30,7 +32,10 @@ public:
     {
         std::string type = messageDeserializer.ExtractType(message);
         if (type == "auth_success")
+        {
             reconnectionPolicy.OnAuthSuccess();
+            tokenReceiver.UpdateToken(messageDeserializer.ExtractToken(message));
+        }
         else if (type == "token_expiring_soon")
             sessionMessageSender.SendAuthRefresh();
         else
