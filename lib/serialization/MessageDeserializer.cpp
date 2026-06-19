@@ -12,5 +12,5 @@ std::string MessageDeserializer::ExtractToken(const std::string &json) const
 {
     JsonDocument doc;
     deserializeJson(doc, json);
-    return doc["token"].as<std::string>();
+    return doc["token"] | "";
 }
