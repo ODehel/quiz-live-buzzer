@@ -1,13 +1,22 @@
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include "../mocks/GameMocks.h"
 #include "../mocks/SessionMocks.h"
 #include "ReconnectionPolicy.h"
 #include "ConnectionEventHandler.h"
+#include "ConnectionEventListener.h"
 #include "SessionMessageSender.h"
 #include "BuzzerBehavior.h"
 #include "HubMessageDispatcher.h"
 #include "BuzzerEventTranslator.h"
 #include "BuzzerEventType.h"
+
+class MockConnectionEventListener : public ConnectionEventListener
+{
+public:
+    MOCK_METHOD(void, OnConnectionLost, (), (override));
+    MOCK_METHOD(void, OnMessageReceived, (const std::string&), (override));
+};
 
 class ConnectionEventHandlerTest : public ::testing::Test
 {
@@ -86,6 +95,26 @@ TEST_F(ConnectionEventHandlerTest, TextReceivedEventTriggersSpeedBuzzArmed)
 
     translator.TranslateBuzzerEvent({BuzzerEventType::TextReceived, "{\"type\":\"question_open\"}"});
     buzzerBehavior.OnBuzzPressed();
+}
+
+TEST(BuzzerEventTranslatorTest, DisconnectionTriggersConnectionLost)
+{
+    MockConnectionEventListener mock;
+    BuzzerEventTranslator translator{mock};
+
+    EXPECT_CALL(mock, OnConnectionLost()).Times(1);
+
+    translator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, ""});
+}
+
+TEST(BuzzerEventTranslatorTest, TextReceivedTriggersMessageReceived)
+{
+    MockConnectionEventListener mock;
+    BuzzerEventTranslator translator{mock};
+
+    EXPECT_CALL(mock, OnMessageReceived("{\"type\":\"question_open\"}")).Times(1);
+
+    translator.TranslateBuzzerEvent({BuzzerEventType::TextReceived, "{\"type\":\"question_open\"}"});
 }
 
 int main(int argc, char **argv)

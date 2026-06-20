@@ -6,9 +6,10 @@
 #include "HubMessageDispatcher.h"
 #include "SessionMessageSender.h"
 #include "MessageDeserializer.h"
+#include "ConnectionEventListener.h"
 #include "TokenReceiver.h"
 
-class ConnectionEventHandler
+class ConnectionEventHandler : public ConnectionEventListener
 {
 private:
     ReconnectionPolicy &reconnectionPolicy;
@@ -23,12 +24,12 @@ public:
     {
     }
 
-    void OnConnectionLost()
+    void OnConnectionLost() override
     {
         reconnectionPolicy.OnReconnectFailed();
     }
 
-    void OnMessageReceived(const std::string &message)
+    void OnMessageReceived(const std::string &message) override
     {
         std::string type = messageDeserializer.ExtractType(message);
         if (type == "auth_success")

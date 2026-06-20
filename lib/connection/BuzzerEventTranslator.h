@@ -3,7 +3,7 @@
 
 #include <string>
 #include "BuzzerEventType.h"
-#include "ConnectionEventHandler.h"
+#include "ConnectionEventListener.h"
 
 struct BuzzerEvent
 {
@@ -14,10 +14,10 @@ struct BuzzerEvent
 class BuzzerEventTranslator
 {
 private:
-    ConnectionEventHandler &connectionEventHandler;
+    ConnectionEventListener &connectionEventListener;
 
 public:
-    BuzzerEventTranslator(ConnectionEventHandler &connectionEventHandler) : connectionEventHandler(connectionEventHandler)
+    BuzzerEventTranslator(ConnectionEventListener &connectionEventListener) : connectionEventListener(connectionEventListener)
     {
     }
 
@@ -26,10 +26,10 @@ public:
         switch (buzzerEvent.type)
         {
         case BuzzerEventType::Disconnected:
-            connectionEventHandler.OnConnectionLost();
+            connectionEventListener.OnConnectionLost();
             break;
         case BuzzerEventType::TextReceived:
-            connectionEventHandler.OnMessageReceived(buzzerEvent.payload);
+            connectionEventListener.OnMessageReceived(buzzerEvent.payload);
             break;
         }
     }
