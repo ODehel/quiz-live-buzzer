@@ -14,6 +14,7 @@
 class MockConnectionEventListener : public ConnectionEventListener
 {
 public:
+    MOCK_METHOD(void, OnConnectionEstablished, (), (override));
     MOCK_METHOD(void, OnConnectionLost, (), (override));
     MOCK_METHOD(void, OnMessageReceived, (const std::string&), (override));
 };
@@ -115,6 +116,13 @@ TEST(BuzzerEventTranslatorTest, TextReceivedTriggersMessageReceived)
     EXPECT_CALL(mock, OnMessageReceived("{\"type\":\"question_open\"}")).Times(1);
 
     translator.TranslateBuzzerEvent({BuzzerEventType::TextReceived, "{\"type\":\"question_open\"}"});
+}
+
+TEST_F(ConnectionEventHandlerTest, EstablishedConnectionTriggersAuth)
+{
+    EXPECT_CALL(mockSessionMessageSender, SendAuth()).Times(1);
+
+    handler.OnConnectionEstablished();
 }
 
 int main(int argc, char **argv)

@@ -24,6 +24,11 @@ public:
     {
     }
 
+    void OnConnectionEstablished() override
+    {
+        sessionMessageSender.SendAuth();
+    }
+
     void OnConnectionLost() override
     {
         reconnectionPolicy.OnReconnectFailed();
