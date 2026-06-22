@@ -20,6 +20,11 @@ public:
     {
         return std::string("{\"type\":\"auth_refresh\",\"token\":\"") + token + "\"}";
     }
+
+    std::string SerializeAuth(const std::string &token) const
+    {
+        return std::string("{\"type\":\"auth\",\"token\":\"") + token + "\"}";
+    }
 };
 
 #endif

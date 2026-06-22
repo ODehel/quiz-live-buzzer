@@ -25,6 +25,11 @@ public:
         payloadSocketWriter.Write(messageSerializer.SerializeAuthRefresh(token));
     }
 
+    void SendAuth() override
+    {
+        payloadSocketWriter.Write(messageSerializer.SerializeAuth(token));
+    }
+
     void UpdateToken(const std::string &token) override
     {
         this->token = token;
