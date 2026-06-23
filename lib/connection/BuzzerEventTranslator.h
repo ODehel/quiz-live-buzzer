@@ -25,11 +25,14 @@ public:
     {
         switch (buzzerEvent.type)
         {
-        case BuzzerEventType::Disconnected:
-            connectionEventListener.OnConnectionLost();
+        case BuzzerEventType::Connected:
+            connectionEventListener.OnConnectionEstablished();
             break;
         case BuzzerEventType::TextReceived:
             connectionEventListener.OnMessageReceived(buzzerEvent.payload);
+            break;
+        case BuzzerEventType::Disconnected:
+            connectionEventListener.OnConnectionLost();
             break;
         }
     }

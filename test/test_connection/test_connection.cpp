@@ -125,6 +125,16 @@ TEST_F(ConnectionEventHandlerTest, EstablishedConnectionTriggersAuth)
     handler.OnConnectionEstablished();
 }
 
+TEST(BuzzerEventTranslatorTest, ConnectionEstablishedTriggersConnectionHandling)
+{
+    MockConnectionEventListener mock;
+    BuzzerEventTranslator translator{mock};
+
+    EXPECT_CALL(mock, OnConnectionEstablished()).Times(1);
+
+    translator.TranslateBuzzerEvent({BuzzerEventType::Connected, ""});
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

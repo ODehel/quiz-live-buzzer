@@ -3,8 +3,9 @@
 
 enum class BuzzerEventType
 {
-    Disconnected,
-    TextReceived
+    Connected,
+    TextReceived,
+    Disconnected
 };
 
 #endif
