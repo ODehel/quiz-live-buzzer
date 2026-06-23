@@ -7,11 +7,14 @@ void WebSocketEventListener::Begin()
                    {
         switch (type)
         {
-        case WStype_DISCONNECTED:
-            buzzerEventTranslator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, ""});
+        case WStype_CONNECTED:
+            buzzerEventTranslator.TranslateBuzzerEvent({BuzzerEventType::Connected, ""});
             break;
         case WStype_TEXT:
             buzzerEventTranslator.TranslateBuzzerEvent({BuzzerEventType::TextReceived, std::string(reinterpret_cast<char *>(payload), length)});
+            break;
+        case WStype_DISCONNECTED:
+            buzzerEventTranslator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, ""});
             break;
         default:
             break;
