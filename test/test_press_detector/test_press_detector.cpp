@@ -5,14 +5,14 @@
 #include "../mocks/MockGpioPinReader.h"
 #include "BuzzerBehavior.h"
 #include "BuzzerButtonPressTranslator.h"
-#include "PhysicalButton.h"
+#include "ButtonInput.h"
 #include "PhysicalButtonReader.h"
 #include "ButtonPressDetector.h"
 
 class MockButtonPressTranslator : public ButtonPressTranslator
 {
 public:
-    MOCK_METHOD(void, TranslateButtonPress, (PhysicalButton), (override));
+    MOCK_METHOD(void, TranslateButtonPress, (ButtonInput), (override));
 };
 
 TEST(ButtonPressDetectorTest, PressedButtonTriggersAnswer)
@@ -22,7 +22,7 @@ TEST(ButtonPressDetectorTest, PressedButtonTriggersAnswer)
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
     BuzzerButtonPressTranslator buttonPressTranslator{buzzerBehavior};
     MockGpioPinReader mockGpioPinAReader;
-    std::vector<ButtonPin> buttonPins{{mockGpioPinAReader, PhysicalButton::A}};
+    std::vector<ButtonPin> buttonPins{{mockGpioPinAReader, ButtonInput::A}};
     PhysicalButtonReader physicalButtonReader{buttonPins};
     ButtonPressDetector buttonPressDetector{physicalButtonReader, buttonPressTranslator};
 
@@ -38,12 +38,12 @@ TEST(ButtonPressDetectorTest, PressedButtonTriggersAnswerOnce)
 {
     MockButtonPressTranslator mockButtonPressTranslator;
     MockGpioPinReader mockGpioPinAReader;
-    std::vector<ButtonPin> buttonPins{{mockGpioPinAReader, PhysicalButton::A}};
+    std::vector<ButtonPin> buttonPins{{mockGpioPinAReader, ButtonInput::A}};
     PhysicalButtonReader physicalButtonReader{buttonPins};
     ButtonPressDetector buttonPressDetector{physicalButtonReader, mockButtonPressTranslator};
 
     EXPECT_CALL(mockGpioPinAReader, Read()).WillRepeatedly(testing::Return(true));
-    EXPECT_CALL(mockButtonPressTranslator, TranslateButtonPress(PhysicalButton::A)).Times(1);
+    EXPECT_CALL(mockButtonPressTranslator, TranslateButtonPress(ButtonInput::A)).Times(1);
 
     buttonPressDetector.Poll();
     buttonPressDetector.Poll();
@@ -53,15 +53,15 @@ TEST(ButtonPressDetectorTest, PressedThenReleasedDoesNotTriggerOnRelease)
 {
     MockButtonPressTranslator mockButtonPressTranslator;
     MockGpioPinReader mockGpioPinAReader;
-    std::vector<ButtonPin> buttonPins{{mockGpioPinAReader, PhysicalButton::A}};
+    std::vector<ButtonPin> buttonPins{{mockGpioPinAReader, ButtonInput::A}};
     PhysicalButtonReader physicalButtonReader{buttonPins};
     ButtonPressDetector buttonPressDetector{physicalButtonReader, mockButtonPressTranslator};
 
     EXPECT_CALL(mockGpioPinAReader, Read())
         .WillOnce(testing::Return(true))
         .WillOnce(testing::Return(false));
-    EXPECT_CALL(mockButtonPressTranslator, TranslateButtonPress(PhysicalButton::A)).Times(1);
-    EXPECT_CALL(mockButtonPressTranslator, TranslateButtonPress(PhysicalButton::Unknown)).Times(0);
+    EXPECT_CALL(mockButtonPressTranslator, TranslateButtonPress(ButtonInput::A)).Times(1);
+    EXPECT_CALL(mockButtonPressTranslator, TranslateButtonPress(ButtonInput::Unknown)).Times(0);
 
     buttonPressDetector.Poll();
     buttonPressDetector.Poll();
@@ -71,7 +71,7 @@ TEST(ButtonPressDetectorTest, ReleasedThenPressedAgainTriggersAnswerTwice)
 {
     MockButtonPressTranslator mockButtonPressTranslator;
     MockGpioPinReader mockGpioPinAReader;
-    std::vector<ButtonPin> buttonPins{{mockGpioPinAReader, PhysicalButton::A}};
+    std::vector<ButtonPin> buttonPins{{mockGpioPinAReader, ButtonInput::A}};
     PhysicalButtonReader physicalButtonReader{buttonPins};
     ButtonPressDetector buttonPressDetector{physicalButtonReader, mockButtonPressTranslator};
 
@@ -79,8 +79,8 @@ TEST(ButtonPressDetectorTest, ReleasedThenPressedAgainTriggersAnswerTwice)
         .WillOnce(testing::Return(true))
         .WillOnce(testing::Return(false))
         .WillOnce(testing::Return(true));
-    EXPECT_CALL(mockButtonPressTranslator, TranslateButtonPress(PhysicalButton::A)).Times(2);
-    EXPECT_CALL(mockButtonPressTranslator, TranslateButtonPress(PhysicalButton::Unknown)).Times(0);
+    EXPECT_CALL(mockButtonPressTranslator, TranslateButtonPress(ButtonInput::A)).Times(2);
+    EXPECT_CALL(mockButtonPressTranslator, TranslateButtonPress(ButtonInput::Unknown)).Times(0);
 
     buttonPressDetector.Poll();
     buttonPressDetector.Poll();

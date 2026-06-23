@@ -3,7 +3,7 @@
 #include "../mocks/GameMocks.h"
 #include "BuzzerBehavior.h"
 #include "BuzzerButtonPressTranslator.h"
-#include "PhysicalButton.h"
+#include "ButtonInput.h"
 
 TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerA)
 {
@@ -15,7 +15,7 @@ TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerA)
 
     EXPECT_CALL(mockHubMessageSender, SendAnswer('A')).Times(1);
 
-    buttonPressTranslator.TranslateButtonPress(PhysicalButton::A);
+    buttonPressTranslator.TranslateButtonPress(ButtonInput::A);
 }
 
 TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerB)
@@ -28,7 +28,7 @@ TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerB)
 
     EXPECT_CALL(mockHubMessageSender, SendAnswer('B')).Times(1);
 
-    buttonPressTranslator.TranslateButtonPress(PhysicalButton::B);
+    buttonPressTranslator.TranslateButtonPress(ButtonInput::B);
 }
 
 TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerC)
@@ -41,7 +41,7 @@ TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerC)
 
     EXPECT_CALL(mockHubMessageSender, SendAnswer('C')).Times(1);
 
-    buttonPressTranslator.TranslateButtonPress(PhysicalButton::C);
+    buttonPressTranslator.TranslateButtonPress(ButtonInput::C);
 }
 
 TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerD)
@@ -54,7 +54,7 @@ TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerD)
 
     EXPECT_CALL(mockHubMessageSender, SendAnswer('D')).Times(1);
 
-    buttonPressTranslator.TranslateButtonPress(PhysicalButton::D);
+    buttonPressTranslator.TranslateButtonPress(ButtonInput::D);
 }
 
 TEST(ButtonPressTranslatorTest, BuzzButtonPressSendsBuzz)
@@ -67,7 +67,7 @@ TEST(ButtonPressTranslatorTest, BuzzButtonPressSendsBuzz)
 
     EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
 
-    buttonPressTranslator.TranslateButtonPress(PhysicalButton::Buzz);
+    buttonPressTranslator.TranslateButtonPress(ButtonInput::Buzz);
 }
 
 TEST(ButtonPressTranslatorTest, UnknownButtonPressSendsNothing)
@@ -80,7 +80,7 @@ TEST(ButtonPressTranslatorTest, UnknownButtonPressSendsNothing)
 
     EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
 
-    buttonPressTranslator.TranslateButtonPress(PhysicalButton::Unknown);
+    buttonPressTranslator.TranslateButtonPress(ButtonInput::Unknown);
 }
 
 int main(int argc, char **argv)

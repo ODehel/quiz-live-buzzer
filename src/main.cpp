@@ -23,11 +23,11 @@ ArduinoGpioPinReader pinCReader(3);
 ArduinoGpioPinReader pinDReader(4);
 ArduinoGpioPinReader pinBuzzReader(5);
 std::vector<ButtonPin> buttonPins{
-    {pinAReader, PhysicalButton::A},
-    {pinBReader, PhysicalButton::B},
-    {pinCReader, PhysicalButton::C},
-    {pinDReader, PhysicalButton::D},
-    {pinBuzzReader, PhysicalButton::Buzz},
+    {pinAReader, ButtonInput::A},
+    {pinBReader, ButtonInput::B},
+    {pinCReader, ButtonInput::C},
+    {pinDReader, ButtonInput::D},
+    {pinBuzzReader, ButtonInput::Buzz},
 };
 ArduinoLocalFeedback localFeedback{{6, 7, 8, 9}};
 ReconnectionPolicy reconnectionPolicy;

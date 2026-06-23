@@ -1,14 +1,14 @@
 #ifndef PHYSICAL_BUTTON_READER_H
 #define PHYSICAL_BUTTON_READER_H
 
-#include "PhysicalButton.h"
+#include "ButtonInput.h"
 #include "GpioPinReader.h"
 #include <vector>
 
 struct ButtonPin
 {
     GpioPinReader &reader;
-    PhysicalButton button;
+    ButtonInput button;
 };
 
 class PhysicalButtonReader
@@ -21,9 +21,9 @@ public:
     {
     }
 
-    PhysicalButton DeduceButton()
+    ButtonInput DeduceButton()
     {
-        PhysicalButton candidate = PhysicalButton::Unknown;
+        ButtonInput candidate = ButtonInput::Unknown;
         int highCount = 0;
         for (ButtonPin &buttonPin : buttonPins)
         {
@@ -36,7 +36,7 @@ public:
 
         return highCount == 1
                    ? candidate
-                   : PhysicalButton::Unknown;
+                   : ButtonInput::Unknown;
     }
 };
 

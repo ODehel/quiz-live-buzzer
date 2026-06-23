@@ -2,7 +2,7 @@
 #define BUZZER_BUTTON_PRESS_TRANSLATOR_H
 
 #include "BuzzerBehavior.h"
-#include "PhysicalButton.h"
+#include "ButtonInput.h"
 #include "ButtonPressTranslator.h"
 
 class BuzzerButtonPressTranslator : public ButtonPressTranslator
@@ -15,26 +15,26 @@ public:
     {
     }
 
-    void TranslateButtonPress(PhysicalButton physicalButton) override
+    void TranslateButtonPress(ButtonInput physicalButton) override
     {
         switch (physicalButton)
         {
-        case PhysicalButton::A:
+        case ButtonInput::A:
             buzzerBehavior.OnMcqPressed('A');
             break;
-        case PhysicalButton::B:
+        case ButtonInput::B:
             buzzerBehavior.OnMcqPressed('B');
             break;
-        case PhysicalButton::C:
+        case ButtonInput::C:
             buzzerBehavior.OnMcqPressed('C');
             break;
-        case PhysicalButton::D:
+        case ButtonInput::D:
             buzzerBehavior.OnMcqPressed('D');
             break;
-        case PhysicalButton::Buzz:
+        case ButtonInput::Buzz:
             buzzerBehavior.OnBuzzPressed();
             break;
-        case PhysicalButton::Unknown:
+        case ButtonInput::Unknown:
             break;
         }
     }
