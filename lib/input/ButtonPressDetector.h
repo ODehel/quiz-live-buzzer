@@ -1,18 +1,18 @@
 #ifndef BUTTON_PRESS_DETECTOR_H
 #define BUTTON_PRESS_DETECTOR_H
 
-#include "PhysicalButtonReader.h"
+#include "ButtonReader.h"
 #include "ButtonPressTranslator.h"
 
 class ButtonPressDetector
 {
 private:
     ButtonInput lastButton = ButtonInput::Unknown;
-    PhysicalButtonReader &reader;
+    ButtonReader &reader;
     ButtonPressTranslator &translator;
 
 public:
-    ButtonPressDetector(PhysicalButtonReader &reader, ButtonPressTranslator &translator) : reader(reader), translator(translator)
+    ButtonPressDetector(ButtonReader &reader, ButtonPressTranslator &translator) : reader(reader), translator(translator)
     {
     }
 

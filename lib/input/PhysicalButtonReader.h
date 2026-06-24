@@ -1,9 +1,10 @@
 #ifndef PHYSICAL_BUTTON_READER_H
 #define PHYSICAL_BUTTON_READER_H
 
+#include <vector>
 #include "ButtonInput.h"
 #include "GpioPinReader.h"
-#include <vector>
+#include "ButtonReader.h"
 
 struct ButtonPin
 {
@@ -11,7 +12,7 @@ struct ButtonPin
     ButtonInput button;
 };
 
-class PhysicalButtonReader
+class PhysicalButtonReader : public ButtonReader
 {
 private:
     std::vector<ButtonPin> &buttonPins;
@@ -21,7 +22,7 @@ public:
     {
     }
 
-    ButtonInput DeduceButton()
+    ButtonInput DeduceButton() override
     {
         ButtonInput candidate = ButtonInput::Unknown;
         int highCount = 0;
