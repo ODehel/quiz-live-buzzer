@@ -1,9 +1,19 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <vector>
 #include "../mocks/GameMocks.h"
 #include "BuzzerBehavior.h"
 #include "BuzzerButtonPressTranslator.h"
 #include "ButtonInput.h"
+#include "TouchZoneReader.h"
+#include "TouchPointReader.h"
+#include "TouchButtonReader.h"
+
+class MockTouchPointReader : public TouchPointReader
+{
+public:
+    MOCK_METHOD(TouchPoint, Read, (), (override));
+};
 
 TEST(ButtonPressTranslatorTest, MCQButtonPressSendsMatchingAnswerA)
 {
@@ -81,6 +91,34 @@ TEST(ButtonPressTranslatorTest, UnknownButtonPressSendsNothing)
     EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
 
     buttonPressTranslator.TranslateButtonPress(ButtonInput::Unknown);
+}
+
+TEST(ButtonPressTranslatorTest, TouchPointInsideZoneDeducesItsButton)
+{
+    MockTouchPointReader mockTouchPointReader;
+    std::vector<TouchZone> zones{{0, 0, 100, 100, ButtonInput::A}};
+    TouchZoneReader touchZoneReader{zones};
+    TouchButtonReader touchButtonReader{mockTouchPointReader, touchZoneReader};
+
+    ON_CALL(mockTouchPointReader, Read()).WillByDefault(::testing::Return(TouchPoint{50, 50}));
+    
+    ButtonInput buttonInput = touchButtonReader.DeduceButton();
+
+    EXPECT_EQ(buttonInput, ButtonInput::A);
+}
+
+TEST(ButtonPressTranslatorTest, TouchPointOutsideZoneDeducesUnknownButton)
+{
+    MockTouchPointReader mockTouchPointReader;
+    std::vector<TouchZone> zones{{0, 0, 100, 100, ButtonInput::A}};
+    TouchZoneReader touchZoneReader{zones};
+    TouchButtonReader touchButtonReader{mockTouchPointReader, touchZoneReader};
+
+    ON_CALL(mockTouchPointReader, Read()).WillByDefault(::testing::Return(TouchPoint{250, 250}));
+    
+    ButtonInput buttonInput = touchButtonReader.DeduceButton();
+
+    EXPECT_EQ(buttonInput, ButtonInput::Unknown);
 }
 
 int main(int argc, char **argv)
