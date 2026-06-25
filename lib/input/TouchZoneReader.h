@@ -2,13 +2,8 @@
 #define TOUCH_ZONE_READER_H
 
 #include <vector>
+#include "TouchPoint.h"
 #include "ButtonInput.h"
-
-struct TouchPoint
-{
-    int x;
-    int y;
-};
 
 struct TouchZone
 {

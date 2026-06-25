@@ -1,7 +1,7 @@
 #ifndef TOUCH_POINT_READER_H
 #define TOUCH_POINT_READER_H
 
-#include "TouchZoneReader.h"
+#include "TouchPoint.h"
 
 class TouchPointReader 
 {

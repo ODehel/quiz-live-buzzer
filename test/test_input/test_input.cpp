@@ -5,6 +5,7 @@
 #include "BuzzerBehavior.h"
 #include "BuzzerButtonPressTranslator.h"
 #include "ButtonInput.h"
+#include "TouchPoint.h"
 #include "TouchZoneReader.h"
 #include "TouchPointReader.h"
 #include "TouchButtonReader.h"
