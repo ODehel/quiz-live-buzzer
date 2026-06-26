@@ -51,6 +51,14 @@ TEST(TouchZoneReaderTest, PointAboveOfZoneDeducesUnknown)
     EXPECT_EQ(reader.DeduceButton({50, -2}), ButtonInput::Unknown);
 }
 
+TEST(TouchZoneReaderTest, NoContactPointDeducesUnknown)
+{
+    std::vector<TouchZone> zones{{0, 0, 100, 100, ButtonInput::A}};
+    TouchZoneReader reader{zones};
+
+    EXPECT_EQ(reader.DeduceButton(TouchPoint::NoContact()), ButtonInput::Unknown);
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
