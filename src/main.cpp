@@ -16,19 +16,25 @@
 #include "ConnectionEventHandler.h"
 #include "BuzzerEventTranslator.h"
 #include "WebSocketEventListener.h"
+#include "TouchZoneReader.h"
+#include "Gt911TouchReader.h"
+#include "TouchButtonReader.h"
 
-ArduinoGpioPinReader pinAReader(1);
-ArduinoGpioPinReader pinBReader(2);
-ArduinoGpioPinReader pinCReader(3);
-ArduinoGpioPinReader pinDReader(4);
-ArduinoGpioPinReader pinBuzzReader(5);
-std::vector<ButtonPin> buttonPins{
-    {pinAReader, ButtonInput::A},
-    {pinBReader, ButtonInput::B},
-    {pinCReader, ButtonInput::C},
-    {pinDReader, ButtonInput::D},
-    {pinBuzzReader, ButtonInput::Buzz},
-};
+ArduinoGpioPinReader pinBuzzReader(38);
+std::vector<ButtonPin> buttonPins{{pinBuzzReader, ButtonInput::Buzz}};
+
+// DETTE: zones figées en 2x2 provisoire pour valider la chaîne tactile au smoke.
+// La disposition réelle est DYNAMIQUE par écran (change à chaque rendu LVGL, §8.2) :
+// ce vecteur devra être réécrit/piloté par l'état de jeu, pas codé en dur ici.
+std::vector<TouchZone> touchZones{
+    {0, 0, 400, 240, ButtonInput::A},
+    {400, 0, 800, 240, ButtonInput::B},
+    {0, 240, 400, 480, ButtonInput::C},
+    {400, 240, 800, 480, ButtonInput::D}};
+Gt911TouchReader gt911;
+TouchZoneReader touchZoneReader{touchZones};
+TouchButtonReader touchButtonReader{gt911, touchZoneReader};
+// DETTE: pins 6/7/8/9 provisoires (non câblés sur le hardware réel) — à fixer au plan de câblage feedback
 ArduinoLocalFeedback localFeedback{{6, 7, 8, 9}};
 ReconnectionPolicy reconnectionPolicy;
 WebSocketsClient client;
@@ -40,20 +46,18 @@ TokenSessionMessageSender tokenSessionMessageSender{payloadSocketWriter, Message
 BuzzerButtonPressTranslator buzzerButtonPressTranslator{buzzerBehavior};
 HubMessageDispatcher hubMessageDispatcher{buzzerBehavior};
 ButtonPressDetector buttonPressDetector{physicalButtonReader, buzzerButtonPressTranslator};
+ButtonPressDetector touchPressDetector{touchButtonReader, buzzerButtonPressTranslator};
 ConnectionEventHandler connectionEventHandler{reconnectionPolicy, hubMessageDispatcher, tokenSessionMessageSender, tokenSessionMessageSender};
 BuzzerEventTranslator buzzerEventTranslator{connectionEventHandler};
 WebSocketEventListener webSocketEventListener{client, buzzerEventTranslator};
 
 void setup()
 {
-    pinAReader.Begin();
-    pinBReader.Begin();
-    pinCReader.Begin();
-    pinDReader.Begin();
+    gt911.Begin();
     pinBuzzReader.Begin();
     localFeedback.Begin();
     webSocketEventListener.Begin();
-    WiFi.begin("VOTRE_SSID", "VOTRE_MOT_DE_PASSE");
+    WiFi.begin("VOTRE_SSID", "VOTRE_MOT_DE_PASSE"); // DETTE: Devra être renseigné par les valeurs reçues par le module NFC
     while (WiFi.status() != WL_CONNECTED)
         delay(500);
     client.begin("192.168.1.83", 8282, "/ws");
@@ -63,4 +67,5 @@ void loop()
 {
     webSocketEventListener.Loop();
     buttonPressDetector.Poll();
+    touchPressDetector.Poll();
 }
