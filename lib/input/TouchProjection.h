@@ -9,6 +9,11 @@ private:
     TouchPoint sensorOrigin;
     TouchPoint sensorResolution;
 
+    int MapAxis(int value, int inMin, int inMax, int outMin, int outMax) const
+    {
+        return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+    }
+
 public:
     TouchProjection(TouchPoint sensorOrigin, TouchPoint sensorResolution) : sensorOrigin(sensorOrigin), sensorResolution(sensorResolution)
     {
@@ -19,13 +24,8 @@ public:
         int screenMaxX = sensorResolution.x - 1;
         int screenMaxY = sensorResolution.y - 1;
         return {
-            mapAxis(touchPoint.x, sensorResolution.x, sensorOrigin.x, 0, screenMaxX),
-            mapAxis(touchPoint.y, sensorResolution.y, sensorOrigin.y, 0, screenMaxY)};
-    }
-
-    int mapAxis(int value, int inMin, int inMax, int outMin, int outMax) const
-    {
-        return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+            MapAxis(touchPoint.x, sensorResolution.x, sensorOrigin.x, 0, screenMaxX),
+            MapAxis(touchPoint.y, sensorResolution.y, sensorOrigin.y, 0, screenMaxY)};
     }
 };
 
