@@ -1,7 +1,9 @@
 #include <Arduino.h>
+#include <string>
 #include <WebSocketsClient.h>
 #include <WiFi.h>
 #include <vector>
+#include <HTTPClient.h>
 #include "ArduinoGpioPinReader.h"
 #include "ArduinoLocalFeedback.h"
 #include "ReconnectionPolicy.h"
@@ -19,6 +21,9 @@
 #include "TouchZoneReader.h"
 #include "Gt911TouchReader.h"
 #include "TouchButtonReader.h"
+#include "ServerCredentials.h"
+#include "LoginRequestSerializer.h"
+#include "LoginResponseDeserializer.h"
 
 ArduinoGpioPinReader pinBuzzReader(38);
 std::vector<ButtonPin> buttonPins{{pinBuzzReader, ButtonInput::Buzz}};
@@ -51,6 +56,30 @@ ConnectionEventHandler connectionEventHandler{reconnectionPolicy, hubMessageDisp
 BuzzerEventTranslator buzzerEventTranslator{connectionEventHandler};
 WebSocketEventListener webSocketEventListener{client, buzzerEventTranslator};
 
+static std::string fetchToken(const String &hubUrl, const ServerCredentials &credentials)
+{
+    std::string token = "";
+    LoginRequestSerializer loginRequestSerializer;
+    std::string requestBody = loginRequestSerializer.SerializeLogin(credentials);
+    HTTPClient http;
+    http.begin(hubUrl + "/api/v1/token");
+    http.addHeader("Content-Type", "application/json");
+    int status = http.POST(String(requestBody.c_str()));
+    if (status == 200)
+    {
+        std::string responseBody = http.getString().c_str();
+        LoginResponseDeserializer loginResponseDeserializer;
+        token = loginResponseDeserializer.DeserializeToken(responseBody);
+    }
+    else
+    {
+        Serial.print("Login failed, HTTP status: "); Serial.println(status);
+    }
+    http.end();
+
+    return token;
+}
+
 void setup()
 {
     gt911.Begin();
@@ -60,6 +89,8 @@ void setup()
     WiFi.begin("VOTRE_SSID", "VOTRE_MOT_DE_PASSE"); // DETTE: Devra être renseigné par les valeurs reçues par le module NFC
     while (WiFi.status() != WL_CONNECTED)
         delay(500);
+    std::string token = fetchToken("http://192.168.1.83:8282", ServerCredentials{"user", "password"});
+    tokenSessionMessageSender.UpdateToken(token);
     client.begin("192.168.1.83", 8282, "/ws");
 }
 
