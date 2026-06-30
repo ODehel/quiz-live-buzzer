@@ -18,7 +18,8 @@ public:
     {
         if (type == "game_resumed")
             return "Partie en cours";
-
+        if (type == "question_choices")
+            return "Question QCM en cours";
         return "Connecté";
     }
 };
