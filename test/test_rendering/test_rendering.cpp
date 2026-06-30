@@ -8,6 +8,13 @@ TEST(DisplayStateTest, AuthSuccessShouldDisplayConnecteOnScreen)
     EXPECT_EQ(displayState.LcdText(), "Connecté");
 }
 
+TEST(DisplayStateTest, GameResumedShouldDisplayPartieEnCoursOnScreen)
+{
+    DisplayState displayState;
+    displayState.Apply("game_resumed");
+    EXPECT_EQ(displayState.LcdText(), "Partie en cours");
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

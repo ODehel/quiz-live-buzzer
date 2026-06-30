@@ -5,15 +5,21 @@
 
 class DisplayState
 {
-public:
-    void Apply(const std::string &type) const
-    {
+private:
+    std::string type = "";
 
+public:
+    void Apply(const std::string &type)
+    {
+        this->type = type;
     }
 
-    std::string LcdText()
+    std::string LcdText() const
     {
-        return "Connectée";
+        if (type == "game_resumed")
+            return "Partie en cours";
+
+        return "Connecté";
     }
 };
 
