@@ -10,18 +10,26 @@
 #include "HubMessageDispatcher.h"
 #include "BuzzerEventTranslator.h"
 #include "BuzzerEventType.h"
+#include "MessageRenderer.h"
+
+class MockMessageRenderer : public MessageRenderer
+{
+public:
+    MOCK_METHOD(void, Apply, (const std::string &), (override));
+};
 
 class MockConnectionEventListener : public ConnectionEventListener
 {
 public:
     MOCK_METHOD(void, OnConnectionEstablished, (), (override));
     MOCK_METHOD(void, OnConnectionLost, (), (override));
-    MOCK_METHOD(void, OnMessageReceived, (const std::string&), (override));
+    MOCK_METHOD(void, OnMessageReceived, (const std::string &), (override));
 };
 
 class ConnectionEventHandlerTest : public ::testing::Test
 {
 protected:
+    MockMessageRenderer mockMessageRenderer;
     MockTokenReceiver mockTokenReceiver;
     MockHubMessageSender mockHubMessageSender;
     MockLocalFeedback mockLocalFeedback;
@@ -29,7 +37,7 @@ protected:
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
-    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, mockTokenReceiver};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, mockTokenReceiver, mockMessageRenderer};
 };
 
 TEST_F(ConnectionEventHandlerTest, BuzzerEliminatedAfterAThreeTimesDisconnection)
@@ -133,6 +141,13 @@ TEST(BuzzerEventTranslatorTest, ConnectionEstablishedTriggersConnectionHandling)
     EXPECT_CALL(mock, OnConnectionEstablished()).Times(1);
 
     translator.TranslateBuzzerEvent({BuzzerEventType::Connected, ""});
+}
+
+TEST_F(ConnectionEventHandlerTest, ReceivedMessageIsRenderedByType)
+{
+    EXPECT_CALL(mockMessageRenderer, Apply("auth_success")).Times(1);
+
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
 }
 
 int main(int argc, char **argv)

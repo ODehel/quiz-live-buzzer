@@ -8,6 +8,7 @@
 #include "MessageDeserializer.h"
 #include "ConnectionEventListener.h"
 #include "TokenReceiver.h"
+#include "MessageRenderer.h"
 
 class ConnectionEventHandler : public ConnectionEventListener
 {
@@ -17,10 +18,11 @@ private:
     SessionMessageSender &sessionMessageSender;
     TokenReceiver &tokenReceiver;
     MessageDeserializer messageDeserializer;
+    MessageRenderer &messageRenderer;
 
 public:
-    ConnectionEventHandler(ReconnectionPolicy &reconnectionPolicy, HubMessageDispatcher &hubMessageDispatcher, SessionMessageSender &sessionMessageSender, TokenReceiver &tokenReceiver)
-        : reconnectionPolicy(reconnectionPolicy), hubMessageDispatcher(hubMessageDispatcher), sessionMessageSender(sessionMessageSender), tokenReceiver(tokenReceiver)
+    ConnectionEventHandler(ReconnectionPolicy &reconnectionPolicy, HubMessageDispatcher &hubMessageDispatcher, SessionMessageSender &sessionMessageSender, TokenReceiver &tokenReceiver, MessageRenderer &messageRenderer)
+        : reconnectionPolicy(reconnectionPolicy), hubMessageDispatcher(hubMessageDispatcher), sessionMessageSender(sessionMessageSender), tokenReceiver(tokenReceiver), messageRenderer(messageRenderer)
     {
     }
 
@@ -37,6 +39,7 @@ public:
     void OnMessageReceived(const std::string &message) override
     {
         std::string type = messageDeserializer.ExtractType(message);
+        messageRenderer.Apply(type);
         if (type == "auth_success")
         {
             reconnectionPolicy.OnAuthSuccess();
