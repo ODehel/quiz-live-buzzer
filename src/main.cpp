@@ -4,6 +4,8 @@
 #include <WiFi.h>
 #include <vector>
 #include <HTTPClient.h>
+#include "SerialScreen.h"
+#include "LcdRenderer.h"
 #include "ArduinoGpioPinReader.h"
 #include "ArduinoLocalFeedback.h"
 #include "ReconnectionPolicy.h"
@@ -38,6 +40,8 @@ std::vector<TouchZone> touchZones{
     {400, 240, 800, 480, ButtonInput::D}};
 Gt911TouchReader gt911;
 TouchZoneReader touchZoneReader{touchZones};
+SerialScreen serialScreen;
+LcdRenderer lcdRenderer{serialScreen};
 TouchButtonReader touchButtonReader{gt911, touchZoneReader};
 // DETTE: pins 6/7/8/9 provisoires (non câblés sur le hardware réel) — à fixer au plan de câblage feedback
 ArduinoLocalFeedback localFeedback{{6, 7, 8, 9}};
@@ -52,7 +56,7 @@ BuzzerButtonPressTranslator buzzerButtonPressTranslator{buzzerBehavior};
 HubMessageDispatcher hubMessageDispatcher{buzzerBehavior};
 ButtonPressDetector buttonPressDetector{physicalButtonReader, buzzerButtonPressTranslator};
 ButtonPressDetector touchPressDetector{touchButtonReader, buzzerButtonPressTranslator};
-ConnectionEventHandler connectionEventHandler{reconnectionPolicy, hubMessageDispatcher, tokenSessionMessageSender, tokenSessionMessageSender};
+ConnectionEventHandler connectionEventHandler{reconnectionPolicy, hubMessageDispatcher, tokenSessionMessageSender, tokenSessionMessageSender, lcdRenderer};
 BuzzerEventTranslator buzzerEventTranslator{connectionEventHandler};
 WebSocketEventListener webSocketEventListener{client, buzzerEventTranslator};
 
@@ -82,6 +86,7 @@ static std::string fetchToken(const String &hubUrl, const ServerCredentials &cre
 
 void setup()
 {
+    Serial.begin(115200);
     gt911.Begin();
     pinBuzzReader.Begin();
     localFeedback.Begin();
