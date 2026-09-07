@@ -27,6 +27,70 @@
 #include "LoginRequestSerializer.h"
 #include "LoginResponseDeserializer.h"
 #include "secrets.h"
+#define LGFX_USE_V1
+#include <LovyanGFX.hpp>
+#include <lgfx/v1/platforms/esp32s3/Panel_RGB.hpp>
+#include <lgfx/v1/platforms/esp32s3/Bus_RGB.hpp>
+
+class LGFX : public lgfx::LGFX_Device
+{
+public:
+    lgfx::Bus_RGB _bus_instance;
+    lgfx::Panel_RGB _panel_instance;
+    LGFX(void)
+    {
+        {
+            auto cfg = _bus_instance.config();
+            cfg.panel = &_panel_instance;
+            cfg.pin_d0 = GPIO_NUM_8;
+            cfg.pin_d1 = GPIO_NUM_3;
+            cfg.pin_d2 = GPIO_NUM_46;
+            cfg.pin_d3 = GPIO_NUM_9;
+            cfg.pin_d4 = GPIO_NUM_1; // B0-B4
+            cfg.pin_d5 = GPIO_NUM_5;
+            cfg.pin_d6 = GPIO_NUM_6;
+            cfg.pin_d7 = GPIO_NUM_7;
+            cfg.pin_d8 = GPIO_NUM_15;
+            cfg.pin_d9 = GPIO_NUM_16;
+            cfg.pin_d10 = GPIO_NUM_4; // G0-G5
+            cfg.pin_d11 = GPIO_NUM_45;
+            cfg.pin_d12 = GPIO_NUM_48;
+            cfg.pin_d13 = GPIO_NUM_47;
+            cfg.pin_d14 = GPIO_NUM_21;
+            cfg.pin_d15 = GPIO_NUM_14; // R0-R4
+            cfg.pin_henable = GPIO_NUM_40;
+            cfg.pin_vsync = GPIO_NUM_41;
+            cfg.pin_hsync = GPIO_NUM_39;
+            cfg.pin_pclk = GPIO_NUM_0;
+            cfg.freq_write = 15000000;
+            cfg.hsync_polarity = 0;
+            cfg.hsync_front_porch = 8;
+            cfg.hsync_pulse_width = 4;
+            cfg.hsync_back_porch = 43;
+            cfg.vsync_polarity = 0;
+            cfg.vsync_front_porch = 8;
+            cfg.vsync_pulse_width = 4;
+            cfg.vsync_back_porch = 12;
+            cfg.pclk_active_neg = 1;
+            cfg.de_idle_high = 0;
+            cfg.pclk_idle_high = 0;
+            _bus_instance.config(cfg);
+        }
+        {
+            auto cfg = _panel_instance.config();
+            cfg.memory_width = 800;
+            cfg.memory_height = 480;
+            cfg.panel_width = 800;
+            cfg.panel_height = 480;
+            cfg.offset_x = 0;
+            cfg.offset_y = 0;
+            _panel_instance.config(cfg);
+        }
+        _panel_instance.setBus(&_bus_instance);
+        setPanel(&_panel_instance);
+    }
+};
+LGFX lcd;
 
 ArduinoGpioPinReader pinBuzzReader(38);
 std::vector<ButtonPin> buttonPins{{pinBuzzReader, ButtonInput::Buzz}};
@@ -78,7 +142,8 @@ static std::string fetchToken(const String &hubUrl, const ServerCredentials &cre
     }
     else
     {
-        Serial.print("Login failed, HTTP status: "); Serial.println(status);
+        Serial.print("Login failed, HTTP status: ");
+        Serial.println(status);
     }
     http.end();
 
@@ -90,9 +155,15 @@ void setup()
     Serial.begin(115200);
     gt911.Begin();
     pinBuzzReader.Begin();
-    localFeedback.Begin();
+    // localFeedback.Begin();   // DETTE §6 : pins 6/7/8/9 en collision avec le bus RGB — voir décision ci-dessous
     webSocketEventListener.Begin();
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD); // DETTE: Devra être renseigné par les valeurs reçues par le module NFC
+
+    pinMode(2, OUTPUT);
+    digitalWrite(2, HIGH); // backlight dalle (GPIO2)
+    lcd.init();            // pilote la dalle DIS07050H
+    lcd.fillScreen(TFT_BLACK);
+
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     while (WiFi.status() != WL_CONNECTED)
         delay(500);
     std::string token = fetchToken("http://192.168.1.183:3000", ServerCredentials{HUB_USERNAME, HUB_PASSWORD});
