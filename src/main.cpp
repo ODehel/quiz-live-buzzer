@@ -26,6 +26,7 @@
 #include "ServerCredentials.h"
 #include "LoginRequestSerializer.h"
 #include "LoginResponseDeserializer.h"
+#include "secrets.h"
 
 ArduinoGpioPinReader pinBuzzReader(38);
 std::vector<ButtonPin> buttonPins{{pinBuzzReader, ButtonInput::Buzz}};
@@ -91,12 +92,12 @@ void setup()
     pinBuzzReader.Begin();
     localFeedback.Begin();
     webSocketEventListener.Begin();
-    WiFi.begin("VOTRE_SSID", "VOTRE_MOT_DE_PASSE"); // DETTE: Devra être renseigné par les valeurs reçues par le module NFC
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD); // DETTE: Devra être renseigné par les valeurs reçues par le module NFC
     while (WiFi.status() != WL_CONNECTED)
         delay(500);
-    std::string token = fetchToken("http://192.168.1.83:8282", ServerCredentials{"user", "password"});
+    std::string token = fetchToken("http://192.168.1.183:3000", ServerCredentials{HUB_USERNAME, HUB_PASSWORD});
     tokenSessionMessageSender.UpdateToken(token);
-    client.begin("192.168.1.83", 8282, "/ws");
+    client.begin("192.168.1.183", 3000, "/ws");
 }
 
 void loop()

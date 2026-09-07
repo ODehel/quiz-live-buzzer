@@ -8,3 +8,6 @@
 # OS
 .DS_Store
 Thumbs.db
+
+# Secrets (non versionnés — cf. provisioning NFC §10 à terme)
+src/secrets.h
