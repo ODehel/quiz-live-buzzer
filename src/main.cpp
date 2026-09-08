@@ -4,7 +4,6 @@
 #include <WiFi.h>
 #include <vector>
 #include <HTTPClient.h>
-#include "SerialScreen.h"
 #include "LcdRenderer.h"
 #include "ArduinoGpioPinReader.h"
 #include "ArduinoLocalFeedback.h"
@@ -31,6 +30,7 @@
 #include <LovyanGFX.hpp>
 #include <lgfx/v1/platforms/esp32s3/Panel_RGB.hpp>
 #include <lgfx/v1/platforms/esp32s3/Bus_RGB.hpp>
+#include "GfxScreen.h"
 
 class LGFX : public lgfx::LGFX_Device
 {
@@ -105,8 +105,8 @@ std::vector<TouchZone> touchZones{
     {400, 240, 800, 480, ButtonInput::D}};
 Gt911TouchReader gt911;
 TouchZoneReader touchZoneReader{touchZones};
-SerialScreen serialScreen;
-LcdRenderer lcdRenderer{serialScreen};
+GfxScreen gfxScreen{lcd};
+LcdRenderer lcdRenderer{gfxScreen};
 TouchButtonReader touchButtonReader{gt911, touchZoneReader};
 // DETTE: pins 6/7/8/9 provisoires (non câblés sur le hardware réel) — à fixer au plan de câblage feedback
 ArduinoLocalFeedback localFeedback{{6, 7, 8, 9}};
