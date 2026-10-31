@@ -121,7 +121,7 @@ BuzzerButtonPressTranslator buzzerButtonPressTranslator{buzzerBehavior};
 HubMessageDispatcher hubMessageDispatcher{buzzerBehavior};
 ButtonPressDetector buttonPressDetector{physicalButtonReader, buzzerButtonPressTranslator};
 ButtonPressDetector touchPressDetector{touchButtonReader, buzzerButtonPressTranslator};
-ConnectionEventHandler connectionEventHandler{reconnectionPolicy, hubMessageDispatcher, tokenSessionMessageSender, tokenSessionMessageSender, lcdRenderer};
+ConnectionEventHandler connectionEventHandler{reconnectionPolicy, hubMessageDispatcher, tokenSessionMessageSender, lcdRenderer};
 BuzzerEventTranslator buzzerEventTranslator{connectionEventHandler};
 WebSocketEventListener webSocketEventListener{client, buzzerEventTranslator};
 

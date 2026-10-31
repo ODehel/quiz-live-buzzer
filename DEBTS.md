@@ -28,6 +28,9 @@ Inventaire initial dressé le 2026-10-31 à partir du diagnostic du dépôt (lec
 
 - **Paramétrage NFC non spécifié** — seul point ouvert du CDC (§10) ; frontière avec l'application mobile à définir. *Pas séparé* : session de cadrage du CDC §10, avant tout code.
 
+- **Renouvellement du token non cadré** — sur `token_expiring_soon`, `SendAuthRefresh()` renvoie le token **courant** (celui du login), alors que la spec du hub (US-021 CA-10) attend un **nouveau JWT** sur `auth_refresh`. Le firmware ne refait jamais `POST /api/v1/token` après le démarrage, et le JWT dure 3600 s par défaut (`JWT_EXPIRATION_TIME`) : une reconnexion après expiration enverrait un token périmé (`4002`, US-009 CA-8). US-021 est spécifiée mais je n'en ai pas trouvé trace dans `ws-route.ts` du hub : le chemin n'est pas éprouvable sur le matériel pour l'instant. *Pas séparé* : session de cadrage (qui redemande un JWT, et quand), puis `fix`.
+- **Reconnexion WebSocket sans recul sur refus du hub** — après une fermeture `4001`, le client rouvre une connexion environ toutes les 1,2 s (relevé du 2026-10-31, avant le correctif du token) jusqu'à la limite du hub : 15 par minute, puis `4006`. Le CDC ne dit rien du comportement sur un code de fermeture. *Pas séparé* : cadrage avec le renouvellement du token.
+
 ## build/ et CI
 
 - **Env `esp32` hors CI** — la CI ne lance que `pio test -e native`. Un build `esp32` cassé ne se voit qu'en local. Choix assumé (le registre PlatformIO et la dépendance LovyanGFX allongent le run). *Pas séparé* : job `esp32` quand LovyanGFX sera épinglée.

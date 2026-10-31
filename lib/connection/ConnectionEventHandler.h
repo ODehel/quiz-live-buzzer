@@ -7,7 +7,6 @@
 #include "SessionMessageSender.h"
 #include "MessageDeserializer.h"
 #include "ConnectionEventListener.h"
-#include "TokenReceiver.h"
 #include "MessageRenderer.h"
 
 class ConnectionEventHandler : public ConnectionEventListener
@@ -16,13 +15,12 @@ private:
     ReconnectionPolicy &reconnectionPolicy;
     HubMessageDispatcher &hubMessageDispatcher;
     SessionMessageSender &sessionMessageSender;
-    TokenReceiver &tokenReceiver;
     MessageDeserializer messageDeserializer;
     MessageRenderer &messageRenderer;
 
 public:
-    ConnectionEventHandler(ReconnectionPolicy &reconnectionPolicy, HubMessageDispatcher &hubMessageDispatcher, SessionMessageSender &sessionMessageSender, TokenReceiver &tokenReceiver, MessageRenderer &messageRenderer)
-        : reconnectionPolicy(reconnectionPolicy), hubMessageDispatcher(hubMessageDispatcher), sessionMessageSender(sessionMessageSender), tokenReceiver(tokenReceiver), messageRenderer(messageRenderer)
+    ConnectionEventHandler(ReconnectionPolicy &reconnectionPolicy, HubMessageDispatcher &hubMessageDispatcher, SessionMessageSender &sessionMessageSender, MessageRenderer &messageRenderer)
+        : reconnectionPolicy(reconnectionPolicy), hubMessageDispatcher(hubMessageDispatcher), sessionMessageSender(sessionMessageSender), messageRenderer(messageRenderer)
     {
     }
 
@@ -43,7 +41,6 @@ public:
         if (type == "auth_success")
         {
             reconnectionPolicy.OnAuthSuccess();
-            tokenReceiver.UpdateToken(messageDeserializer.ExtractToken(message));
         }
         else if (type == "token_expiring_soon")
             sessionMessageSender.SendAuthRefresh();

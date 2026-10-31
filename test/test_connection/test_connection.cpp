@@ -2,6 +2,9 @@
 #include <gmock/gmock.h>
 #include "../mocks/GameMocks.h"
 #include "../mocks/SessionMocks.h"
+#include "../mocks/ConnectionMocks.h"
+#include "TokenSessionMessageSender.h"
+#include "MessageSerializer.h"
 #include "ReconnectionPolicy.h"
 #include "ConnectionEventHandler.h"
 #include "ConnectionEventListener.h"
@@ -30,14 +33,13 @@ class ConnectionEventHandlerTest : public ::testing::Test
 {
 protected:
     MockMessageRenderer mockMessageRenderer;
-    MockTokenReceiver mockTokenReceiver;
     MockHubMessageSender mockHubMessageSender;
     MockLocalFeedback mockLocalFeedback;
     MockSessionMessageSender mockSessionMessageSender;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
-    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, mockTokenReceiver, mockMessageRenderer};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, mockMessageRenderer};
 };
 
 TEST_F(ConnectionEventHandlerTest, BuzzerEliminatedAfterAThreeTimesDisconnection)
@@ -75,13 +77,6 @@ TEST_F(ConnectionEventHandlerTest, TokenExpiringSoonTriggersAuthRefresh)
     EXPECT_CALL(mockSessionMessageSender, SendAuthRefresh()).Times(1);
 
     handler.OnMessageReceived("{\"type\":\"token_expiring_soon\"}");
-}
-
-TEST_F(ConnectionEventHandlerTest, AuthSuccessTriggersUpdateToken)
-{
-    EXPECT_CALL(mockTokenReceiver, UpdateToken("any-token")).Times(1);
-
-    handler.OnMessageReceived("{\"type\":\"auth_success\",\"token\":\"any-token\"}");
 }
 
 TEST_F(ConnectionEventHandlerTest, DisconnectedEventTriggersConnectionLost)
@@ -148,6 +143,25 @@ TEST_F(ConnectionEventHandlerTest, ReceivedMessageIsRenderedByType)
     EXPECT_CALL(mockMessageRenderer, Apply("auth_success")).Times(1);
 
     handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+}
+
+TEST(ConnectionEventHandlerSessionTest, ReconnectionSendsTheTokenGivenAtLoginAfterTheHubConfirmedTheAuthentication)
+{
+    ::testing::NiceMock<MockMessageRenderer> mockMessageRenderer;
+    MockHubMessageSender mockHubMessageSender;
+    MockLocalFeedback mockLocalFeedback;
+    MockPayloadSocketWriter mockPayloadSocketWriter;
+    TokenSessionMessageSender tokenSessionMessageSender{mockPayloadSocketWriter, MessageSerializer{}};
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    HubMessageDispatcher dispatcher{buzzerBehavior};
+    ReconnectionPolicy policy;
+    ConnectionEventHandler handler{policy, dispatcher, tokenSessionMessageSender, mockMessageRenderer};
+    tokenSessionMessageSender.UpdateToken("login-token");
+
+    handler.OnMessageReceived("{\"type\":\"auth_success\",\"role\":\"buzzer\",\"username\":\"quiz_buzzer_01\",\"expires_in\":3600}");
+
+    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth\",\"token\":\"login-token\"}")).Times(1);
+    handler.OnConnectionEstablished();
 }
 
 int main(int argc, char **argv)
