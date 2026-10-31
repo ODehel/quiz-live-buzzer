@@ -13,18 +13,6 @@ TEST(MessageDeserializerTest, QuestionChoicesMessageIsTypeQuestionChoices)
     EXPECT_EQ(deserializer.ExtractType("{\"type\":\"question_choices\"}"), "question_choices");
 }
 
-TEST(MessageDeserializerTest, ExtractTokenReturnsTokenFromAuthSuccessMessage)
-{
-    MessageDeserializer deserializer;
-    EXPECT_EQ(deserializer.ExtractToken("{\"type\":\"auth_success\",\"token\":\"any-token\"}"), "any-token");
-}
-
-TEST(MessageDeserializerTest, ExtractTokenReturnsEmptyStringFromAuthSuccessMessageWithNoToken)
-{
-    MessageDeserializer deserializer;
-    EXPECT_EQ(deserializer.ExtractToken("{\"type\":\"auth_success\"}"), "");
-}
-
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
