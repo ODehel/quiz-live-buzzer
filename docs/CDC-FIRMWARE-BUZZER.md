@@ -21,7 +21,7 @@ Ce document sert à reprendre le travail sans refaire le cadrage. Contexte de la
 
 Le buzzer est un **exécutant piloté par le serveur** (le hub Node.js est le chef d'orchestre). Le buzzer **n'initie rien de lui-même**, à trois exceptions près, toutes **locales** :
 
-1. Le **feedback visuel immédiat** lors d'un appui armé (évite la latence réseau).
+1. Le **feedback immédiat** (écran, éventuellement son) lors d'un appui armé (évite la latence réseau).
 2. L'**auto-verrouillage** après un appui armé.
 3. Le passage en mode **Éliminé** après 3 échecs consécutifs de reconnexion WiFi.
 
@@ -31,12 +31,13 @@ Le buzzer est un **exécutant piloté par le serveur** (le hub Node.js est le ch
 
 | Composant | Rôle |
 |---|---|
-| Écran LCD | Affichage piloté par le serveur (question, réponses, classement, etc.) |
-| 4 boutons-poussoir (A, B, C, D) | Réponse en mode MCQ |
-| 1 gros bouton « buzz » | Réponse en mode SPEED |
+| Écran LCD tactile | Affichage piloté par le serveur (question, réponses, classement, etc.) et zones tactiles A–D : réponse en mode MCQ |
+| 1 gros bouton rouge « buzz » (sans LED intégrée) | Réponse en mode SPEED |
 | Haut-parleurs | Restitution sonore (sons préchargés) |
 | WiFi / WebSocket | Communication avec le serveur (réseau local uniquement) |
 | Module NFC | Paramétrage du buzzer via l'app mobile *(hors périmètre de cette session — voir §8)* |
+
+> **Décision #1 (`DECISIONS.md`)** : le buzzer ne compte qu'**un seul bouton physique**, le bouton rouge. Les réponses A–D passent par l'écran tactile ; il n'y a ni boutons-poussoir A–D ni LED.
 
 ---
 
@@ -44,7 +45,7 @@ Le buzzer est un **exécutant piloté par le serveur** (le hub Node.js est le ch
 
 Décision de conception centrale (DRY) : il existe **une seule** écoute d'appui, permanente. Ce n'est pas chaque mode qui décide d'écouter ou non — c'est **l'état courant** qui décide si un appui détecté produit un effet.
 
-- La détection physique (GPIO, anti-rebond) vit dans `src/`, derrière une abstraction.
+- La détection physique (GPIO du bouton rouge, anti-rebond ; tactile GT911) vit dans `src/`, derrière une abstraction.
 - La **décision** d'agir vit dans `lib/`, testable en natif.
 - Signature pressentie côté logique : quelque chose comme `OnButtonPressed(famille, valeur)`.
 
@@ -79,17 +80,17 @@ Les deux modes armés sont **deux variantes d'un même patron**. Patron commun :
 1. Le **serveur** arme le mode (transition entrante distante).
 2. Un appui de la **bonne famille** arrive.
 3. **Lock-first** : le verrou est posé **immédiatement et synchroniquement**, *avant* toute autre opération. → garantit qu'un second appui ultra-rapide tombe sur un mode déjà inerte et soit ignoré.
-4. **Feedback local immédiat** (illumination locale, sans attendre le serveur).
+4. **Feedback local immédiat** (affichage sur l'écran, éventuellement un son, sans attendre le serveur).
 5. **Envoi du message** au serveur.
 6. Retour à l'état inerte localement (auto-verrouillé).
 7. Le **serveur** déverrouille / change de phase plus tard (transition sortante distante).
 
 | Aspect | Variante MCQ | Variante SPEED |
 |---|---|---|
-| Famille armée | Boutons A–D | Gros bouton buzz |
+| Famille armée | Zones tactiles A–D | Gros bouton buzz |
 | Valeur transmise | La lettre choisie (A/B/C/D) | Aucune (le buzz n'a pas de variante) |
 | Message émis | `answer { value }` | `buzz` |
-| Appui hors famille | Ignoré (ex. buzz pendant MCQ) | Ignoré (ex. bouton A pendant SPEED) |
+| Appui hors famille | Ignoré (ex. buzz pendant MCQ) | Ignoré (ex. zone A pendant SPEED) |
 | Second appui après verrou | Ignoré | Ignoré |
 | Chemins d'armement | `question_choices` | `question_open`, `buzz_unlocked` |
 | Désarmement sans appui | `timer_end` | `timer_end` |
@@ -136,14 +137,14 @@ La logique d'état du buzzer se réduit à cette table. Chaque ligne est un comp
 | Inerte | `question_choices` | MCQ armé | — | — |
 | Inerte | `question_open` | SPEED armé | — | — |
 | Inerte | `buzz_unlocked` | SPEED armé | — | — |
-| MCQ armé | appui A–D | Inerte | lock-first → feedback local | `answer {value}` |
+| MCQ armé | appui zone A–D | Inerte | lock-first → feedback local | `answer {value}` |
 | MCQ armé | `timer_end` | Inerte | — | — |
 | MCQ armé | appui buzz | MCQ armé | ignoré (hors famille) | — |
 | SPEED armé | appui buzz | Inerte | lock-first → feedback local | `buzz` |
 | SPEED armé | `timer_end` | Inerte | — | — |
-| SPEED armé | appui A–D | SPEED armé | ignoré (hors famille) | — |
+| SPEED armé | appui zone A–D | SPEED armé | ignoré (hors famille) | — |
 | *(tout mode armé)* | second appui après lock | inchangé | ignoré (déjà verrouillé) | — |
-| Inerte | tout appui | Inerte | ignoré | — |
+| Inerte | tout appui (zone ou bouton rouge) | Inerte | ignoré | — |
 | Inerte | 3ᵉ échec reco. WiFi consécutif | Éliminé | — | — |
 | *(tout sauf Éliminé)* | 3ᵉ échec reco. WiFi consécutif | Éliminé | — | — |
 | Éliminé | tout | Éliminé | ignoré (terminal) | — |
@@ -218,6 +219,8 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 ### 8.2 Table de rendu (message reçu → affichage)
 
 > Rendu mécanique exécuté à la réception de chaque message, indépendamment de la logique d'état (§6).
+> ⚠️ **Colonne LED caduque (décision #1)** : le buzzer n'a plus de LED. L'état que la colonne LED exprimait (propositions actives, bonne réponse, attente) doit être porté par l'écran. Le vocabulaire et les lignes ci-dessous sont conservés tels quels en attendant une session dédiée de réécriture du rendu.
+
 > **Vocabulaire LED** : `Toutes éteintes` / `Toutes allumées` / `Toutes clignotantes` / `Clignoter LED(x)` (x = contenu du message).
 > **Vocabulaire LCD** : description abstraite du contenu, exemple de libellé entre parenthèses (texte exact = détail d'implémentation).
 > Seuls `timer_end` et `question_result` ont un rendu **conditionnel** ; tous les autres messages sont inconditionnels.
