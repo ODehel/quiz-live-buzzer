@@ -163,15 +163,15 @@ Règles transverses (rappel) :
 
 Le fichier CSV existant (`Quiz_Buzzer_Game_-_Liste_des_états.csv`) contient **26 lignes**. Recadrage acté :
 
-- **24 lignes** ont pour déclencheur « API » : ce ne sont **pas des états comportementaux** mais des **commandes d'affichage** envoyées par le serveur. Le buzzer les exécute mécaniquement (quelles LEDs, quel texte LCD).
+- **24 lignes** ont pour déclencheur « API » : ce ne sont **pas des états comportementaux** mais des **commandes d'affichage** envoyées par le serveur. Le buzzer les exécute mécaniquement (quel effet d'écran, quel texte LCD).
 - Seules **2 lignes** ont un déclencheur local (`SimpleQuestionPlayerAnsweredState` = Bouton, `SpeedQuestionPlayerAnsweredState` = Buzzer) : elles correspondent aux **modes armés** du §4.
 - Plusieurs « états » ne diffèrent que par une **donnée** et non par un comportement (ex. `DisplayAnswerA/B/C/D` → une seule logique paramétrée par la lettre).
 
 **Conséquence (SRP appliqué à la spec)** : deux préoccupations en deux artefacts distincts —
 1. la **logique d'état** (§4–6) ;
-2. la **table de rendu** (§8.2 : « message reçu → configuration LEDs + LCD »).
+2. la **table de rendu** (§8.2 : « message reçu → effet écran + LCD »).
 
-> ⚠️ **Écart CSV vs hub réel acté** : le CSV décrivait un affichage **progressif** des réponses MCQ (`DisplayAnswerA/B/C/D`, une par une). Le contrat hub réel (US-011) envoie les 4 propositions **simultanément** dans `question_choices`. L'affichage progressif est donc **abandonné** : les 4 LEDs passent à leur état cible en une fois.
+> ⚠️ **Écart CSV vs hub réel acté** : le CSV décrivait un affichage **progressif** des réponses MCQ (`DisplayAnswerA/B/C/D`, une par une). Le contrat hub réel (US-011) envoie les 4 propositions **simultanément** dans `question_choices`. L'affichage progressif est donc **abandonné** : les 4 zones passent à leur état cible en une fois.
 
 ---
 
@@ -219,35 +219,39 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 ### 8.2 Table de rendu (message reçu → affichage)
 
 > Rendu mécanique exécuté à la réception de chaque message, indépendamment de la logique d'état (§6).
-> ⚠️ **Colonne LED caduque (décision #1)** : le buzzer n'a plus de LED. L'état que la colonne LED exprimait (propositions actives, bonne réponse, attente) doit être porté par l'écran. Le vocabulaire et les lignes ci-dessous sont conservés tels quels en attendant une session dédiée de réécriture du rendu.
-
-> **Vocabulaire LED** : `Toutes éteintes` / `Toutes allumées` / `Toutes clignotantes` / `Clignoter LED(x)` (x = contenu du message).
+> **Vocabulaire effet écran** (le buzzer n'a pas de LED, décision #1) :
+> - `Zones masquées` : aucune zone tactile affichée ni active.
+> - `Zones actives` : les zones A–D sont affichées et tactiles.
+> - `Mettre en évidence zone(x)` : les zones sont affichées mais inactives, la zone x clignote (x = contenu du message).
+> - `Bandeau clignotant` : un bandeau de l'écran alterne entre deux teintes ; le texte LCD reste lisible.
+> - Durée : un effet dure tant que le message qui l'a posé reste l'état d'affichage courant, jusqu'au message suivant qui change l'effet (à revoir si besoin).
+>
 > **Vocabulaire LCD** : description abstraite du contenu, exemple de libellé entre parenthèses (texte exact = détail d'implémentation).
 > Seuls `timer_end` et `question_result` ont un rendu **conditionnel** ; tous les autres messages sont inconditionnels.
 
-| Message | Condition | LED | LCD | Son |
+| Message | Condition | Effet écran | LCD | Son |
 |---|---|---|---|---|
-| *(init, §10)* | — | Toutes clignotantes (une par une) | Logo | — |
-| `auth_success` | — | Toutes éteintes | Attente (« Connecté ») | — |
-| `game_resumed` | — | Toutes éteintes | Attente (« Partie en cours ») | — |
-| `question_title` | — | Toutes éteintes | Libellé question (« Question N : … ») | — |
-| `question_choices` | — | Toutes allumées | Les 4 propositions A/B/C/D | — |
-| `question_open` (SPEED) | — | Toutes éteintes | Titre + chrono | — |
+| *(init, §9)* | — | Bandeau clignotant | Logo | — |
+| `auth_success` | — | Zones masquées | Attente (« Connecté ») | — |
+| `game_resumed` | — | Zones masquées | Attente (« Partie en cours ») | — |
+| `question_title` | — | Zones masquées | Libellé question (« Question N : … ») | — |
+| `question_choices` | — | Zones actives | Les 4 propositions A/B/C/D | — |
+| `question_open` (SPEED) | — | Zones masquées | Titre + chrono | — |
 | `timer_tick` | — | inchangé | Chrono (« N s ») | — |
-| `timer_end` | mode armé courant | Toutes éteintes | Temps écoulé (« Trop tard ») | — |
+| `timer_end` | mode armé courant | Zones masquées | Temps écoulé (« Trop tard ») | — |
 | `timer_end` | Inerte | inchangé | inchangé | — |
-| `answer_received` | — | Toutes éteintes | Réponse prise en compte (« Réponse enregistrée ») | — |
-| `buzz_accepted` | — | Toutes clignotantes | Tu as buzzé (« À toi ! ») | — |
-| `buzz_locked` | — | Toutes éteintes | Un autre a buzzé (« Buzzé par X ») | — |
-| `buzz_invalidated` | — | Toutes éteintes | Éliminé pour la question (« Raté ») | — |
-| `buzz_unlocked` | — | Toutes éteintes | À nouveau possible de buzzer | — |
-| `question_result` | `correct_answer` = lettre A–D (MCQ) | Clignoter LED(correct_answer) | Résultat (bonne réponse + réponse joueur) | — |
-| `question_result` | sinon (SPEED), `correct: true` | Toutes clignotantes | Résultat (validé) | — |
-| `question_result` | sinon (SPEED), `correct: false` | Toutes éteintes | Résultat (raté) | — |
+| `answer_received` | — | Zones masquées | Réponse prise en compte (« Réponse enregistrée ») | — |
+| `buzz_accepted` | — | Bandeau clignotant | Tu as buzzé (« À toi ! ») | — |
+| `buzz_locked` | — | Zones masquées | Un autre a buzzé (« Buzzé par X ») | — |
+| `buzz_invalidated` | — | Zones masquées | Éliminé pour la question (« Raté ») | — |
+| `buzz_unlocked` | — | Zones masquées | À nouveau possible de buzzer | — |
+| `question_result` | `correct_answer` = lettre A–D (MCQ) | Mettre en évidence zone(correct_answer) | Résultat (bonne réponse + réponse joueur) | — |
+| `question_result` | sinon (SPEED), `correct: true` | Bandeau clignotant | Résultat (validé) | — |
+| `question_result` | sinon (SPEED), `correct: false` | Zones masquées | Résultat (raté) | — |
 | `play_sound_url` | — | inchangé | inchangé | fichier distant (HTTP GET) |
 | `play_system_sound` | — | inchangé | inchangé | son préchargé (selon `sound_id`) |
 
-> **Distinction MCQ/SPEED pour `question_result`** : déduite du **contenu** du message (pas d'un état mémorisé). Si `correct_answer` est une lettre A–D → MCQ (clignoter la LED correspondante) ; sinon → SPEED (toutes clignotantes si `correct: true`, toutes éteintes sinon). Le contrat hub garantit cette discrimination : MCQ renvoie une lettre, SPEED renvoie un texte de réponse.
+> **Distinction MCQ/SPEED pour `question_result`** : déduite du **contenu** du message (pas d'un état mémorisé). Si `correct_answer` est une lettre A–D → MCQ (mettre en évidence la zone correspondante) ; sinon → SPEED (bandeau clignotant si `correct: true`, zones masquées sinon). Le contrat hub garantit cette discrimination : MCQ renvoie une lettre, SPEED renvoie un texte de réponse.
 
 > **Sons et messages métier** : le hub déclenche les sons système via des messages `play_system_sound` **distincts** des messages métier (US-018 : « message métier d'abord, son système ensuite »). La colonne Son n'est donc renseignée que sur les lignes `play_sound_url` / `play_system_sound` ; les sons associés aux événements (buzz, résultat, timer) arrivent par ces messages séparés.
 
@@ -259,7 +263,7 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 
 ### Séquence d'initialisation
 
-1. Mise sous tension. Affichage du rendu d'init (logo + LEDs clignotantes — voir §8.2).
+1. Mise sous tension. Affichage du rendu d'init (logo + bandeau clignotant — voir §8.2).
 2. Connexion au réseau WiFi local.
 3. Ouverture de la connexion WebSocket sur `ws://<ip>:<port>/ws`.
 4. Envoi du message d'authentification `{ "type": "auth", "token": "<JWT>" }`.
@@ -282,6 +286,7 @@ Aucune écoute active de mode n'existe avant l'entrée en Inerte : un appui pend
 | # | Sujet | Détail |
 |---|---|---|
 | 1 | **Paramétrage NFC** | Frontière avec l'app mobile ; non traité dans cette session. |
+| 2 | **Son du feedback local** | Le feedback immédiat d'un appui armé passe par l'écran (décision #1) ; un son local préchargé en plus est possible, non tranché. |
 
 > Les anciens points « Protocole de messages », « Table de rendu détaillée », « Démarrage / connexion initiale » et la classification de `buzz_invalidated` / `timer_end` sont désormais **tranchés** (§8.1, §8.2, §9) et ne figurent plus comme ouverts.
 
