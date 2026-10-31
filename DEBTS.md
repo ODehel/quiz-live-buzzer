@@ -20,6 +20,8 @@ Inventaire initial dressé le 2026-10-31 à partir du diagnostic du dépôt (lec
 ## src/ (adaptateurs)
 
 - **Accents absents à l'écran** — problème de police, pas d'encodage : il faudra une police Latin-étendu, avec un budget Flash à surveiller (l'env `esp32` occupe environ 76 % de la Flash d'après le dernier relevé de session, non remesuré). *Pas séparé* : feature « police Latin-étendu ».
+- **Erreurs GPIO à chaque démarrage (`TAMC_GT911`)** — `Gt911TouchReader` construit la bibliothèque avec les broches `int` et `rst` à `static_cast<uint8_t>(-1)` (255), puisque le vrai reset passe par l'expandeur PCA9557 ; `ts.begin()` appelle pourtant `reset()`, qui pilote ces broches : trois `Invalid pin selected` et cinq `gpio_set_level ... error` sur le port série (relevé au smoke test du 2026-10-31, décompte identique à la lecture de `reset()` sur la branche principale de la bibliothèque, non vérifiée sur la `1.0.2`). Aucun effet observé. *Pas séparé* : initialiser le GT911 sans passer par ce `reset()`, à étudier avec les smoke tests tactiles.
+- **`200` sans token observé une fois** — premier login du smoke test du 2026-10-31 : le hub a répondu `200`, le buzzer n'a pas obtenu de token et a réessayé 5 s plus tard (le second login a abouti). Cause non établie (corps de réponse vide ou illisible). Le réessai l'absorbe ; `HttpTokenFetcher` écrit maintenant la taille du corps sur le port série. *Pas séparé* : à reprendre si la trace révèle un corps non vide.
 - **Adaptateurs validés par smoke test seulement** — `src/` n'est couvert par aucun test natif (frontière voulue : sans état, sans branche, erreur visible au smoke test). À rouvrir si un adaptateur gagne une branche.
 
 ## lib/

@@ -17,8 +17,14 @@ LoginResult HttpTokenFetcher::Fetch()
     LoginResult result{LoginStatus::Failed, ""};
     if (status == 200)
     {
+        std::string responseBody = http.getString().c_str();
         LoginResponseDeserializer loginResponseDeserializer;
-        result = LoginResult{LoginStatus::Success, loginResponseDeserializer.DeserializeToken(http.getString().c_str())};
+        result = LoginResult{LoginStatus::Success, loginResponseDeserializer.DeserializeToken(responseBody)};
+        if (result.token.empty())
+        {
+            Serial.print("Login answered 200 without a token, body size: ");
+            Serial.println(responseBody.size());
+        }
     }
     else if (status == 401)
     {

@@ -154,6 +154,7 @@ void setup()
         startupHalted = true;
         return;
     }
+    Serial.println("Login OK, opening the WebSocket.");
     tokenSessionMessageSender.UpdateToken(login.token);
     client.begin("192.168.1.183", 3000, "/ws");
 }
