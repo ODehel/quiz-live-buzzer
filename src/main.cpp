@@ -3,7 +3,6 @@
 #include <WebSocketsClient.h>
 #include <WiFi.h>
 #include <vector>
-#include <HTTPClient.h>
 #include "LcdRenderer.h"
 #include "ArduinoGpioPinReader.h"
 #include "ArduinoLocalFeedback.h"
@@ -23,8 +22,9 @@
 #include "Gt911TouchReader.h"
 #include "TouchButtonReader.h"
 #include "ServerCredentials.h"
-#include "LoginRequestSerializer.h"
-#include "LoginResponseDeserializer.h"
+#include "HttpTokenFetcher.h"
+#include "ArduinoSleeper.h"
+#include "TokenAcquisition.h"
 #include "secrets.h"
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>
@@ -125,30 +125,11 @@ ConnectionEventHandler connectionEventHandler{reconnectionPolicy, hubMessageDisp
 BuzzerEventTranslator buzzerEventTranslator{connectionEventHandler};
 WebSocketEventListener webSocketEventListener{client, buzzerEventTranslator};
 
-static std::string fetchToken(const String &hubUrl, const ServerCredentials &credentials)
-{
-    std::string token = "";
-    LoginRequestSerializer loginRequestSerializer;
-    std::string requestBody = loginRequestSerializer.SerializeLogin(credentials);
-    HTTPClient http;
-    http.begin(hubUrl + "/api/v1/token");
-    http.addHeader("Content-Type", "application/json");
-    int status = http.POST(String(requestBody.c_str()));
-    if (status == 200)
-    {
-        std::string responseBody = http.getString().c_str();
-        LoginResponseDeserializer loginResponseDeserializer;
-        token = loginResponseDeserializer.DeserializeToken(responseBody);
-    }
-    else
-    {
-        Serial.print("Login failed, HTTP status: ");
-        Serial.println(status);
-    }
-    http.end();
-
-    return token;
-}
+constexpr unsigned long LOGIN_RETRY_DELAY_MS = 5000;
+HttpTokenFetcher httpTokenFetcher{"http://192.168.1.183:3000", ServerCredentials{HUB_USERNAME, HUB_PASSWORD}};
+ArduinoSleeper arduinoSleeper;
+TokenAcquisition tokenAcquisition{httpTokenFetcher, arduinoSleeper, LOGIN_RETRY_DELAY_MS};
+bool startupHalted = false;
 
 void setup()
 {
@@ -166,13 +147,21 @@ void setup()
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     while (WiFi.status() != WL_CONNECTED)
         delay(500);
-    std::string token = fetchToken("http://192.168.1.183:3000", ServerCredentials{HUB_USERNAME, HUB_PASSWORD});
-    tokenSessionMessageSender.UpdateToken(token);
+    LoginResult login = tokenAcquisition.Acquire();
+    if (login.status == LoginStatus::InvalidCredentials)
+    {
+        Serial.println("Login refused: invalid credentials, check secrets.h. Startup halted.");
+        startupHalted = true;
+        return;
+    }
+    tokenSessionMessageSender.UpdateToken(login.token);
     client.begin("192.168.1.183", 3000, "/ws");
 }
 
 void loop()
 {
+    if (startupHalted)
+        return;
     webSocketEventListener.Loop();
     buttonPressDetector.Poll();
     touchPressDetector.Poll();
