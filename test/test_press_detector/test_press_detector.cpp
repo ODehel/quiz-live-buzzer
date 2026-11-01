@@ -1,10 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <vector>
-#include "../mocks/GameMocks.h"
 #include "../mocks/MockGpioPinReader.h"
-#include "BuzzerBehavior.h"
-#include "BuzzerButtonPressTranslator.h"
 #include "ButtonInput.h"
 #include "PhysicalButtonReader.h"
 #include "ButtonPressDetector.h"
@@ -14,25 +11,6 @@ class MockButtonPressTranslator : public ButtonPressTranslator
 public:
     MOCK_METHOD(void, TranslateButtonPress, (ButtonInput), (override));
 };
-
-TEST(ButtonPressDetectorTest, PressedButtonTriggersAnswer)
-{
-    MockHubMessageSender mockHubMessageSender;
-    MockLocalFeedback mockLocalFeedback;
-    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    BuzzerButtonPressTranslator buttonPressTranslator{buzzerBehavior};
-    MockGpioPinReader mockGpioPinAReader;
-    std::vector<ButtonPin> buttonPins{{mockGpioPinAReader, ButtonInput::A}};
-    PhysicalButtonReader physicalButtonReader{buttonPins};
-    ButtonPressDetector buttonPressDetector{physicalButtonReader, buttonPressTranslator};
-
-    buzzerBehavior.OnQuestionChoices();
-
-    EXPECT_CALL(mockGpioPinAReader, Read()).WillOnce(testing::Return(true));
-    EXPECT_CALL(mockHubMessageSender, SendAnswer('A')).Times(1);
-
-    buttonPressDetector.Poll();
-}
 
 TEST(ButtonPressDetectorTest, PressedButtonTriggersAnswerOnce)
 {

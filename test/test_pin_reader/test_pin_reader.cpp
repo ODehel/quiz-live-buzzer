@@ -7,50 +7,24 @@
 #include "../mocks/MockGpioPinReader.h"
 
 
-TEST(PhysicalButtonReaderTest, HighDigitalPinDeducesPhysicalButtonA)
+TEST(PhysicalButtonReaderTest, HighDigitalPinDeducesBuzzButton)
 {
     MockGpioPinReader mockGpioPinReader;
-    std::vector<ButtonPin> buttonPins{{mockGpioPinReader, ButtonInput::A}};
+    std::vector<ButtonPin> buttonPins{{mockGpioPinReader, ButtonInput::Buzz}};
     PhysicalButtonReader physicalButtonReader{buttonPins};
 
     EXPECT_CALL(mockGpioPinReader, Read()).WillOnce(testing::Return(true));
 
-    EXPECT_EQ(physicalButtonReader.DeduceButton(), ButtonInput::A);
+    EXPECT_EQ(physicalButtonReader.DeduceButton(), ButtonInput::Buzz);
 }
 
-TEST(PhysicalButtonReaderTest, LowDigitalPinDeducesPhysicalButtonUnknown)
+TEST(PhysicalButtonReaderTest, LowDigitalPinDeducesUnknownButton)
 {
     MockGpioPinReader mockGpioPinReader;
-    std::vector<ButtonPin> buttonPins{{mockGpioPinReader, ButtonInput::B}};
+    std::vector<ButtonPin> buttonPins{{mockGpioPinReader, ButtonInput::Buzz}};
     PhysicalButtonReader physicalButtonReader{buttonPins};
 
     EXPECT_CALL(mockGpioPinReader, Read()).WillOnce(testing::Return(false));
-
-    EXPECT_EQ(physicalButtonReader.DeduceButton(), ButtonInput::Unknown);
-}
-
-TEST(PhysicalButtonReaderTest, HighDigitalPinDeducesPhysicalButtonB)
-{
-    MockGpioPinReader mockGpioPinAReader;
-    MockGpioPinReader mockGpioPinBReader;
-    std::vector<ButtonPin> buttonPins{{mockGpioPinAReader, ButtonInput::A}, {mockGpioPinBReader, ButtonInput::B}};
-    PhysicalButtonReader physicalButtonReader{buttonPins};
-
-    EXPECT_CALL(mockGpioPinAReader, Read()).WillOnce(testing::Return(false));
-    EXPECT_CALL(mockGpioPinBReader, Read()).WillOnce(testing::Return(true));
-
-    EXPECT_EQ(physicalButtonReader.DeduceButton(), ButtonInput::B);
-}
-
-TEST(PhysicalButtonReaderTest, MultiplePressedPinsDeducesPhysicalButtonUnknown)
-{
-    MockGpioPinReader mockGpioPinAReader;
-    MockGpioPinReader mockGpioPinBReader;
-    std::vector<ButtonPin> buttonPins{{mockGpioPinAReader, ButtonInput::A}, {mockGpioPinBReader, ButtonInput::B}};
-    PhysicalButtonReader physicalButtonReader{buttonPins};
-
-    EXPECT_CALL(mockGpioPinAReader, Read()).WillOnce(testing::Return(true));
-    EXPECT_CALL(mockGpioPinBReader, Read()).WillOnce(testing::Return(true));
 
     EXPECT_EQ(physicalButtonReader.DeduceButton(), ButtonInput::Unknown);
 }

@@ -5,12 +5,12 @@
 #include <vector>
 #include "LcdRenderer.h"
 #include "ArduinoGpioPinReader.h"
-#include "ArduinoLocalFeedback.h"
 #include "ReconnectionPolicy.h"
 #include "WebSocketPayloadSocketWriter.h"
 #include "WebSocketMessageSender.h"
 #include "PhysicalButtonReader.h"
 #include "BuzzerBehavior.h"
+#include "NoLocalFeedback.h"
 #include "TokenSessionMessageSender.h"
 #include "BuzzerButtonPressTranslator.h"
 #include "HubMessageDispatcher.h"
@@ -108,8 +108,7 @@ TouchZoneReader touchZoneReader{touchZones};
 GfxScreen gfxScreen{lcd};
 LcdRenderer lcdRenderer{gfxScreen};
 TouchButtonReader touchButtonReader{gt911, touchZoneReader};
-// DETTE: pins 6/7/8/9 provisoires (non câblés sur le hardware réel) — à fixer au plan de câblage feedback
-ArduinoLocalFeedback localFeedback{{6, 7, 8, 9}};
+NoLocalFeedback localFeedback;
 ReconnectionPolicy reconnectionPolicy;
 WebSocketsClient client;
 WebSocketPayloadSocketWriter payloadSocketWriter{client};
@@ -136,7 +135,6 @@ void setup()
     Serial.begin(115200);
     gt911.Begin();
     pinBuzzReader.Begin();
-    // localFeedback.Begin();   // DETTE §6 : pins 6/7/8/9 en collision avec le bus RGB — voir décision ci-dessous
     webSocketEventListener.Begin();
 
     pinMode(2, OUTPUT);
