@@ -3,6 +3,7 @@
 #include "../mocks/GameMocks.h"
 #include "../mocks/SessionMocks.h"
 #include "../mocks/ConnectionMocks.h"
+#include "../mocks/StartupMocks.h"
 #include "TokenSessionMessageSender.h"
 #include "MessageSerializer.h"
 #include "ReconnectionPolicy.h"
@@ -145,13 +146,14 @@ TEST_F(ConnectionEventHandlerTest, ReceivedMessageIsRenderedByType)
     handler.OnMessageReceived("{\"type\":\"auth_success\"}");
 }
 
-TEST(ConnectionEventHandlerSessionTest, ReconnectionSendsTheTokenGivenAtLoginAfterTheHubConfirmedTheAuthentication)
+TEST(ConnectionEventHandlerSessionTest, ReconnectionSendsAFreshTokenAfterTheHubConfirmedTheAuthentication)
 {
     ::testing::NiceMock<MockMessageRenderer> mockMessageRenderer;
     MockHubMessageSender mockHubMessageSender;
     MockLocalFeedback mockLocalFeedback;
     MockPayloadSocketWriter mockPayloadSocketWriter;
-    TokenSessionMessageSender tokenSessionMessageSender{mockPayloadSocketWriter, MessageSerializer{}};
+    MockTokenFetcher mockTokenFetcher;
+    TokenSessionMessageSender tokenSessionMessageSender{mockPayloadSocketWriter, MessageSerializer{}, mockTokenFetcher};
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
@@ -160,7 +162,8 @@ TEST(ConnectionEventHandlerSessionTest, ReconnectionSendsTheTokenGivenAtLoginAft
 
     handler.OnMessageReceived("{\"type\":\"auth_success\",\"role\":\"buzzer\",\"username\":\"quiz_buzzer_01\",\"expires_in\":3600}");
 
-    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth\",\"token\":\"login-token\"}")).Times(1);
+    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(::testing::Return(LoginResult{LoginStatus::Success, "fresh-token"}));
+    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth\",\"token\":\"fresh-token\"}")).Times(1);
     handler.OnConnectionEstablished();
 }
 
