@@ -10,7 +10,7 @@
 #include "WebSocketMessageSender.h"
 #include "PhysicalButtonReader.h"
 #include "BuzzerBehavior.h"
-#include "NoLocalFeedback.h"
+#include "ScreenLocalFeedback.h"
 #include "TokenSessionMessageSender.h"
 #include "BuzzerButtonPressTranslator.h"
 #include "HubMessageDispatcher.h"
@@ -107,7 +107,7 @@ TouchZoneReader touchZoneReader{touchZones};
 GfxScreen gfxScreen{lcd};
 LcdRenderer lcdRenderer{gfxScreen};
 TouchButtonReader touchButtonReader{gt911, touchZoneReader};
-NoLocalFeedback localFeedback;
+ScreenLocalFeedback localFeedback{gfxScreen};
 ReconnectionPolicy reconnectionPolicy;
 WebSocketsClient client;
 WebSocketPayloadSocketWriter payloadSocketWriter{client};

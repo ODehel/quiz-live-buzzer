@@ -36,7 +36,7 @@ public:
         if (mode == Mode::McqArmed)
         {
             mode = Mode::Inert;
-            localFeedback.Acknowledge();
+            localFeedback.AcknowledgeAnswer();
             hubMessageSender.SendAnswer(value);
         }
     }
@@ -49,7 +49,7 @@ public:
         if (mode == Mode::SpeedArmed)
         {
             mode = Mode::Inert;
-            localFeedback.Acknowledge();
+            localFeedback.AcknowledgeBuzz();
             hubMessageSender.SendBuzz();
         }
     }

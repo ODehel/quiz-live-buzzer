@@ -105,17 +105,19 @@ TEST_F(BuzzerBehaviorTest, EliminatedBuzzerIgnoresBuzzPress)
     buzzerBehavior.OnBuzzPressed();
 }
 
-TEST_F(BuzzerBehaviorTest, ArmedBuzzerAcknowledgesOnButtonPress)
+TEST_F(BuzzerBehaviorTest, ArmedBuzzerAcknowledgesAnswerOnButtonPress)
 {
-    EXPECT_CALL(mockLocalFeedback, Acknowledge()).Times(1);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeAnswer()).Times(1);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz()).Times(0);
 
     buzzerBehavior.OnQuestionChoices();
     buzzerBehavior.OnMcqPressed('A');
 }
 
-TEST_F(BuzzerBehaviorTest, ArmedBuzzerAcknowledgesOnBuzzPress)
+TEST_F(BuzzerBehaviorTest, ArmedBuzzerAcknowledgesBuzzOnBuzzPress)
 {
-    EXPECT_CALL(mockLocalFeedback, Acknowledge()).Times(1);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz()).Times(1);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeAnswer()).Times(0);
 
     buzzerBehavior.OnQuestionOpen();
     buzzerBehavior.OnBuzzPressed();
@@ -125,18 +127,18 @@ TEST_F(BuzzerBehaviorTest, ArmedBuzzerAcknowledgesBeforeSendingAnswer)
 {
     testing::InSequence seq;
 
-    EXPECT_CALL(mockLocalFeedback, Acknowledge());
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeAnswer());
     EXPECT_CALL(mockHubMessageSender, SendAnswer('A'));
 
     buzzerBehavior.OnQuestionChoices();
     buzzerBehavior.OnMcqPressed('A');
-} 
+}
 
 TEST_F(BuzzerBehaviorTest, ArmedBuzzerAcknowledgesBeforeSendingBuzz)
 {
     testing::InSequence seq;
 
-    EXPECT_CALL(mockLocalFeedback, Acknowledge());
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz());
     EXPECT_CALL(mockHubMessageSender, SendBuzz());
 
     buzzerBehavior.OnQuestionOpen();

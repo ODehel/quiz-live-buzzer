@@ -14,6 +14,16 @@ public:
             return "Question QCM en cours";
         return "Connecté";
     }
+
+    std::string LcdTextForAnswerSent() const
+    {
+        return "Réponse envoyée";
+    }
+
+    std::string LcdTextForBuzzSent() const
+    {
+        return "Buzz envoyé";
+    }
 };
 
 #endif

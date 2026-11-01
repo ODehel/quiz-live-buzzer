@@ -19,6 +19,18 @@ TEST(DisplayStateTest, QuestionChoicesShouldDisplayQuestionQcmEnCoursOnScreen)
     EXPECT_EQ(displayState.LcdTextFor("question_choices"), "Question QCM en cours");
 }
 
+TEST(DisplayStateTest, AnswerSentShouldDisplayReponseEnvoyeeOnScreen)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.LcdTextForAnswerSent(), "Réponse envoyée");
+}
+
+TEST(DisplayStateTest, BuzzSentShouldDisplayBuzzEnvoyeOnScreen)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.LcdTextForBuzzSent(), "Buzz envoyé");
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
