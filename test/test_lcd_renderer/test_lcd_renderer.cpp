@@ -13,6 +13,31 @@ TEST(LcdRendererTest, AuthSuccessMessageShowsConnecteOnScreen)
     lcdRenderer.Apply("auth_success");
 }
 
+using FixedTextCase = std::pair<std::string, std::string>;
+
+class MessageWithFixedTextTest : public ::testing::TestWithParam<FixedTextCase>
+{
+};
+
+TEST_P(MessageWithFixedTextTest, ShowsItsFixedTextOnScreen)
+{
+    MockScreen mockScreen;
+    LcdRenderer lcdRenderer{mockScreen};
+
+    EXPECT_CALL(mockScreen, Show(GetParam().second)).Times(1);
+
+    lcdRenderer.Apply(GetParam().first);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    MessagesWithAFixedText,
+    MessageWithFixedTextTest,
+    ::testing::Values(
+        FixedTextCase{"answer_received", "Réponse enregistrée"},
+        FixedTextCase{"buzz_accepted", "À toi !"},
+        FixedTextCase{"buzz_invalidated", "Raté"},
+        FixedTextCase{"buzz_unlocked", "À nouveau possible de buzzer"}));
+
 class MessageWithoutDisplayTest : public ::testing::TestWithParam<std::string>
 {
 };

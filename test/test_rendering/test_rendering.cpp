@@ -31,6 +31,27 @@ TEST(DisplayStateTest, BuzzSentShouldDisplayBuzzEnvoyeOnScreen)
     EXPECT_EQ(displayState.LcdTextForBuzzSent(), "Buzz envoyé");
 }
 
+using FixedTextCase = std::pair<std::string, std::string>;
+
+class MessageWithFixedTextTest : public ::testing::TestWithParam<FixedTextCase>
+{
+};
+
+TEST_P(MessageWithFixedTextTest, ShouldDisplayItsFixedTextOnScreen)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.LcdTextFor(GetParam().first), GetParam().second);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    MessagesWithAFixedText,
+    MessageWithFixedTextTest,
+    ::testing::Values(
+        FixedTextCase{"answer_received", "Réponse enregistrée"},
+        FixedTextCase{"buzz_accepted", "À toi !"},
+        FixedTextCase{"buzz_invalidated", "Raté"},
+        FixedTextCase{"buzz_unlocked", "À nouveau possible de buzzer"}));
+
 class MessageWithoutDisplayTest : public ::testing::TestWithParam<std::string>
 {
 };
