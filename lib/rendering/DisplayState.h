@@ -12,7 +12,9 @@ public:
             return "Partie en cours";
         if (type == "question_choices")
             return "Question QCM en cours";
-        return "Connecté";
+        if (type == "auth_success")
+            return "Connecté";
+        return "";
     }
 
     std::string LcdTextForAnswerSent() const
