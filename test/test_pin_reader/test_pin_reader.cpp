@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-#include <vector>
 #include "ButtonInput.h"
 #include "PhysicalButtonReader.h"
 #include "../mocks/MockGpioPinReader.h"
@@ -10,8 +9,7 @@
 TEST(PhysicalButtonReaderTest, HighDigitalPinDeducesBuzzButton)
 {
     MockGpioPinReader mockGpioPinReader;
-    std::vector<ButtonPin> buttonPins{{mockGpioPinReader, ButtonInput::Buzz}};
-    PhysicalButtonReader physicalButtonReader{buttonPins};
+    PhysicalButtonReader physicalButtonReader{mockGpioPinReader};
 
     EXPECT_CALL(mockGpioPinReader, Read()).WillOnce(testing::Return(true));
 
@@ -21,8 +19,7 @@ TEST(PhysicalButtonReaderTest, HighDigitalPinDeducesBuzzButton)
 TEST(PhysicalButtonReaderTest, LowDigitalPinDeducesUnknownButton)
 {
     MockGpioPinReader mockGpioPinReader;
-    std::vector<ButtonPin> buttonPins{{mockGpioPinReader, ButtonInput::Buzz}};
-    PhysicalButtonReader physicalButtonReader{buttonPins};
+    PhysicalButtonReader physicalButtonReader{mockGpioPinReader};
 
     EXPECT_CALL(mockGpioPinReader, Read()).WillOnce(testing::Return(false));
 

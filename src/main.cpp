@@ -93,7 +93,6 @@ public:
 LGFX lcd;
 
 ArduinoGpioPinReader pinBuzzReader(38);
-std::vector<ButtonPin> buttonPins{{pinBuzzReader, ButtonInput::Buzz}};
 
 // DETTE: zones figées en 2x2 provisoire pour valider la chaîne tactile au smoke.
 // La disposition réelle est DYNAMIQUE par écran (change à chaque rendu LVGL, §8.2) :
@@ -113,7 +112,7 @@ ReconnectionPolicy reconnectionPolicy;
 WebSocketsClient client;
 WebSocketPayloadSocketWriter payloadSocketWriter{client};
 WebSocketMessageSender messageSender{MessageSerializer{}, client};
-PhysicalButtonReader physicalButtonReader{buttonPins};
+PhysicalButtonReader physicalButtonReader{pinBuzzReader};
 BuzzerBehavior buzzerBehavior{messageSender, localFeedback};
 HttpTokenFetcher httpTokenFetcher{"http://192.168.1.183:3000", ServerCredentials{HUB_USERNAME, HUB_PASSWORD}};
 TokenSessionMessageSender tokenSessionMessageSender{payloadSocketWriter, MessageSerializer{}, httpTokenFetcher};
