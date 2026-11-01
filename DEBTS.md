@@ -27,6 +27,7 @@ Inventaire initial dressé le 2026-10-31 à partir du diagnostic du dépôt (lec
 ## lib/
 
 - **Boutons physiques A–D : code mort** — la décision #1 ne garde qu'un bouton physique, le bouton rouge. `PhysicalButton` A à D, leur traduction (`ButtonPressTranslator`) et les tests associés décrivent un matériel qui n'existera pas. *Pas séparé* : `refactor(input): remove the physical A-D buttons`, avant la réécriture du rendu.
+- **`DisplayState` sans entrée pour les appuis locaux** — le rendu local d'un appui armé (CDC §8.2, décision #3) n'a pas d'entrée : `DisplayState` ne mute que sur un message entrant (`Apply(type)`). *Pas séparé* : feature « rendu local des appuis armés », après le retrait des boutons A–D.
 - **Paramétrage NFC non spécifié** — seul point ouvert du CDC (§10) ; frontière avec l'application mobile à définir. *Pas séparé* : session de cadrage du CDC §10, avant tout code.
 
 - **Renouvellement du token non cadré** — sur `token_expiring_soon`, `SendAuthRefresh()` renvoie le token **courant** (celui du login), alors que la spec du hub (US-021 CA-10) attend un **nouveau JWT** sur `auth_refresh`. Le firmware ne refait jamais `POST /api/v1/token` après le démarrage, et le JWT dure 3600 s par défaut (`JWT_EXPIRATION_TIME`) : une reconnexion après expiration enverrait un token périmé (`4002`, US-009 CA-8). US-021 est spécifiée mais je n'en ai pas trouvé trace dans `ws-route.ts` du hub : le chemin n'est pas éprouvable sur le matériel pour l'instant. *Pas séparé* : session de cadrage (qui redemande un JWT, et quand), puis `fix`.
