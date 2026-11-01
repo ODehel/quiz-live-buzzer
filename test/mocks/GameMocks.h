@@ -15,7 +15,8 @@ public:
 class MockLocalFeedback : public LocalFeedback
 {
 public:
-    MOCK_METHOD(void, Acknowledge, (), (override));
+    MOCK_METHOD(void, AcknowledgeAnswer, (), (override));
+    MOCK_METHOD(void, AcknowledgeBuzz, (), (override));
 };
 
 #endif

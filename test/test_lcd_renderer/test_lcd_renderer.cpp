@@ -1,13 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include "LcdRenderer.h"
-#include "Screen.h"
-
-class MockScreen : public Screen
-{
-public:
-    MOCK_METHOD(void, Show, (const std::string &text), (override));
-};
+#include "../mocks/ScreenMocks.h"
 
 TEST(LcdRendererTest, AuthSuccessMessageShowsConnecteOnScreen)
 {

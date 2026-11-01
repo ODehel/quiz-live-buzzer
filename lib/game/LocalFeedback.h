@@ -5,7 +5,8 @@ class LocalFeedback
 {
 public:
     virtual ~LocalFeedback() = default;
-    virtual void Acknowledge() = 0;
+    virtual void AcknowledgeAnswer() = 0;
+    virtual void AcknowledgeBuzz() = 0;
 };
 
 #endif
