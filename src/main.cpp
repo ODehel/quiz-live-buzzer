@@ -115,7 +115,8 @@ WebSocketPayloadSocketWriter payloadSocketWriter{client};
 WebSocketMessageSender messageSender{MessageSerializer{}, client};
 PhysicalButtonReader physicalButtonReader{buttonPins};
 BuzzerBehavior buzzerBehavior{messageSender, localFeedback};
-TokenSessionMessageSender tokenSessionMessageSender{payloadSocketWriter, MessageSerializer{}};
+HttpTokenFetcher httpTokenFetcher{"http://192.168.1.183:3000", ServerCredentials{HUB_USERNAME, HUB_PASSWORD}};
+TokenSessionMessageSender tokenSessionMessageSender{payloadSocketWriter, MessageSerializer{}, httpTokenFetcher};
 BuzzerButtonPressTranslator buzzerButtonPressTranslator{buzzerBehavior};
 HubMessageDispatcher hubMessageDispatcher{buzzerBehavior};
 ButtonPressDetector buttonPressDetector{physicalButtonReader, buzzerButtonPressTranslator};
@@ -125,7 +126,6 @@ BuzzerEventTranslator buzzerEventTranslator{connectionEventHandler};
 WebSocketEventListener webSocketEventListener{client, buzzerEventTranslator};
 
 constexpr unsigned long LOGIN_RETRY_DELAY_MS = 5000;
-HttpTokenFetcher httpTokenFetcher{"http://192.168.1.183:3000", ServerCredentials{HUB_USERNAME, HUB_PASSWORD}};
 ArduinoSleeper arduinoSleeper;
 TokenAcquisition tokenAcquisition{httpTokenFetcher, arduinoSleeper, LOGIN_RETRY_DELAY_MS};
 bool startupHalted = false;

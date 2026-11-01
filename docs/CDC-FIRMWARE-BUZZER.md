@@ -270,7 +270,7 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 1. Mise sous tension. Affichage du rendu d'init (logo + bandeau clignotant — voir §8.2).
 2. Connexion au réseau WiFi local.
 3. Ouverture de la connexion WebSocket sur `ws://<ip>:<port>/ws`.
-4. Envoi du message d'authentification `{ "type": "auth", "token": "<JWT>" }`.
+4. Envoi du message d'authentification `{ "type": "auth", "token": "<JWT>" }`. Le JWT est obtenu juste avant par `POST /api/v1/token`, **à chaque connexion**, reconnexions comprises (un JWT dure 3600 s par défaut). Un seul essai : en cas d'échec, le dernier JWT connu est envoyé.
 5. Réception de `auth_success` → **fin de la phase d'init**, entrée en mode Inerte (la machine à états de jeu démarre).
 
 La séquence est linéaire : chaque étape déclenche la suivante, sans décision métier. La temporisation, les tentatives et la gestion des erreurs réseau sont déléguées à la couche réseau (`src/`), cohérent avec §5.
