@@ -51,4 +51,3 @@ Inventaire initial dressé le 2026-10-31 à partir du diagnostic du dépôt (lec
 
 - **README vide** (0 octet). *Pas séparé* : `docs(readme)` — description, build, tests, secrets.
 - **CDC §0 et §11 périmés** — §0 présente le document comme « établi avant implémentation » avec un smoke test vert, §11 propose un premier cycle de reconnexion déjà réalisé et demande de supprimer `Smoke.ToolchainWorks`. À réécrire en état courant.
-- **Méthode centralisée en retard** — `CLAUDE.md` et `docs/method/WORKFLOW.md` de `quiz-buzzer-docs` décrivent encore le régime sans pull request (« Claude ne fait jamais `git push` », commit direct puis fast-forward de `main`). Ce dépôt travaille désormais par pull request, relue et fusionnée en `squash` par Olivier. *Pas séparé* : session dans `quiz-buzzer-docs`.
