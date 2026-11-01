@@ -80,7 +80,7 @@ Les deux modes armés sont **deux variantes d'un même patron**. Patron commun :
 1. Le **serveur** arme le mode (transition entrante distante).
 2. Un appui de la **bonne famille** arrive.
 3. **Lock-first** : le verrou est posé **immédiatement et synchroniquement**, *avant* toute autre opération. → garantit qu'un second appui ultra-rapide tombe sur un mode déjà inerte et soit ignoré.
-4. **Feedback local immédiat** (affichage sur l'écran, éventuellement un son, sans attendre le serveur).
+4. **Feedback local immédiat** (affichage sur l'écran, éventuellement un son, sans attendre le serveur ; voir §8.2).
 5. **Envoi du message** au serveur.
 6. Retour à l'état inerte localement (auto-verrouillé).
 7. Le **serveur** déverrouille / change de phase plus tard (transition sortante distante).
@@ -218,11 +218,11 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 
 ### 8.2 Table de rendu (message reçu → affichage)
 
-> Rendu mécanique exécuté à la réception de chaque message, indépendamment de la logique d'état (§6).
+> Rendu mécanique exécuté à la réception de chaque message, indépendamment de la logique d'état (§6), et à chaque appui armé local (lignes `local`).
 > **Vocabulaire effet écran** (le buzzer n'a pas de LED, décision #1) :
 > - `Zones masquées` : aucune zone tactile affichée ni active.
 > - `Zones actives` : les zones A–D sont affichées et tactiles.
-> - `Mettre en évidence zone(x)` : les zones sont affichées mais inactives, la zone x clignote (x = contenu du message).
+> - `Mettre en évidence zone(x)` : les zones sont affichées mais inactives, la zone x clignote (x = contenu du message, ou lettre choisie pour un appui local).
 > - `Bandeau clignotant` : un bandeau de l'écran alterne entre deux teintes ; le texte LCD reste lisible.
 > - Durée : un effet dure tant que le message qui l'a posé reste l'état d'affichage courant, jusqu'au message suivant qui change l'effet (à revoir si besoin).
 >
@@ -248,10 +248,14 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 | `question_result` | `correct_answer` = lettre A–D (MCQ) | Mettre en évidence zone(correct_answer) | Résultat (bonne réponse + réponse joueur) | — |
 | `question_result` | sinon (SPEED), `correct: true` | Bandeau clignotant | Résultat (validé) | — |
 | `question_result` | sinon (SPEED), `correct: false` | Zones masquées | Résultat (raté) | — |
+| *(local : appui sur la zone x, MCQ armé)* | — | Mettre en évidence zone(x) | Réponse envoyée (« Réponse envoyée ») | — |
+| *(local : appui sur le bouton rouge, SPEED armé)* | — | Zones masquées | Buzz envoyé (« Buzz envoyé ») | — |
 | `play_sound_url` | — | inchangé | inchangé | fichier distant (HTTP GET) |
 | `play_system_sound` | — | inchangé | inchangé | son préchargé (selon `sound_id`) |
 
 > **Distinction MCQ/SPEED pour `question_result`** : déduite du **contenu** du message (pas d'un état mémorisé). Si `correct_answer` est une lettre A–D → MCQ (mettre en évidence la zone correspondante) ; sinon → SPEED (bandeau clignotant si `correct: true`, zones masquées sinon). Le contrat hub garantit cette discrimination : MCQ renvoie une lettre, SPEED renvoie un texte de réponse.
+
+> **Rendu local** : le rendu d'un appui armé s'exécute dans la séquence lock-first (§4.2), après la pose du verrou et avant l'émission. Il vaut jusqu'au message suivant du hub (`answer_received`, `buzz_accepted`, `buzz_locked`…), qui le remplace selon le tableau. Le SPEED n'affiche pas `Bandeau clignotant` à l'appui : le hub peut avoir accepté un autre buzzer d'abord, le bandeau n'est donc posé qu'à `buzz_accepted`.
 
 > **Sons et messages métier** : le hub déclenche les sons système via des messages `play_system_sound` **distincts** des messages métier (US-018 : « message métier d'abord, son système ensuite »). La colonne Son n'est donc renseignée que sur les lignes `play_sound_url` / `play_system_sound` ; les sons associés aux événements (buzz, résultat, timer) arrivent par ces messages séparés.
 
