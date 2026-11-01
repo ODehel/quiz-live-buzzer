@@ -26,7 +26,6 @@ Inventaire initial dressé le 2026-10-31 à partir du diagnostic du dépôt (lec
 
 ## lib/
 
-- **`PhysicalButtonReader` : cas multi-boutons sans test** — il ne lit plus qu'un seul bouton, le rouge (décision #4). Sa règle « un seul appui parmi plusieurs » (`highCount == 1`) n'est plus couverte depuis la suppression de ses tests multi-boutons. *Pas séparé* : le simplifier pour un bouton unique, ou rétablir un test.
 - **`DisplayState` sans entrée pour les appuis locaux** — le rendu local d'un appui armé (CDC §8.2, décision #3) n'a pas d'entrée : `DisplayState` ne mute que sur un message entrant (`Apply(type)`). *Pas séparé* : feature « rendu local des appuis armés », après le retrait des boutons A–D.
 - **Paramétrage NFC non spécifié** — seul point ouvert du CDC (§10) ; frontière avec l'application mobile à définir. *Pas séparé* : session de cadrage du CDC §10, avant tout code.
 
