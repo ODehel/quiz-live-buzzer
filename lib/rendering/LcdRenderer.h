@@ -18,7 +18,9 @@ public:
 
     void Apply(const std::string& type) override 
     {
-        screen.Show(displayState.LcdTextFor(type));
+        std::string text = displayState.LcdTextFor(type);
+        if (!text.empty())
+            screen.Show(text);
     }
 };
 

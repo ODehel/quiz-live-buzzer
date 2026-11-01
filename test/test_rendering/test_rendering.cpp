@@ -31,6 +31,21 @@ TEST(DisplayStateTest, BuzzSentShouldDisplayBuzzEnvoyeOnScreen)
     EXPECT_EQ(displayState.LcdTextForBuzzSent(), "Buzz envoyé");
 }
 
+class MessageWithoutDisplayTest : public ::testing::TestWithParam<std::string>
+{
+};
+
+TEST_P(MessageWithoutDisplayTest, ShouldHaveNoTextToDisplay)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.LcdTextFor(GetParam()), "");
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    MessagesLeavingTheScreenUnchanged,
+    MessageWithoutDisplayTest,
+    ::testing::Values("timer_tick", "play_sound_url", "play_system_sound", "token_expiring_soon", "unknown_type"));
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
