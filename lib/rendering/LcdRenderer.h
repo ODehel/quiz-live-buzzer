@@ -33,6 +33,12 @@ public:
                 screen.Show(displayState.LcdTextForRemainingSeconds(message.RemainingSeconds()));
             return;
         }
+        if (type == "buzz_locked")
+        {
+            if (message.HasBuzzerUsername())
+                screen.Show(displayState.LcdTextForBuzzedBy(message.BuzzerUsername()));
+            return;
+        }
         std::string text = displayState.LcdTextFor(type);
         if (!text.empty())
             screen.Show(text);

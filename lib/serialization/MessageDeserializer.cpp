@@ -7,6 +7,8 @@ HubMessage MessageDeserializer::Parse(const std::string &json) const
     deserializeJson(doc, json);
     HubMessage message{doc["type"].as<std::string>()};
     if (doc["remaining_seconds"].is<int>())
-        return message.WithRemainingSeconds(doc["remaining_seconds"].as<int>());
+        message = message.WithRemainingSeconds(doc["remaining_seconds"].as<int>());
+    if (doc["buzzer_username"].is<const char *>())
+        message = message.WithBuzzerUsername(doc["buzzer_username"].as<std::string>());
     return message;
 }

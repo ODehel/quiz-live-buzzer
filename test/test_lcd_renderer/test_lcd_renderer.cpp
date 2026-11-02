@@ -101,6 +101,41 @@ TEST(LcdRendererTimerTickTest, LeavesTheScreenUnchangedWithoutRemainingSeconds)
     lcdRenderer.Apply(HubMessage{"timer_tick"});
 }
 
+using BuzzLockedCase = std::pair<std::string, std::string>;
+
+class BuzzLockedTest : public ::testing::TestWithParam<BuzzLockedCase>
+{
+};
+
+TEST_P(BuzzLockedTest, ShowsWhoBuzzedFirstOnScreen)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, Show(GetParam().second)).Times(1);
+
+    lcdRenderer.Apply(HubMessage{"buzz_locked"}.WithBuzzerUsername(GetParam().first));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    BuzzerUsernames,
+    BuzzLockedTest,
+    ::testing::Values(
+        BuzzLockedCase{"Alice", "Alice a buzzé"},
+        BuzzLockedCase{"Bob", "Bob a buzzé"}));
+
+TEST(LcdRendererBuzzLockedTest, LeavesTheScreenUnchangedWithoutBuzzerUsername)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, Show(testing::_)).Times(0);
+
+    lcdRenderer.Apply(HubMessage{"buzz_locked"});
+}
+
 class MessageWithoutDisplayTest : public ::testing::TestWithParam<std::string>
 {
 };

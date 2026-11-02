@@ -30,6 +30,11 @@ public:
         return std::to_string(seconds) + " s";
     }
 
+    std::string LcdTextForBuzzedBy(const std::string &username) const
+    {
+        return username + " a buzzé";
+    }
+
     std::string LcdTextForTimeUp() const
     {
         return "Trop tard";
