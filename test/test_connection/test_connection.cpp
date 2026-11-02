@@ -15,6 +15,8 @@
 #include "BuzzerEventTranslator.h"
 #include "BuzzerEventType.h"
 #include "MessageRenderer.h"
+#include "LcdRenderer.h"
+#include "../mocks/ScreenMocks.h"
 
 class MockMessageRenderer : public MessageRenderer
 {
@@ -144,6 +146,24 @@ TEST_F(ConnectionEventHandlerTest, ReceivedMessageIsRenderedByType)
     EXPECT_CALL(mockMessageRenderer, Apply("auth_success")).Times(1);
 
     handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+}
+
+TEST(ConnectionEventHandlerRenderingTest, TimerEndIsRenderedWithTheModeOfBeforeTheMessage)
+{
+    ::testing::NiceMock<MockHubMessageSender> mockHubMessageSender;
+    ::testing::NiceMock<MockLocalFeedback> mockLocalFeedback;
+    ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
+    MockScreen mockScreen;
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
+    HubMessageDispatcher dispatcher{buzzerBehavior};
+    ReconnectionPolicy policy;
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer};
+    buzzerBehavior.OnQuestionOpen();
+
+    EXPECT_CALL(mockScreen, Show("Trop tard")).Times(1);
+
+    handler.OnMessageReceived("{\"type\":\"timer_end\"}");
 }
 
 TEST(ConnectionEventHandlerSessionTest, ReconnectionSendsAFreshTokenAfterTheHubConfirmedTheAuthentication)

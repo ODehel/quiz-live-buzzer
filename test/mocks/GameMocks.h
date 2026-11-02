@@ -4,6 +4,7 @@
 #include <gmock/gmock.h>
 #include "HubMessageSender.h"
 #include "LocalFeedback.h"
+#include "ArmedModeReader.h"
 
 class MockHubMessageSender : public HubMessageSender
 {
@@ -17,6 +18,12 @@ class MockLocalFeedback : public LocalFeedback
 public:
     MOCK_METHOD(void, AcknowledgeAnswer, (), (override));
     MOCK_METHOD(void, AcknowledgeBuzz, (), (override));
+};
+
+class MockArmedModeReader : public ArmedModeReader
+{
+public:
+    MOCK_METHOD(bool, IsArmed, (), (const, override));
 };
 
 #endif

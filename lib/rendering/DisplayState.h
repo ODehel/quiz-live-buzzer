@@ -25,6 +25,11 @@ public:
         return "";
     }
 
+    std::string LcdTextForTimeUp() const
+    {
+        return "Trop tard";
+    }
+
     std::string LcdTextForAnswerSent() const
     {
         return "Réponse envoyée";
