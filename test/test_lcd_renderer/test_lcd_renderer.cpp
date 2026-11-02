@@ -136,6 +136,41 @@ TEST(LcdRendererBuzzLockedTest, LeavesTheScreenUnchangedWithoutBuzzerUsername)
     lcdRenderer.Apply(HubMessage{"buzz_locked"});
 }
 
+using QuestionOpenCase = std::pair<std::string, std::string>;
+
+class QuestionOpenTest : public ::testing::TestWithParam<QuestionOpenCase>
+{
+};
+
+TEST_P(QuestionOpenTest, ShowsTheQuestionTitleOnScreen)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, Show(GetParam().second)).Times(1);
+
+    lcdRenderer.Apply(HubMessage{"question_open"}.WithTitle(GetParam().first));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    QuestionTitles,
+    QuestionOpenTest,
+    ::testing::Values(
+        QuestionOpenCase{"Quelle est la capitale du Portugal ?", "Quelle est la capitale du Portugal ?"},
+        QuestionOpenCase{"Qui a buzzé le premier hier soir ?", "Qui a buzzé le premier hier soir ?"}));
+
+TEST(LcdRendererQuestionOpenTest, LeavesTheScreenUnchangedWithoutTitle)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, Show(testing::_)).Times(0);
+
+    lcdRenderer.Apply(HubMessage{"question_open"});
+}
+
 class MessageWithoutDisplayTest : public ::testing::TestWithParam<std::string>
 {
 };

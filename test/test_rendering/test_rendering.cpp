@@ -55,6 +55,18 @@ TEST(DisplayStateTest, BuzzLockedWithoutBuzzerUsernameShouldHaveNoTextToDisplay)
     EXPECT_EQ(displayState.LcdTextFor(HubMessage{"buzz_locked"}), "");
 }
 
+TEST(DisplayStateTest, QuestionOpenShouldDisplayTheQuestionTitleOnScreen)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"question_open"}.WithTitle("Quelle est la capitale du Portugal ?")), "Quelle est la capitale du Portugal ?");
+}
+
+TEST(DisplayStateTest, QuestionOpenWithoutTitleShouldHaveNoTextToDisplay)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"question_open"}), "");
+}
+
 using FixedTextCase = std::pair<std::string, std::string>;
 
 class MessageWithFixedTextTest : public ::testing::TestWithParam<FixedTextCase>

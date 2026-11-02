@@ -61,6 +61,29 @@ TEST(MessageDeserializerTest, ParsedBuzzLockedWithANumericBuzzerUsernameHasNone)
     EXPECT_FALSE(deserializer.Parse("{\"type\":\"buzz_locked\",\"buzzer_username\":42}").HasBuzzerUsername());
 }
 
+TEST(MessageDeserializerTest, ParsedQuestionOpenHasItsTitle)
+{
+    MessageDeserializer deserializer;
+
+    HubMessage message = deserializer.Parse("{\"type\":\"question_open\",\"title\":\"Quelle est la capitale du Portugal ?\"}");
+
+    EXPECT_EQ(message.Title(), "Quelle est la capitale du Portugal ?");
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionOpenWithoutTitleHasAnEmptyTitle)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_EQ(deserializer.Parse("{\"type\":\"question_open\"}").Title(), "");
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionOpenWithANumericTitleHasAnEmptyTitle)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_EQ(deserializer.Parse("{\"type\":\"question_open\",\"title\":42}").Title(), "");
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
