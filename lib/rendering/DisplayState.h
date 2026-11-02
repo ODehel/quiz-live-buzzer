@@ -2,12 +2,18 @@
 #define DISPLAY_STATE_H
 
 #include <string>
+#include "HubMessage.h"
 
 class DisplayState
 {
 public:
-    std::string LcdTextFor(const std::string &type) const
+    std::string LcdTextFor(const HubMessage &message) const
     {
+        const std::string &type = message.Type();
+        if (type == "timer_tick")
+            return message.HasRemainingSeconds() ? LcdTextForRemainingSeconds(message.RemainingSeconds()) : "";
+        if (type == "buzz_locked")
+            return message.HasBuzzerUsername() ? LcdTextForBuzzedBy(message.BuzzerUsername()) : "";
         if (type == "game_resumed")
             return "Partie en cours";
         if (type == "question_choices")
@@ -25,16 +31,6 @@ public:
         return "";
     }
 
-    std::string LcdTextForRemainingSeconds(int seconds) const
-    {
-        return std::to_string(seconds) + " s";
-    }
-
-    std::string LcdTextForBuzzedBy(const std::string &username) const
-    {
-        return username + " a buzzé";
-    }
-
     std::string LcdTextForTimeUp() const
     {
         return "Trop tard";
@@ -48,6 +44,17 @@ public:
     std::string LcdTextForBuzzSent() const
     {
         return "Buzz envoyé";
+    }
+
+private:
+    std::string LcdTextForRemainingSeconds(int seconds) const
+    {
+        return std::to_string(seconds) + " s";
+    }
+
+    std::string LcdTextForBuzzedBy(const std::string &username) const
+    {
+        return username + " a buzzé";
     }
 };
 
