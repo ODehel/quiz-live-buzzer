@@ -1,13 +1,13 @@
 #ifndef MESSAGE_RENDERER_H
 #define MESSAGE_RENDERER_H
 
-#include <string>
+#include "HubMessage.h"
 
 class MessageRenderer
 {
 public:
     virtual ~MessageRenderer() = default;
-    virtual void Apply(const std::string &) = 0;
+    virtual void Apply(const HubMessage &) = 0;
 };
 
 #endif

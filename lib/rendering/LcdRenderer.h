@@ -18,8 +18,9 @@ public:
     {
     }
 
-    void Apply(const std::string& type) override
+    void Apply(const HubMessage &message) override
     {
+        const std::string &type = message.Type();
         if (type == "timer_end")
         {
             if (armedModeReader.IsArmed())

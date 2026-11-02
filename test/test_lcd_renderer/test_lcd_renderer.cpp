@@ -12,7 +12,7 @@ TEST(LcdRendererTest, AuthSuccessMessageShowsConnecteOnScreen)
 
     EXPECT_CALL(mockScreen, Show("Connecté")).Times(1);
 
-    lcdRenderer.Apply("auth_success");
+    lcdRenderer.Apply(HubMessage{"auth_success"});
 }
 
 using FixedTextCase = std::pair<std::string, std::string>;
@@ -29,7 +29,7 @@ TEST_P(MessageWithFixedTextTest, ShowsItsFixedTextOnScreen)
 
     EXPECT_CALL(mockScreen, Show(GetParam().second)).Times(1);
 
-    lcdRenderer.Apply(GetParam().first);
+    lcdRenderer.Apply(HubMessage{GetParam().first});
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -50,7 +50,7 @@ TEST(LcdRendererTimerEndTest, ShowsTooLateWhenAQuestionIsArmed)
 
     EXPECT_CALL(mockScreen, Show("Trop tard")).Times(1);
 
-    lcdRenderer.Apply("timer_end");
+    lcdRenderer.Apply(HubMessage{"timer_end"});
 }
 
 TEST(LcdRendererTimerEndTest, LeavesTheScreenUnchangedWhenNoQuestionIsArmed)
@@ -62,7 +62,7 @@ TEST(LcdRendererTimerEndTest, LeavesTheScreenUnchangedWhenNoQuestionIsArmed)
 
     EXPECT_CALL(mockScreen, Show(testing::_)).Times(0);
 
-    lcdRenderer.Apply("timer_end");
+    lcdRenderer.Apply(HubMessage{"timer_end"});
 }
 
 class MessageWithoutDisplayTest : public ::testing::TestWithParam<std::string>
@@ -77,7 +77,7 @@ TEST_P(MessageWithoutDisplayTest, LeavesTheScreenUnchanged)
 
     EXPECT_CALL(mockScreen, Show(testing::_)).Times(0);
 
-    lcdRenderer.Apply(GetParam());
+    lcdRenderer.Apply(HubMessage{GetParam()});
 }
 
 INSTANTIATE_TEST_SUITE_P(
