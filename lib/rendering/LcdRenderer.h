@@ -20,26 +20,13 @@ public:
 
     void Apply(const HubMessage &message) override
     {
-        const std::string &type = message.Type();
-        if (type == "timer_end")
+        if (message.Type() == "timer_end")
         {
             if (armedModeReader.IsArmed())
                 screen.Show(displayState.LcdTextForTimeUp());
             return;
         }
-        if (type == "timer_tick")
-        {
-            if (message.HasRemainingSeconds())
-                screen.Show(displayState.LcdTextForRemainingSeconds(message.RemainingSeconds()));
-            return;
-        }
-        if (type == "buzz_locked")
-        {
-            if (message.HasBuzzerUsername())
-                screen.Show(displayState.LcdTextForBuzzedBy(message.BuzzerUsername()));
-            return;
-        }
-        std::string text = displayState.LcdTextFor(type);
+        std::string text = displayState.LcdTextFor(message);
         if (!text.empty())
             screen.Show(text);
     }

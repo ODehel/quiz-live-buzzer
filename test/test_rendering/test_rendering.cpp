@@ -4,19 +4,19 @@
 TEST(DisplayStateTest, AuthSuccessShouldDisplayConnecteOnScreen)
 {
     DisplayState displayState;
-    EXPECT_EQ(displayState.LcdTextFor("auth_success"), "Connecté");
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"auth_success"}), "Connecté");
 }
 
 TEST(DisplayStateTest, GameResumedShouldDisplayPartieEnCoursOnScreen)
 {
     DisplayState displayState;
-    EXPECT_EQ(displayState.LcdTextFor("game_resumed"), "Partie en cours");
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"game_resumed"}), "Partie en cours");
 }
 
 TEST(DisplayStateTest, QuestionChoicesShouldDisplayQuestionQcmEnCoursOnScreen)
 {
     DisplayState displayState;
-    EXPECT_EQ(displayState.LcdTextFor("question_choices"), "Question QCM en cours");
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"question_choices"}), "Question QCM en cours");
 }
 
 TEST(DisplayStateTest, AnswerSentShouldDisplayReponseEnvoyeeOnScreen)
@@ -34,7 +34,25 @@ TEST(DisplayStateTest, BuzzSentShouldDisplayBuzzEnvoyeOnScreen)
 TEST(DisplayStateTest, BuzzLockedShouldDisplayWhoBuzzedOnScreen)
 {
     DisplayState displayState;
-    EXPECT_EQ(displayState.LcdTextForBuzzedBy("Alice"), "Alice a buzzé");
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"buzz_locked"}.WithBuzzerUsername("Alice")), "Alice a buzzé");
+}
+
+TEST(DisplayStateTest, TimerTickShouldDisplayTheRemainingSecondsOnScreen)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"timer_tick"}.WithRemainingSeconds(25)), "25 s");
+}
+
+TEST(DisplayStateTest, TimerTickWithoutRemainingSecondsShouldHaveNoTextToDisplay)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"timer_tick"}), "");
+}
+
+TEST(DisplayStateTest, BuzzLockedWithoutBuzzerUsernameShouldHaveNoTextToDisplay)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"buzz_locked"}), "");
 }
 
 using FixedTextCase = std::pair<std::string, std::string>;
@@ -46,7 +64,7 @@ class MessageWithFixedTextTest : public ::testing::TestWithParam<FixedTextCase>
 TEST_P(MessageWithFixedTextTest, ShouldDisplayItsFixedTextOnScreen)
 {
     DisplayState displayState;
-    EXPECT_EQ(displayState.LcdTextFor(GetParam().first), GetParam().second);
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{GetParam().first}), GetParam().second);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -65,7 +83,7 @@ class MessageWithoutDisplayTest : public ::testing::TestWithParam<std::string>
 TEST_P(MessageWithoutDisplayTest, ShouldHaveNoTextToDisplay)
 {
     DisplayState displayState;
-    EXPECT_EQ(displayState.LcdTextFor(GetParam()), "");
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{GetParam()}), "");
 }
 
 INSTANTIATE_TEST_SUITE_P(
