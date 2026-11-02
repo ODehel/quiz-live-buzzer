@@ -25,6 +25,11 @@ public:
         return "";
     }
 
+    std::string LcdTextForRemainingSeconds(int seconds) const
+    {
+        return std::to_string(seconds) + " s";
+    }
+
     std::string LcdTextForTimeUp() const
     {
         return "Trop tard";
