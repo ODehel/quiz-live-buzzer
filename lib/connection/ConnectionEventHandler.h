@@ -36,8 +36,9 @@ public:
 
     void OnMessageReceived(const std::string &message) override
     {
-        std::string type = messageDeserializer.ExtractType(message);
-        messageRenderer.Apply(type);
+        HubMessage hubMessage = messageDeserializer.Parse(message);
+        const std::string &type = hubMessage.Type();
+        messageRenderer.Apply(hubMessage);
         if (type == "auth_success")
         {
             reconnectionPolicy.OnAuthSuccess();

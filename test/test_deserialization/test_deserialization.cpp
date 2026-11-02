@@ -1,16 +1,16 @@
 #include <gtest/gtest.h>
 #include "MessageDeserializer.h"
 
-TEST(MessageDeserializerTest, QuestionOpenMessageIsTypeQuestionOpen)
+TEST(MessageDeserializerTest, ParsedQuestionOpenMessageIsTypeQuestionOpen)
 {
     MessageDeserializer deserializer;
-    EXPECT_EQ(deserializer.ExtractType("{\"type\":\"question_open\"}"), "question_open");
+    EXPECT_EQ(deserializer.Parse("{\"type\":\"question_open\"}").Type(), "question_open");
 }
 
-TEST(MessageDeserializerTest, QuestionChoicesMessageIsTypeQuestionChoices)
+TEST(MessageDeserializerTest, ParsedQuestionChoicesMessageIsTypeQuestionChoices)
 {
     MessageDeserializer deserializer;
-    EXPECT_EQ(deserializer.ExtractType("{\"type\":\"question_choices\"}"), "question_choices");
+    EXPECT_EQ(deserializer.Parse("{\"type\":\"question_choices\"}").Type(), "question_choices");
 }
 
 int main(int argc, char **argv)

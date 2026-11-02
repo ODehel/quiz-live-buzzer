@@ -21,7 +21,7 @@
 class MockMessageRenderer : public MessageRenderer
 {
 public:
-    MOCK_METHOD(void, Apply, (const std::string &), (override));
+    MOCK_METHOD(void, Apply, (const HubMessage &), (override));
 };
 
 class MockConnectionEventListener : public ConnectionEventListener
@@ -143,7 +143,7 @@ TEST(BuzzerEventTranslatorTest, ConnectionEstablishedTriggersConnectionHandling)
 
 TEST_F(ConnectionEventHandlerTest, ReceivedMessageIsRenderedByType)
 {
-    EXPECT_CALL(mockMessageRenderer, Apply("auth_success")).Times(1);
+    EXPECT_CALL(mockMessageRenderer, Apply(::testing::Property(&HubMessage::Type, "auth_success"))).Times(1);
 
     handler.OnMessageReceived("{\"type\":\"auth_success\"}");
 }

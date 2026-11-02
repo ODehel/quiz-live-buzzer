@@ -2,11 +2,12 @@
 #define MESSAGE_DESERIALIZER_H
 
 #include <string>
+#include "HubMessage.h"
 
 class MessageDeserializer 
 {
 public:
-    std::string ExtractType(const std::string &json) const;
+    HubMessage Parse(const std::string &json) const;
 };
 
 #endif
