@@ -1,6 +1,7 @@
 #ifndef BUZZER_BEHAVIOR_H
 #define BUZZER_BEHAVIOR_H
 
+#include "ArmedModeReader.h"
 #include "HubMessageSender.h"
 #include "LocalFeedback.h"
 
@@ -11,7 +12,7 @@ enum class Mode
     SpeedArmed
 };
 
-class BuzzerBehavior
+class BuzzerBehavior : public ArmedModeReader
 {
 private:
     Mode mode = Mode::Inert;
@@ -26,6 +27,11 @@ private:
 public:
     BuzzerBehavior(HubMessageSender &hubMessageSender, LocalFeedback &localFeedback) : hubMessageSender(hubMessageSender), localFeedback(localFeedback)
     {
+    }
+
+    bool IsArmed() const override
+    {
+        return mode != Mode::Inert;
     }
 
     void OnMcqPressed(char value)

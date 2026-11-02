@@ -145,6 +145,70 @@ TEST_F(BuzzerBehaviorTest, ArmedBuzzerAcknowledgesBeforeSendingBuzz)
     buzzerBehavior.OnBuzzPressed();
 }
 
+TEST_F(BuzzerBehaviorTest, InertBuzzerIsNotArmed)
+{
+    const ArmedModeReader &reader = buzzerBehavior;
+
+    EXPECT_FALSE(reader.IsArmed());
+}
+
+TEST_F(BuzzerBehaviorTest, QuestionChoicesArmTheBuzzer)
+{
+    const ArmedModeReader &reader = buzzerBehavior;
+
+    buzzerBehavior.OnQuestionChoices();
+
+    EXPECT_TRUE(reader.IsArmed());
+}
+
+TEST_F(BuzzerBehaviorTest, QuestionOpenArmsTheBuzzer)
+{
+    const ArmedModeReader &reader = buzzerBehavior;
+
+    buzzerBehavior.OnQuestionOpen();
+
+    EXPECT_TRUE(reader.IsArmed());
+}
+
+TEST_F(BuzzerBehaviorTest, BuzzUnlockedArmsTheBuzzer)
+{
+    const ArmedModeReader &reader = buzzerBehavior;
+
+    buzzerBehavior.OnBuzzUnlocked();
+
+    EXPECT_TRUE(reader.IsArmed());
+}
+
+TEST_F(BuzzerBehaviorTest, AnswerPressDisarmsTheBuzzer)
+{
+    const ArmedModeReader &reader = buzzerBehavior;
+    buzzerBehavior.OnQuestionChoices();
+
+    buzzerBehavior.OnMcqPressed('A');
+
+    EXPECT_FALSE(reader.IsArmed());
+}
+
+TEST_F(BuzzerBehaviorTest, BuzzPressDisarmsTheBuzzer)
+{
+    const ArmedModeReader &reader = buzzerBehavior;
+    buzzerBehavior.OnQuestionOpen();
+
+    buzzerBehavior.OnBuzzPressed();
+
+    EXPECT_FALSE(reader.IsArmed());
+}
+
+TEST_F(BuzzerBehaviorTest, TimerEndDisarmsTheBuzzer)
+{
+    const ArmedModeReader &reader = buzzerBehavior;
+    buzzerBehavior.OnQuestionOpen();
+
+    buzzerBehavior.OnTimerEnd();
+
+    EXPECT_FALSE(reader.IsArmed());
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

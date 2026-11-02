@@ -105,7 +105,6 @@ std::vector<TouchZone> touchZones{
 Gt911TouchReader gt911;
 TouchZoneReader touchZoneReader{touchZones};
 GfxScreen gfxScreen{lcd};
-LcdRenderer lcdRenderer{gfxScreen};
 TouchButtonReader touchButtonReader{gt911, touchZoneReader};
 ScreenLocalFeedback localFeedback{gfxScreen};
 ReconnectionPolicy reconnectionPolicy;
@@ -114,6 +113,7 @@ WebSocketPayloadSocketWriter payloadSocketWriter{client};
 WebSocketMessageSender messageSender{MessageSerializer{}, client};
 PhysicalButtonReader physicalButtonReader{pinBuzzReader};
 BuzzerBehavior buzzerBehavior{messageSender, localFeedback};
+LcdRenderer lcdRenderer{gfxScreen, buzzerBehavior};
 HttpTokenFetcher httpTokenFetcher{"http://192.168.1.183:3000", ServerCredentials{HUB_USERNAME, HUB_PASSWORD}};
 TokenSessionMessageSender tokenSessionMessageSender{payloadSocketWriter, MessageSerializer{}, httpTokenFetcher};
 BuzzerButtonPressTranslator buzzerButtonPressTranslator{buzzerBehavior};
