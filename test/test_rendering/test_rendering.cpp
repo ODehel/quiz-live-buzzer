@@ -31,6 +31,12 @@ TEST(DisplayStateTest, BuzzSentShouldDisplayBuzzEnvoyeOnScreen)
     EXPECT_EQ(displayState.LcdTextForBuzzSent(), "Buzz envoyé");
 }
 
+TEST(DisplayStateTest, BuzzLockedShouldDisplayWhoBuzzedOnScreen)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.LcdTextForBuzzedBy("Alice"), "Alice a buzzé");
+}
+
 using FixedTextCase = std::pair<std::string, std::string>;
 
 class MessageWithFixedTextTest : public ::testing::TestWithParam<FixedTextCase>

@@ -37,6 +37,30 @@ TEST(MessageDeserializerTest, ParsedTimerTickWithATextRemainingSecondsHasNone)
     EXPECT_FALSE(deserializer.Parse("{\"type\":\"timer_tick\",\"remaining_seconds\":\"25\"}").HasRemainingSeconds());
 }
 
+TEST(MessageDeserializerTest, ParsedBuzzLockedHasItsBuzzerUsername)
+{
+    MessageDeserializer deserializer;
+
+    HubMessage message = deserializer.Parse("{\"type\":\"buzz_locked\",\"buzzer_username\":\"Alice\"}");
+
+    EXPECT_TRUE(message.HasBuzzerUsername());
+    EXPECT_EQ(message.BuzzerUsername(), "Alice");
+}
+
+TEST(MessageDeserializerTest, ParsedBuzzLockedWithoutBuzzerUsernameHasNone)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_FALSE(deserializer.Parse("{\"type\":\"buzz_locked\"}").HasBuzzerUsername());
+}
+
+TEST(MessageDeserializerTest, ParsedBuzzLockedWithANumericBuzzerUsernameHasNone)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_FALSE(deserializer.Parse("{\"type\":\"buzz_locked\",\"buzzer_username\":42}").HasBuzzerUsername());
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

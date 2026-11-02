@@ -242,7 +242,7 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 | `timer_end` | Inerte | inchangé | inchangé | — |
 | `answer_received` | — | Zones masquées | Réponse prise en compte (« Réponse enregistrée ») | — |
 | `buzz_accepted` | — | Bandeau clignotant | Tu as buzzé (« À toi ! ») | — |
-| `buzz_locked` | — | Zones masquées | Un autre a buzzé (« Buzzé par X ») | — |
+| `buzz_locked` | — | Zones masquées | Un autre a buzzé (« X a buzzé ») | — |
 | `buzz_invalidated` | — | Zones masquées | Éliminé pour la question (« Raté ») | — |
 | `buzz_unlocked` | — | Zones masquées | À nouveau possible de buzzer | — |
 | `question_result` | `correct_answer` = lettre A–D (MCQ) | Mettre en évidence zone(correct_answer) | Résultat (bonne réponse + réponse joueur) | — |

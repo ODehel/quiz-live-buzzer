@@ -10,6 +10,8 @@ private:
     std::string type;
     bool hasRemainingSeconds = false;
     int remainingSeconds = 0;
+    bool hasBuzzerUsername = false;
+    std::string buzzerUsername;
 
 public:
     explicit HubMessage(std::string type) : type(std::move(type))
@@ -37,6 +39,24 @@ public:
     int RemainingSeconds() const
     {
         return remainingSeconds;
+    }
+
+    HubMessage WithBuzzerUsername(std::string username) const
+    {
+        HubMessage copy = *this;
+        copy.hasBuzzerUsername = true;
+        copy.buzzerUsername = std::move(username);
+        return copy;
+    }
+
+    bool HasBuzzerUsername() const
+    {
+        return hasBuzzerUsername;
+    }
+
+    const std::string &BuzzerUsername() const
+    {
+        return buzzerUsername;
     }
 };
 
