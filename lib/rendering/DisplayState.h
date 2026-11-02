@@ -14,6 +14,8 @@ public:
             return message.HasRemainingSeconds() ? LcdTextForRemainingSeconds(message.RemainingSeconds()) : "";
         if (type == "buzz_locked")
             return message.HasBuzzerUsername() ? LcdTextForBuzzedBy(message.BuzzerUsername()) : "";
+        if (type == "question_open")
+            return message.Title();
         if (type == "game_resumed")
             return "Partie en cours";
         if (type == "question_choices")
