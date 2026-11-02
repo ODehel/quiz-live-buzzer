@@ -27,6 +27,12 @@ public:
                 screen.Show(displayState.LcdTextForTimeUp());
             return;
         }
+        if (type == "timer_tick")
+        {
+            if (message.HasRemainingSeconds())
+                screen.Show(displayState.LcdTextForRemainingSeconds(message.RemainingSeconds()));
+            return;
+        }
         std::string text = displayState.LcdTextFor(type);
         if (!text.empty())
             screen.Show(text);

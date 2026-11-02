@@ -65,6 +65,42 @@ TEST(LcdRendererTimerEndTest, LeavesTheScreenUnchangedWhenNoQuestionIsArmed)
     lcdRenderer.Apply(HubMessage{"timer_end"});
 }
 
+using TimerTickCase = std::pair<int, std::string>;
+
+class TimerTickTest : public ::testing::TestWithParam<TimerTickCase>
+{
+};
+
+TEST_P(TimerTickTest, ShowsTheRemainingSecondsOnScreen)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, Show(GetParam().second)).Times(1);
+
+    lcdRenderer.Apply(HubMessage{"timer_tick"}.WithRemainingSeconds(GetParam().first));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    RemainingSeconds,
+    TimerTickTest,
+    ::testing::Values(
+        TimerTickCase{25, "25 s"},
+        TimerTickCase{5, "5 s"},
+        TimerTickCase{0, "0 s"}));
+
+TEST(LcdRendererTimerTickTest, LeavesTheScreenUnchangedWithoutRemainingSeconds)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, Show(testing::_)).Times(0);
+
+    lcdRenderer.Apply(HubMessage{"timer_tick"});
+}
+
 class MessageWithoutDisplayTest : public ::testing::TestWithParam<std::string>
 {
 };
@@ -83,7 +119,7 @@ TEST_P(MessageWithoutDisplayTest, LeavesTheScreenUnchanged)
 INSTANTIATE_TEST_SUITE_P(
     MessagesLeavingTheScreenUnchanged,
     MessageWithoutDisplayTest,
-    ::testing::Values("timer_tick", "play_sound_url", "play_system_sound", "token_expiring_soon", "unknown_type"));
+    ::testing::Values("play_sound_url", "play_system_sound", "token_expiring_soon", "unknown_type"));
 
 int main(int argc, char **argv)
 {
