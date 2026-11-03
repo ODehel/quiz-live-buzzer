@@ -3,57 +3,50 @@
 
 #include <string>
 #include <vector>
+#include "TextMeasurer.h"
+#include "Utf8.h"
 
 struct TextLines
 {
-    int scale;
+    int size;
     std::vector<std::string> lines;
 };
 
-// Place un texte sur une zone d'écran : choisit la plus grande échelle de police pour laquelle
+// Place un texte sur une zone d'écran : choisit la plus grande taille de police pour laquelle
 // le texte, coupé aux espaces, tient en hauteur, puis rend les lignes à dessiner.
-// Un titre de question (250 caractères au plus) tient à l'échelle MinScale quels que soient ses mots.
-// Au-delà de ce que MinScale peut contenir, le texte garde MinScale et déborde de la zone.
+// Les largeurs et hauteurs sont celles du TextMeasurer, en pixels.
+// Au-delà de ce que la plus petite taille peut contenir, le texte garde cette taille et déborde.
 class TextLayout
 {
-public:
-    enum : int
-    {
-        MaxScale = 5,
-        MinScale = 3
-    };
-
 private:
+    const TextMeasurer &measurer;
     int areaWidth;
     int areaHeight;
-    int cellWidth;
-    int cellHeight;
 
 public:
-    TextLayout(int areaWidth, int areaHeight, int cellWidth, int cellHeight)
-        : areaWidth(areaWidth), areaHeight(areaHeight), cellWidth(cellWidth), cellHeight(cellHeight)
+    TextLayout(const TextMeasurer &measurer, int areaWidth, int areaHeight)
+        : measurer(measurer), areaWidth(areaWidth), areaHeight(areaHeight)
     {
     }
 
     TextLines Compute(const std::string &text) const
     {
-        for (int scale = MaxScale; scale > MinScale; --scale)
+        const int smallest = measurer.SizeCount() - 1;
+        for (int size = 0; size < smallest; ++size)
         {
-            std::vector<std::string> lines = Wrap(text, ColumnsAt(scale));
-            if (static_cast<int>(lines.size()) <= RowsAt(scale))
-                return TextLines{scale, lines};
+            std::vector<std::string> lines = Wrap(text, size);
+            if (static_cast<int>(lines.size()) * measurer.LineHeight(size) <= areaHeight)
+                return TextLines{size, lines};
         }
-        return TextLines{MinScale, Wrap(text, ColumnsAt(MinScale))};
+        return TextLines{smallest, Wrap(text, smallest)};
     }
 
-    // Coupe aux espaces, ligne par ligne, sans dépasser `columns` caractères ; un mot plus long
-    // qu'une ligne est coupé. Un caractère UTF-8 compte pour une colonne et n'est jamais coupé.
-    static std::vector<std::string> Wrap(const std::string &text, int columns)
+    // Coupe aux espaces, ligne par ligne, sans dépasser la largeur de la zone ; un mot plus large
+    // qu'une ligne est coupé (au moins un caractère par ligne). Un caractère UTF-8 n'est jamais coupé en deux.
+    std::vector<std::string> Wrap(const std::string &text, int size) const
     {
-        const size_t width = columns < 1 ? 1 : static_cast<size_t>(columns);
         std::vector<std::string> lines;
         std::string line;
-        size_t lineLength = 0;
         size_t position = 0;
         while (position < text.size())
         {
@@ -68,76 +61,51 @@ public:
             std::string word = text.substr(position, end - position);
             position = end;
 
-            if (CharacterCount(word) > width)
+            if (!Fits(word, size))
             {
-                if (lineLength > 0)
+                if (!line.empty())
                     lines.push_back(line);
-                while (CharacterCount(word) > width)
+                while (!Fits(word, size))
                 {
-                    const size_t cut = ByteOffsetOfCharacter(word, width);
+                    const size_t cut = LongestPrefixThatFits(word, size);
                     lines.push_back(word.substr(0, cut));
                     word = word.substr(cut);
                 }
                 line = word;
-                lineLength = CharacterCount(word);
             }
-            else if (lineLength > 0 && lineLength + 1 + CharacterCount(word) > width)
+            else if (!line.empty() && !Fits(line + " " + word, size))
             {
                 lines.push_back(line);
                 line = word;
-                lineLength = CharacterCount(word);
             }
             else
             {
-                if (lineLength > 0)
-                    line += ' ';
-                line += word;
-                lineLength = CharacterCount(line);
+                line = line.empty() ? word : line + " " + word;
             }
         }
-        if (lineLength > 0)
+        if (!line.empty())
             lines.push_back(line);
         return lines;
     }
 
 private:
-    int ColumnsAt(int scale) const
+    bool Fits(const std::string &text, int size) const
     {
-        return areaWidth / (cellWidth * scale);
+        return measurer.Width(text, size) <= areaWidth;
     }
 
-    int RowsAt(int scale) const
+    size_t LongestPrefixThatFits(const std::string &word, int size) const
     {
-        return areaHeight / (cellHeight * scale);
-    }
-
-    static bool StartsCharacter(char byte)
-    {
-        return (static_cast<unsigned char>(byte) & 0xC0) != 0x80;
-    }
-
-    static size_t CharacterCount(const std::string &text)
-    {
-        size_t count = 0;
-        for (size_t i = 0; i < text.size(); ++i)
-            if (StartsCharacter(text[i]))
-                ++count;
-        return count;
-    }
-
-    static size_t ByteOffsetOfCharacter(const std::string &text, size_t characterIndex)
-    {
-        size_t seen = 0;
-        for (size_t i = 0; i < text.size(); ++i)
+        const size_t count = Utf8::CharacterCount(word);
+        size_t best = 0;
+        for (size_t characters = 1; characters <= count; ++characters)
         {
-            if (StartsCharacter(text[i]))
-            {
-                if (seen == characterIndex)
-                    return i;
-                ++seen;
-            }
+            const size_t offset = Utf8::ByteOffsetOfCharacter(word, characters);
+            if (!Fits(word.substr(0, offset), size))
+                break;
+            best = offset;
         }
-        return text.size();
+        return best == 0 ? Utf8::ByteOffsetOfCharacter(word, 1) : best;
     }
 };
 
