@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 #include <string>
 #include <vector>
+#include "FontMetrics.h"
 #include "MonospaceTextMeasurer.h"
+#include "ProportionalTextMeasurer.h"
 #include "TextLayout.h"
 
 using Lines = std::vector<std::string>;
@@ -260,6 +262,35 @@ TEST_F(TextLayoutComputeTest, QuestionTitleOfTheMaximumLengthShouldFitOnTheScree
         TextLines result = layout.Compute(title);
         EXPECT_LE(static_cast<int>(result.lines.size()) * measurer.LineHeight(result.size), AreaHeight);
     }
+}
+
+// Police proportionnelle factice : 'i' étroit, 'W' large, tous les autres glyphes (espace compris) à `advance`.
+static FontMetrics ProportionalFont(int lineHeight, int advance, int narrow, int wide)
+{
+    std::vector<int> advances(FontMetrics::LastCode - FontMetrics::FirstCode + 1, advance);
+    advances['i' - FontMetrics::FirstCode] = narrow;
+    advances['W' - FontMetrics::FirstCode] = wide;
+    return FontMetrics(lineHeight, advances);
+}
+
+TEST(TextLayoutProportionalTest, SameNumberOfCharactersShouldWrapDifferentlyWhenGlyphsAreWider)
+{
+    ProportionalTextMeasurer measurer({ProportionalFont(10, 20, 10, 50)});
+    TextLayout layout(measurer, 130, 1000);
+    EXPECT_EQ(layout.Wrap("ii ii", 0), (Lines{"ii ii"}));
+    EXPECT_EQ(layout.Wrap("WW WW", 0), (Lines{"WW", "WW"}));
+}
+
+TEST(TextLayoutProportionalTest, SizeShouldBeChosenFromGlyphWidthsNotFromTheNumberOfCharacters)
+{
+    ProportionalTextMeasurer measurer({ProportionalFont(60, 20, 10, 50), ProportionalFont(30, 10, 5, 25)});
+    TextLayout layout(measurer, 120, 100);
+    const TextLines wide = layout.Compute("WW WW"); // grande taille : 2 lignes de 60 px = 120 > 100
+    EXPECT_EQ(wide.size, 1);
+    EXPECT_EQ(wide.lines, (Lines{"WW WW"}));
+    const TextLines narrow = layout.Compute("ii ii"); // grande taille : 1 ligne de 60 px
+    EXPECT_EQ(narrow.size, 0);
+    EXPECT_EQ(narrow.lines, (Lines{"ii ii"}));
 }
 
 int main(int argc, char **argv)
