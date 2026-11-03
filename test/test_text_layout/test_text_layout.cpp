@@ -1,16 +1,44 @@
 #include <gtest/gtest.h>
 #include <string>
 #include <vector>
+#include "MonospaceTextMeasurer.h"
 #include "TextLayout.h"
 
 using Lines = std::vector<std::string>;
 
 // Dalle 800x480 de la CrowPanel avec une marge de 10 px, police de base 6x8 (LovyanGFX).
-// À l'échelle 5 : 26 colonnes x 11 lignes ; à 4 : 32 x 14 ; à 3 : 43 x 19.
+// Tailles 0, 1, 2 = échelles 5, 4, 3 : 26 colonnes x 11 lignes ; 32 x 14 ; 43 x 19.
 static const int AreaWidth = 780;
 static const int AreaHeight = 460;
 static const int CellWidth = 6;
 static const int CellHeight = 8;
+
+// Une seule taille, un pixel par caractère : la largeur de la zone se lit en colonnes.
+class OnePixelPerCharacter : public TextMeasurer
+{
+public:
+    int SizeCount() const override
+    {
+        return 1;
+    }
+
+    int Width(const std::string &text, int) const override
+    {
+        return static_cast<int>(Utf8::CharacterCount(text));
+    }
+
+    int LineHeight(int) const override
+    {
+        return 1;
+    }
+};
+
+static Lines WrapAtColumns(const std::string &text, int columns)
+{
+    OnePixelPerCharacter measurer;
+    TextLayout layout(measurer, columns, 1000);
+    return layout.Wrap(text, 0);
+}
 
 static std::string Repeat(const std::string &unit, int times)
 {
@@ -22,127 +50,203 @@ static std::string Repeat(const std::string &unit, int times)
 
 TEST(TextLayoutWrapTest, EmptyTextShouldHaveNoLine)
 {
-    EXPECT_EQ(TextLayout::Wrap("", 10), Lines{});
+    EXPECT_EQ(WrapAtColumns("", 10), Lines{});
 }
 
 TEST(TextLayoutWrapTest, TextThatFitsShouldStayOnOneLine)
 {
-    EXPECT_EQ(TextLayout::Wrap("Partie en cours", 26), Lines{"Partie en cours"});
+    EXPECT_EQ(WrapAtColumns("Partie en cours", 26), Lines{"Partie en cours"});
 }
 
 TEST(TextLayoutWrapTest, TextShouldBreakAtTheLastSpaceThatFits)
 {
-    EXPECT_EQ(TextLayout::Wrap("Question QCM en cours", 10), (Lines{"Question", "QCM en", "cours"}));
+    EXPECT_EQ(WrapAtColumns("Question QCM en cours", 10), (Lines{"Question", "QCM en", "cours"}));
 }
 
 TEST(TextLayoutWrapTest, WordsFillingTheLineExactlyShouldStayTogether)
 {
-    EXPECT_EQ(TextLayout::Wrap("ab cd", 5), Lines{"ab cd"});
+    EXPECT_EQ(WrapAtColumns("ab cd", 5), Lines{"ab cd"});
 }
 
 TEST(TextLayoutWrapTest, SpaceBetweenWordsShouldCountAsAColumn)
 {
-    EXPECT_EQ(TextLayout::Wrap("ab cd", 4), (Lines{"ab", "cd"}));
+    EXPECT_EQ(WrapAtColumns("ab cd", 4), (Lines{"ab", "cd"}));
 }
 
 TEST(TextLayoutWrapTest, EverySpaceOfALineShouldCountAsAColumn)
 {
-    EXPECT_EQ(TextLayout::Wrap("a b c d", 5), (Lines{"a b c", "d"}));
+    EXPECT_EQ(WrapAtColumns("a b c d", 5), (Lines{"a b c", "d"}));
 }
 
 TEST(TextLayoutWrapTest, WordFillingTheWholeLineShouldLeaveTheNextWordForTheNextLine)
 {
-    EXPECT_EQ(TextLayout::Wrap("abcd efgh", 4), (Lines{"abcd", "efgh"}));
+    EXPECT_EQ(WrapAtColumns("abcd efgh", 4), (Lines{"abcd", "efgh"}));
 }
 
 TEST(TextLayoutWrapTest, WordLongerThanTheLineShouldBeSplit)
 {
-    EXPECT_EQ(TextLayout::Wrap("abcdefghij", 4), (Lines{"abcd", "efgh", "ij"}));
+    EXPECT_EQ(WrapAtColumns("abcdefghij", 4), (Lines{"abcd", "efgh", "ij"}));
 }
 
 TEST(TextLayoutWrapTest, RestOfASplitWordShouldShareItsLineWithTheNextWord)
 {
-    EXPECT_EQ(TextLayout::Wrap("abcdefghij k", 4), (Lines{"abcd", "efgh", "ij k"}));
+    EXPECT_EQ(WrapAtColumns("abcdefghij k", 4), (Lines{"abcd", "efgh", "ij k"}));
 }
 
 TEST(TextLayoutWrapTest, WordLongerThanTheLineShouldStartOnANewLine)
 {
-    EXPECT_EQ(TextLayout::Wrap("ab cdefghij", 4), (Lines{"ab", "cdef", "ghij"}));
+    EXPECT_EQ(WrapAtColumns("ab cdefghij", 4), (Lines{"ab", "cdef", "ghij"}));
 }
 
 TEST(TextLayoutWrapTest, ExtraSpacesShouldBeIgnored)
 {
-    EXPECT_EQ(TextLayout::Wrap("  ab   cd  ", 10), Lines{"ab cd"});
+    EXPECT_EQ(WrapAtColumns("  ab   cd  ", 10), Lines{"ab cd"});
 }
 
 TEST(TextLayoutWrapTest, AccentedCharacterShouldCountAsOneColumn)
 {
-    EXPECT_EQ(TextLayout::Wrap("éé éé", 5), Lines{"éé éé"});
+    EXPECT_EQ(WrapAtColumns("éé éé", 5), Lines{"éé éé"});
 }
 
 TEST(TextLayoutWrapTest, SplitShouldNotCutInsideAnAccentedCharacter)
 {
-    EXPECT_EQ(TextLayout::Wrap("ééé", 2), (Lines{"éé", "é"}));
+    EXPECT_EQ(WrapAtColumns("ééé", 2), (Lines{"éé", "é"}));
 }
 
 TEST(TextLayoutWrapTest, NoColumnShouldBehaveLikeOneColumn)
 {
-    EXPECT_EQ(TextLayout::Wrap("ab", 0), (Lines{"a", "b"}));
+    EXPECT_EQ(WrapAtColumns("ab", 0), (Lines{"a", "b"}));
 }
 
-TEST(TextLayoutComputeTest, ShortTextShouldUseTheLargestScale)
+// Police à chasse variable : 'i' et espace font 1 px, tout autre caractère 3 px.
+// Deux tailles : la 0 (la plus grande) mesure 2 px de haut par ligne, la 1 en mesure 1 (largeurs inchangées).
+class NarrowLettersMeasurer : public TextMeasurer
 {
-    TextLayout layout{AreaWidth, AreaHeight, CellWidth, CellHeight};
+public:
+    int SizeCount() const override
+    {
+        return 2;
+    }
+
+    int Width(const std::string &text, int) const override
+    {
+        int width = 0;
+        for (size_t i = 0; i < text.size(); ++i)
+            width += (text[i] == 'i' || text[i] == ' ') ? 1 : 3;
+        return width;
+    }
+
+    int LineHeight(int size) const override
+    {
+        return 2 - size;
+    }
+};
+
+TEST(TextLayoutProportionalTest, NarrowLettersShouldLetMoreCharactersFitOnALine)
+{
+    NarrowLettersMeasurer measurer;
+    TextLayout layout(measurer, 6, 1000);
+    EXPECT_EQ(layout.Wrap("iiiiii mm", 0), (Lines{"iiiiii", "mm"}));
+}
+
+TEST(TextLayoutProportionalTest, WideLettersShouldBreakBeforeTheyWouldInColumns)
+{
+    NarrowLettersMeasurer measurer;
+    TextLayout layout(measurer, 6, 1000);
+    EXPECT_EQ(layout.Wrap("mmm", 0), (Lines{"mm", "m"}));
+}
+
+TEST(TextLayoutProportionalTest, SpaceShouldBeMeasuredLikeAnyOtherCharacter)
+{
+    NarrowLettersMeasurer measurer;
+    TextLayout layout(measurer, 7, 1000);
+    EXPECT_EQ(layout.Wrap("i mm", 0), (Lines{"i", "mm"}));
+}
+
+TEST(TextLayoutProportionalTest, ComputeShouldJudgeTheHeightWithTheLineHeightOfEachSize)
+{
+    NarrowLettersMeasurer measurer;
+    TextLayout layout(measurer, 6, 3);
+    // "mm mm" fait 2 lignes : 2 x 2 = 4 px en taille 0 (trop haut), 2 x 1 = 2 px en taille 1 (tient)
+    TextLines result = layout.Compute("mm mm");
+    EXPECT_EQ(result.size, 1);
+    EXPECT_EQ(result.lines, (Lines{"mm", "mm"}));
+}
+
+TEST(TextLayoutProportionalTest, TextFillingTheHeightExactlyShouldKeepTheSize)
+{
+    NarrowLettersMeasurer measurer;
+    TextLayout layout(measurer, 6, 4);
+    // 2 lignes x 2 px = 4 px = la hauteur de la zone
+    TextLines result = layout.Compute("mm mm");
+    EXPECT_EQ(result.size, 0);
+}
+
+class TextLayoutComputeTest : public ::testing::Test
+{
+protected:
+    MonospaceTextMeasurer measurer{CellWidth, CellHeight};
+    TextLayout layout{measurer, AreaWidth, AreaHeight};
+};
+
+TEST_F(TextLayoutComputeTest, ShortTextShouldUseTheLargestSize)
+{
     TextLines result = layout.Compute("Connecté");
-    EXPECT_EQ(result.scale, 5);
+    EXPECT_EQ(measurer.ScaleOf(result.size), 5);
     EXPECT_EQ(result.lines, Lines{"Connecté"});
 }
 
-TEST(TextLayoutComputeTest, TextFillingTheRowsOfTheLargestScaleShouldKeepIt)
+TEST_F(TextLayoutComputeTest, TextFillingTheRowsOfTheLargestScaleShouldKeepIt)
 {
-    TextLayout layout{AreaWidth, AreaHeight, CellWidth, CellHeight};
     TextLines result = layout.Compute(Repeat("x", 26 * 11));
-    EXPECT_EQ(result.scale, 5);
+    EXPECT_EQ(measurer.ScaleOf(result.size), 5);
     EXPECT_EQ(result.lines.size(), 11u);
 }
 
-TEST(TextLayoutComputeTest, TextBeyondTheRowsOfTheLargestScaleShouldUseTheNextScale)
+TEST_F(TextLayoutComputeTest, TextBeyondTheRowsOfTheLargestScaleShouldUseTheNextScale)
 {
-    TextLayout layout{AreaWidth, AreaHeight, CellWidth, CellHeight};
     TextLines result = layout.Compute(Repeat("x", 26 * 11 + 1));
-    EXPECT_EQ(result.scale, 4);
+    EXPECT_EQ(measurer.ScaleOf(result.size), 4);
     EXPECT_EQ(result.lines.size(), 9u);
 }
 
-TEST(TextLayoutComputeTest, TextFillingTheRowsOfTheNextScaleShouldKeepIt)
+TEST_F(TextLayoutComputeTest, TextFillingTheRowsOfTheNextScaleShouldKeepIt)
 {
-    TextLayout layout{AreaWidth, AreaHeight, CellWidth, CellHeight};
     TextLines result = layout.Compute(Repeat("x", 32 * 14));
-    EXPECT_EQ(result.scale, 4);
+    EXPECT_EQ(measurer.ScaleOf(result.size), 4);
     EXPECT_EQ(result.lines.size(), 14u);
 }
 
-TEST(TextLayoutComputeTest, TextBeyondTheRowsOfTheNextScaleShouldUseTheSmallestScale)
+TEST_F(TextLayoutComputeTest, TextBeyondTheRowsOfTheNextScaleShouldUseTheSmallestScale)
 {
-    TextLayout layout{AreaWidth, AreaHeight, CellWidth, CellHeight};
     TextLines result = layout.Compute(Repeat("x", 32 * 14 + 1));
-    EXPECT_EQ(result.scale, 3);
+    EXPECT_EQ(measurer.ScaleOf(result.size), 3);
     EXPECT_EQ(result.lines.size(), 11u);
 }
 
-TEST(TextLayoutComputeTest, TextBeyondTheSmallestScaleShouldKeepItAndOverflow)
+TEST_F(TextLayoutComputeTest, WordTooWideForALargeSizeShouldStayWholeOnASmallerOne)
 {
-    TextLayout layout{AreaWidth, AreaHeight, CellWidth, CellHeight};
+    // 30 caractères : 900 px en échelle 5 (trop large), 720 px en échelle 4 (tient)
+    EXPECT_EQ(layout.Wrap(Repeat("x", 30), 1), Lines{Repeat("x", 30)});
+}
+
+TEST_F(TextLayoutComputeTest, WordTooWideForALargeSizeShouldShareItsLineOnASmallerOne)
+{
+    // "a " + 28 x : 840 px pour le mot seul en échelle 5 (trop large), 720 px la ligne entière en échelle 4
+    EXPECT_EQ(layout.Wrap("a " + Repeat("x", 28), 1), Lines{"a " + Repeat("x", 28)});
+}
+
+TEST_F(TextLayoutComputeTest, TextBeyondTheSmallestScaleShouldKeepItAndOverflow)
+{
     TextLines result = layout.Compute(Repeat("x", 43 * 19 + 1));
-    EXPECT_EQ(result.scale, 3);
+    EXPECT_EQ(measurer.ScaleOf(result.size), 3);
     EXPECT_EQ(result.lines.size(), 20u);
 }
 
 // Contrat de la fonctionnalité : un titre de question (250 caractères au plus, US-005 CA-4)
 // tient sur la dalle quelle que soit la longueur de ses mots.
-TEST(TextLayoutComputeTest, QuestionTitleOfTheMaximumLengthShouldFitOnTheScreenWhateverItsWords)
+TEST_F(TextLayoutComputeTest, QuestionTitleOfTheMaximumLengthShouldFitOnTheScreenWhateverItsWords)
 {
-    TextLayout layout{AreaWidth, AreaHeight, CellWidth, CellHeight};
     std::vector<std::string> titles;
     for (int wordLength = 1; wordLength <= 60; ++wordLength)
         titles.push_back(Repeat(Repeat("x", wordLength) + " ", 250).substr(0, 250));
@@ -154,7 +258,7 @@ TEST(TextLayoutComputeTest, QuestionTitleOfTheMaximumLengthShouldFitOnTheScreenW
     {
         SCOPED_TRACE(title);
         TextLines result = layout.Compute(title);
-        EXPECT_LE(static_cast<int>(result.lines.size()) * CellHeight * result.scale, AreaHeight);
+        EXPECT_LE(static_cast<int>(result.lines.size()) * measurer.LineHeight(result.size), AreaHeight);
     }
 }
 

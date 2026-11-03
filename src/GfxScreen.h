@@ -2,6 +2,7 @@
 #define GFX_SCREEN_H
 
 #include "Screen.h"
+#include "MonospaceTextMeasurer.h"
 #include "TextLayout.h"
 #include <string>
 #include <LovyanGFX.hpp>
@@ -21,11 +22,12 @@ public:
     void Show(const std::string &text) override
     {
         lcd.setTextSize(1); // cellule de base de la police, pour mesurer
-        const TextLayout layout(lcd.width() - 2 * margin, lcd.height() - 2 * margin, lcd.fontWidth(), lcd.fontHeight());
-        const TextLines placed = layout.Compute(text); // échelle et lignes
+        const MonospaceTextMeasurer measurer(lcd.fontWidth(), lcd.fontHeight());
+        const TextLayout layout(measurer, lcd.width() - 2 * margin, lcd.height() - 2 * margin);
+        const TextLines placed = layout.Compute(text); // taille et lignes
 
         lcd.fillScreen(TFT_BLACK); // efface l'écran (pas d'empilement)
-        lcd.setTextSize(placed.scale);
+        lcd.setTextSize(measurer.ScaleOf(placed.size));
         lcd.setTextDatum(middle_center); // point d'ancrage = centre de chaque ligne
         const int lineHeight = lcd.fontHeight();
         const int count = static_cast<int>(placed.lines.size());
