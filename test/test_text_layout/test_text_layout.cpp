@@ -157,3 +157,9 @@ TEST(TextLayoutComputeTest, QuestionTitleOfTheMaximumLengthShouldFitOnTheScreenW
         EXPECT_LE(static_cast<int>(result.lines.size()) * CellHeight * result.scale, AreaHeight);
     }
 }
+
+int main(int argc, char **argv)
+{
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
