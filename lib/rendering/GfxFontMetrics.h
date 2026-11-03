@@ -1,6 +1,8 @@
 #ifndef GFX_FONT_METRICS_H
 #define GFX_FONT_METRICS_H
 
+#include <cstdint>
+#include <map>
 #include <vector>
 #include "FontMetrics.h"
 
@@ -8,13 +10,31 @@
 // 82 % faisait mordre le descendant d'une ligne sur l'accent de la suivante (smoke test du 2026-11-03).
 static const int QuizLineSpacingPercent = 90;
 
-// Lit les dimensions d'une police au format GFXfont (`first`, `last`, `yAdvance`, `glyph[i].xAdvance`) :
-// `lgfx::GFXfont` en production, une fausse police dans les tests. Le type est un paramètre de
-// gabarit pour que `lib/` ne dépende pas de LovyanGFX.
+// Avance du glyphe que la police dessine pour `code`, ou `notFound` si elle n'en dessine pas.
+// Même recherche que `lgfx::GFXfont::getGlyph` : sans plage (`range_num` à 0), le glyphe d'indice i
+// dessine le code `first` + i ; avec des plages, le code `start` + k dessine le glyphe d'indice `base` + k.
+template <class GfxFont>
+int FindAdvance(const GfxFont &font, uint32_t code, int notFound)
+{
+    if (code < font.first || code > font.last)
+        return notFound;
+    if (font.range_num == 0)
+        return font.glyph[code - font.first].xAdvance;
+    for (int i = 0; i < font.range_num; ++i)
+    {
+        if (code >= font.range[i].start && code <= font.range[i].end)
+            return font.glyph[font.range[i].base + (code - font.range[i].start)].xAdvance;
+    }
+    return notFound;
+}
+
+// Lit les dimensions d'une police au format GFXfont (`first`, `last`, `yAdvance`, `glyph[i].xAdvance`,
+// `range_num`, `range`) : `lgfx::GFXfont` en production, une fausse police dans les tests. Le type est
+// un paramètre de gabarit pour que `lib/` ne dépende pas de LovyanGFX.
 //
-// Hypothèses : les glyphes se suivent sans trou de `first` à `last` (pas de plage d'encodage de
-// LovyanGFX) et la police contient le glyphe `?` (0x3F). Un code que la police ne dessine pas
-// avance comme `?`, ce que `FontMetrics::Advance` fait déjà hors de 0x20-0xFF. C'est une
+// Hypothèses : la police contient le glyphe `?` (0x3F) et les glyphes de Latin-1 (0x20 à 0xFF) ; ceux
+// qu'elle dessine au-delà de 0xFF (œ, ’, … : les codes de ses plages) gardent leur avance. Un code que
+// la police ne dessine pas avance comme `?`, ce que `FontMetrics::Advance` fait déjà. C'est une
 // surestimation voulue : LovyanGFX ne dessine rien pour ce code et avance de la largeur d'un
 // espace, plus étroite ; mesurer `?` fait couper plus tôt, jamais déborder.
 //
@@ -24,17 +44,26 @@ static const int QuizLineSpacingPercent = 90;
 template <class GfxFont>
 FontMetrics ReadFontMetrics(const GfxFont &font, int lineSpacingPercent)
 {
-    const int questionMarkAdvance = font.glyph['?' - font.first].xAdvance;
+    const int notFound = -1;
+    const int questionMarkAdvance = FindAdvance(font, '?', notFound);
     std::vector<int> advances;
     for (int code = FontMetrics::FirstCode; code <= FontMetrics::LastCode; ++code)
     {
-        if (code < font.first || code > font.last)
-            advances.push_back(questionMarkAdvance);
-        else
-            advances.push_back(font.glyph[code - font.first].xAdvance);
+        const int advance = FindAdvance(font, code, notFound);
+        advances.push_back(advance == notFound ? questionMarkAdvance : advance);
+    }
+    std::map<uint32_t, int> extraAdvances;
+    for (int i = 0; i < font.range_num; ++i)
+    {
+        for (uint32_t code = font.range[i].start; code <= font.range[i].end; ++code)
+        {
+            const int advance = FindAdvance(font, code, notFound);
+            if (code > FontMetrics::LastCode && advance != notFound)
+                extraAdvances[code] = advance;
+        }
     }
     const int lineHeight = (font.yAdvance * lineSpacingPercent + 50) / 100;
-    return FontMetrics(lineHeight, advances);
+    return FontMetrics(lineHeight, advances, extraAdvances);
 }
 
 #endif

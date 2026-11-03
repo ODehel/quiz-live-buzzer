@@ -1,14 +1,14 @@
 # Polices de l'écran
 
-Trois tailles d'Oswald Regular (corps 30, 38 et 48 px) au format `lgfx::GFXfont`, 1 bit par pixel, U+0020 à U+00FF (Latin-1). `GfxScreen` les utilise : il mesure avec leurs largeurs réelles (`ReadFontMetrics`) et dessine avec la taille que choisit `TextLayout`.
+Trois tailles d'Oswald Regular (corps 30, 38 et 48 px) au format `lgfx::GFXfont`, 1 bit par pixel, U+0020 à U+00FF (Latin-1) plus `Œ`, `œ`, `’`, `…` et `€`. `GfxScreen` les utilise : il mesure avec leurs largeurs réelles (`ReadFontMetrics`) et dessine avec la taille que choisit `TextLayout`.
 
 | Fichier | Corps | Cap-height | Bitmaps | `yAdvance` |
 |---|---|---|---|---|
-| `OswaldRegular30.h` | 30 px | 24 px | 6 061 o | 44 px |
-| `OswaldRegular38.h` | 38 px | 31 px | 9 368 o | 56 px |
-| `OswaldRegular48.h` | 48 px | 39 px | 15 070 o | 71 px |
+| `OswaldRegular30.h` | 30 px | 24 px | 6 215 o | 44 px |
+| `OswaldRegular38.h` | 38 px | 31 px | 9 600 o | 56 px |
+| `OswaldRegular48.h` | 48 px | 39 px | 15 448 o | 71 px |
 
-Les trois tables de glyphes pèsent 2 688 octets chacune (224 glyphes de 12 octets).
+Les trois tables de glyphes pèsent 2 748 octets chacune (229 glyphes de 12 octets : 224 de Latin-1, puis `Œ`, `œ`, `’`, `…`, `€`), plus 30 octets de plages d'encodage (`lgfx::EncodeRange`, 5 plages de 6 octets : Latin-1, U+0152-U+0153, U+2019, U+2026, U+20AC).
 
 ## Licence
 

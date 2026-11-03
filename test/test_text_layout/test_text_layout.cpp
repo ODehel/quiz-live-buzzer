@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <iterator>
+#include <map>
 #include <string>
 #include <vector>
 #include "FontMetrics.h"
@@ -303,8 +304,11 @@ TEST(TextLayoutProportionalTest, SizeShouldBeChosenFromGlyphWidthsNotFromTheNumb
 static ProportionalTextMeasurer SmallestRealFont()
 {
     const std::vector<int> advances(std::begin(OswaldRegular30Advances), std::end(OswaldRegular30Advances));
+    std::map<uint32_t, int> extraAdvances;
+    for (size_t i = 0; i < std::size(OswaldRegular30ExtraCodes); ++i)
+        extraAdvances[OswaldRegular30ExtraCodes[i]] = OswaldRegular30ExtraAdvances[i];
     const int lineHeight = (OswaldRegular30YAdvance * QuizLineSpacingPercent + 50) / 100;
-    return ProportionalTextMeasurer({FontMetrics(lineHeight, advances)});
+    return ProportionalTextMeasurer({FontMetrics(lineHeight, advances, extraAdvances)});
 }
 
 static int HeightOf(const TextLines &placed, const TextMeasurer &measurer)
@@ -341,6 +345,18 @@ TEST(TextLayoutRealFontTest, LineHeightShouldLeaveRoomBetweenADescenderAndTheAcc
     const int clearance = measurer.LineHeight(0) - OswaldRegular30DescenderDepth - OswaldRegular30AccentHeight;
 
     EXPECT_GE(clearance, 1);
+}
+
+// Œ, œ, ’, … et € sont mesurés avec leur largeur réelle (20, 21, 5, 17 et 15 px en Oswald 30 px), pas avec celle d'un `?`.
+TEST(TextLayoutRealFontTest, FrenchLigaturesAndTypographicSymbolsShouldBeMeasuredWithTheirRealWidth)
+{
+    const ProportionalTextMeasurer measurer = SmallestRealFont();
+
+    EXPECT_EQ(measurer.Width("Œ", 0), 20);
+    EXPECT_EQ(measurer.Width("œ", 0), 21);
+    EXPECT_EQ(measurer.Width("’", 0), 5);
+    EXPECT_EQ(measurer.Width("…", 0), 17);
+    EXPECT_EQ(measurer.Width("€", 0), 15);
 }
 
 // Même titre tout en majuscules (les majuscules sont les glyphes les plus larges d'un texte réel).

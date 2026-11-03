@@ -4,8 +4,10 @@
 Usage : python3 scripts/generate-gfx-font.py <police.ttf> <taille en px> <nom> <sortie.h>
 Dépendance : pip install freetype-py
 
-Couvre U+0020-U+00FF (Latin-1). Un code que la police ne contient pas (les contrôles
-0x7F-0x9F) reçoit le glyphe de `?`, comme le suppose `ReadFontMetrics` (lib/rendering).
+Couvre U+0020-U+00FF (Latin-1), plus Œ, œ, ’, … et € (EXTRA_CODES) rangés après Latin-1 et
+déclarés par des `lgfx::EncodeRange`. Un code de Latin-1 que la police ne contient pas (les
+contrôles 0x7F-0x9F) reçoit le glyphe de `?`, comme le suppose `ReadFontMetrics` (lib/rendering).
+Un code de EXTRA_CODES absent de la police est une erreur : pas de glyphe de remplacement.
 La sortie est déterministe : même police, même taille, même fichier.
 """
 import sys
@@ -15,6 +17,8 @@ import freetype
 FIRST = 0x20
 LAST = 0xFF
 FILL_CODE = ord("?")
+# Hors Latin-1, dans l'ordre des codes : Œ, œ, ’, …, €.
+EXTRA_CODES = [0x0152, 0x0153, 0x2019, 0x2026, 0x20AC]
 
 
 def read_glyph(face, code):
@@ -67,13 +71,34 @@ def generate(ttf, size, name):
         glyphs.append(record)
         if code == FILL_CODE:
             filler = record
+    for code in EXTRA_CODES:
+        if face.get_char_index(code) == 0:
+            raise SystemExit("La police ne contient pas U+%04X" % code)
+        width, height, advance, x_offset, y_offset, bits = read_glyph(face, code)
+        glyphs.append((len(bitmaps), width, height, advance, x_offset, y_offset))
+        bitmaps.extend(pack(bits))
     return bitmaps, glyphs, y_advance
+
+
+def encode_ranges():
+    """Plages (début, fin, indice du premier glyphe) : Latin-1 d'abord, puis les codes de EXTRA_CODES
+    consécutifs regroupés, dans l'ordre où `generate` range les glyphes."""
+    ranges = [(FIRST, LAST, 0)]
+    index = LAST - FIRST + 1
+    for code in EXTRA_CODES:
+        start, end, base = ranges[-1]
+        if len(ranges) > 1 and code == end + 1:
+            ranges[-1] = (start, code, base)
+        else:
+            ranges.append((code, code, index))
+        index += 1
+    return ranges
 
 
 def to_header(bitmaps, glyphs, y_advance, name, ttf, size):
     lines = [
         "// Généré par scripts/generate-gfx-font.py : ne pas modifier à la main.",
-        "// Police : %s, %d px, U+0020-U+00FF. Licence : SIL OFL 1.1 (voir OFL.txt)." % (ttf, size),
+        "// Police : %s, %d px, U+0020-U+00FF et U+0152, U+0153, U+2019, U+2026, U+20AC. Licence : SIL OFL 1.1 (voir OFL.txt)." % (ttf, size),
         "#ifndef %s_H" % name.upper(),
         "#define %s_H" % name.upper(),
         "",
@@ -86,11 +111,15 @@ def to_header(bitmaps, glyphs, y_advance, name, ttf, size):
     lines += ["};", "", "static const lgfx::GFXglyph %sGlyphs[] PROGMEM = {" % name]
     for offset, width, height, advance, x_offset, y_offset in glyphs:
         lines.append("    {%d, %d, %d, %d, %d, %d}," % (offset, width, height, advance, x_offset, y_offset))
+    ranges = encode_ranges()
+    lines += ["};", "", "static const lgfx::EncodeRange %sRanges[] PROGMEM = {" % name]
+    for start, end, base in ranges:
+        lines.append("    {0x%04X, 0x%04X, %d}," % (start, end, base))
     lines += [
         "};",
         "",
-        "static const lgfx::GFXfont %s = {(uint8_t *)%sBitmaps, (lgfx::GFXglyph *)%sGlyphs, 0x%02X, 0x%02X, %d};"
-        % (name, name, name, FIRST, LAST, y_advance),
+        "static const lgfx::GFXfont %s = {(uint8_t *)%sBitmaps, (lgfx::GFXglyph *)%sGlyphs, 0x%02X, 0x%04X, %d, %d, (lgfx::EncodeRange *)%sRanges};"
+        % (name, name, name, FIRST, ranges[-1][1], y_advance, len(ranges), name),
         "",
         "#endif",
         "",
@@ -106,7 +135,7 @@ def main(argv):
     bitmaps, glyphs, y_advance = generate(ttf, size, name)
     with open(output, "w", encoding="utf-8", newline="\n") as handle:
         handle.write(to_header(bitmaps, glyphs, y_advance, name, ttf.replace("\\", "/").split("/")[-1], size))
-    print("%s : %d octets de bitmaps, %d glyphes, yAdvance %d" % (name, len(bitmaps), len(glyphs), y_advance))
+    print("%s : %d octets de bitmaps, %d glyphes, %d plages, yAdvance %d" % (name, len(bitmaps), len(glyphs), len(encode_ranges()), y_advance))
     return 0
 
 
