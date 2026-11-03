@@ -37,7 +37,7 @@ TEST(GfxFontMetricsTest, AdvanceShouldBeTheOneOfTheGlyphOfThatCode)
     const std::vector<FakeGlyph> glyphs = GlyphsFor(0x20, 0xFF);
     const FakeFont font{glyphs.data(), 0x20, 0xFF, 44};
 
-    const FontMetrics metrics = ReadFontMetrics(font);
+    const FontMetrics metrics = ReadFontMetrics(font, 100);
 
     EXPECT_EQ(metrics.Advance(0x20), AdvanceOfIndex(0x20 - 0x20));
     EXPECT_EQ(metrics.Advance('a'), AdvanceOfIndex('a' - 0x20));
@@ -50,7 +50,7 @@ TEST(GfxFontMetricsTest, CodeBeforeTheFirstGlyphShouldAdvanceLikeAQuestionMark)
     const std::vector<FakeGlyph> glyphs = GlyphsFor(0x30, 0xFF);
     const FakeFont font{glyphs.data(), 0x30, 0xFF, 44};
 
-    const FontMetrics metrics = ReadFontMetrics(font);
+    const FontMetrics metrics = ReadFontMetrics(font, 100);
 
     EXPECT_EQ(metrics.Advance(0x20), AdvanceOfIndex('?' - 0x30));
     EXPECT_EQ(metrics.Advance(0x2F), AdvanceOfIndex('?' - 0x30));
@@ -62,7 +62,7 @@ TEST(GfxFontMetricsTest, CodeAfterTheLastGlyphShouldAdvanceLikeAQuestionMark)
     const std::vector<FakeGlyph> glyphs = GlyphsFor(0x20, 0x7E);
     const FakeFont font{glyphs.data(), 0x20, 0x7E, 44};
 
-    const FontMetrics metrics = ReadFontMetrics(font);
+    const FontMetrics metrics = ReadFontMetrics(font, 100);
 
     EXPECT_EQ(metrics.Advance(0x7E), AdvanceOfIndex(0x7E - 0x20));
     EXPECT_EQ(metrics.Advance(0x7F), AdvanceOfIndex('?' - 0x20));
@@ -74,9 +74,29 @@ TEST(GfxFontMetricsTest, LineHeightShouldBeTheNewlineDistanceOfTheFont)
     const std::vector<FakeGlyph> glyphs(0xFF - 0x20 + 1, FakeGlyph{10});
     const FakeFont font{glyphs.data(), 0x20, 0xFF, 44};
 
-    const FontMetrics metrics = ReadFontMetrics(font);
+    const FontMetrics metrics = ReadFontMetrics(font, 100);
 
     EXPECT_EQ(metrics.LineHeight(), 44);
+}
+
+TEST(GfxFontMetricsTest, LineHeightShouldBeTheNewlineDistanceScaledByTheLineSpacing)
+{
+    const std::vector<FakeGlyph> glyphs(0xFF - 0x20 + 1, FakeGlyph{10});
+    const FakeFont font{glyphs.data(), 0x20, 0xFF, 100};
+
+    const FontMetrics metrics = ReadFontMetrics(font, 82);
+
+    EXPECT_EQ(metrics.LineHeight(), 82);
+}
+
+TEST(GfxFontMetricsTest, ScaledLineHeightShouldBeRoundedToTheNearestPixel)
+{
+    const std::vector<FakeGlyph> glyphs(0xFF - 0x20 + 1, FakeGlyph{10});
+    const FakeFont below{glyphs.data(), 0x20, 0xFF, 56}; // 56 * 82 % = 45,92
+    const FakeFont above{glyphs.data(), 0x20, 0xFF, 44}; // 44 * 82 % = 36,08
+
+    EXPECT_EQ(ReadFontMetrics(below, 82).LineHeight(), 46);
+    EXPECT_EQ(ReadFontMetrics(above, 82).LineHeight(), 36);
 }
 
 int main(int argc, char **argv)
