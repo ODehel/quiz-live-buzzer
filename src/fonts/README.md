@@ -1,6 +1,6 @@
 # Polices de l'écran
 
-Trois tailles d'Oswald Regular (corps 30, 38 et 48 px) au format `lgfx::GFXfont`, 1 bit par pixel, U+0020 à U+00FF (Latin-1). Aucune n'est encore branchée : `GfxScreen` mesure toujours à chasse fixe (voir `DEBTS.md`).
+Trois tailles d'Oswald Regular (corps 30, 38 et 48 px) au format `lgfx::GFXfont`, 1 bit par pixel, U+0020 à U+00FF (Latin-1). `GfxScreen` les utilise : il mesure avec leurs largeurs réelles (`ReadFontMetrics`) et dessine avec la taille que choisit `TextLayout`.
 
 | Fichier | Corps | Cap-height | Bitmaps | `yAdvance` |
 |---|---|---|---|---|
@@ -29,6 +29,13 @@ for s in 30 38 48; do
   python3 scripts/generate-gfx-font.py OswaldFont/fonts/ttf/Oswald-Regular.ttf $s OswaldRegular$s src/fonts/OswaldRegular$s.h
 done
 git diff --stat src/fonts   # vide si la version de FreeType rend les mêmes pixels
+```
+
+Puis régénérer la copie des largeurs de la plus petite police, que lisent les tests natifs :
+
+```bash
+python3 scripts/extract-font-advances.py src/fonts/OswaldRegular30.h OswaldRegular30 test/fixtures/OswaldRegular30Advances.h
+git diff --stat test/fixtures   # vide si les largeurs n'ont pas changé
 ```
 
 La sortie est déterministe pour une version de FreeType donnée ; les en-têtes actuels ont été générés avec `freetype-py` (FreeType 2.13.2).
