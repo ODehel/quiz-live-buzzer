@@ -4,6 +4,10 @@
 #include <vector>
 #include "FontMetrics.h"
 
+// Interligne des textes de quiz, en pourcentage du `yAdvance` d'Oswald (64, 50 et 40 px au lieu de 71, 56 et 44).
+// 82 % faisait mordre le descendant d'une ligne sur l'accent de la suivante (smoke test du 2026-11-03).
+static const int QuizLineSpacingPercent = 90;
+
 // Lit les dimensions d'une police au format GFXfont (`first`, `last`, `yAdvance`, `glyph[i].xAdvance`) :
 // `lgfx::GFXfont` en production, une fausse police dans les tests. Le type est un paramètre de
 // gabarit pour que `lib/` ne dépende pas de LovyanGFX.
@@ -16,7 +20,7 @@
 //
 // `lineSpacingPercent` règle l'interligne : la hauteur de ligne est le `yAdvance` de la police
 // multiplié par ce pourcentage, arrondi au pixel le plus proche. Le `yAdvance` natif d'Oswald
-// (environ 1,48 em) est trop grand pour un texte de quiz : à 82 %, il tombe à environ 1,2 em.
+// (environ 1,48 em) est trop grand pour un texte de quiz ; l'interligne retenu est `QuizLineSpacingPercent`.
 template <class GfxFont>
 FontMetrics ReadFontMetrics(const GfxFont &font, int lineSpacingPercent)
 {

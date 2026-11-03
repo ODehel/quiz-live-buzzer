@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "FontMetrics.h"
+#include "GfxFontMetrics.h"
 #include "MonospaceTextMeasurer.h"
 #include "ProportionalTextMeasurer.h"
 #include "TextLayout.h"
@@ -296,13 +297,13 @@ TEST(TextLayoutProportionalTest, SizeShouldBeChosenFromGlyphWidthsNotFromTheNumb
     EXPECT_EQ(narrow.lines, (Lines{"ii ii"}));
 }
 
-// Largeurs réelles de la plus petite police (Oswald 30 px, interligne réglé à 82 %). Si un titre de
+// Largeurs réelles de la plus petite police (Oswald 30 px, interligne réglé à `QuizLineSpacingPercent`). Si un titre de
 // 250 caractères tient à cette taille, il tient à toutes : `Compute` ne garde une plus grande taille
 // que si le texte y tient aussi.
 static ProportionalTextMeasurer SmallestRealFont()
 {
     const std::vector<int> advances(std::begin(OswaldRegular30Advances), std::end(OswaldRegular30Advances));
-    const int lineHeight = (OswaldRegular30YAdvance * 82 + 50) / 100;
+    const int lineHeight = (OswaldRegular30YAdvance * QuizLineSpacingPercent + 50) / 100;
     return ProportionalTextMeasurer({FontMetrics(lineHeight, advances)});
 }
 
@@ -329,6 +330,17 @@ TEST(TextLayoutRealFontTest, RealisticFrenchTitleShouldFitOnTheScreenWithTheReal
     const TextLines placed = layout.Compute(title);
     EXPECT_LE(HeightOf(placed, measurer), AreaHeight);
     EXPECT_EQ(placed.lines.size(), 4u); // largeurs réelles : fige l'étalonnage de la mesure
+}
+
+// Constaté au smoke test du 2026-11-03 : à 82 %, le descendant d'une ligne (`q`, `g`, `y`) mord sur l'accent
+// de la ligne du dessous. Le pas entre deux lignes doit laisser au moins un pixel entre les deux.
+TEST(TextLayoutRealFontTest, LineHeightShouldLeaveRoomBetweenADescenderAndTheAccentOfTheNextLine)
+{
+    const ProportionalTextMeasurer measurer = SmallestRealFont();
+
+    const int clearance = measurer.LineHeight(0) - OswaldRegular30DescenderDepth - OswaldRegular30AccentHeight;
+
+    EXPECT_GE(clearance, 1);
 }
 
 // Même titre tout en majuscules (les majuscules sont les glyphes les plus larges d'un texte réel).

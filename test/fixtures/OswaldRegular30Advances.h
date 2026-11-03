@@ -4,6 +4,10 @@
 #define OSWALDREGULAR30_ADVANCES_H
 
 static const int OswaldRegular30YAdvance = 44;
+// Hauteur de l'accent le plus haut (U+00C0 à U+00FF) au-dessus de la ligne de base.
+static const int OswaldRegular30AccentHeight = 33;
+// Profondeur du descendant le plus bas (g, j, p, q, y) sous la ligne de base.
+static const int OswaldRegular30DescenderDepth = 6;
 
 static const int OswaldRegular30Advances[] = {
     7, 6, 8, 15, 15, 27, 18, 4, 9, 8, 12, 12, 6, 9, 6, 11,

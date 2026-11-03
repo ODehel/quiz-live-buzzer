@@ -28,10 +28,15 @@ def main(argv):
         print("Format d'en-tête inattendu : " + header)
         return 1
     first, last, y_advance = int(font.group(1), 16), int(font.group(2), 16), int(font.group(3))
-    advances = [int(glyph[3]) for glyph in GLYPH.findall(table.group(1))]
+    glyphs = [tuple(int(v) for v in glyph) for glyph in GLYPH.findall(table.group(1))]
+    advances = [glyph[3] for glyph in glyphs]
     if first != 0x20 or last != 0xFF or len(advances) != last - first + 1:
         print("La police doit couvrir U+0020 à U+00FF sans trou")
         return 1
+
+    # Géométrie verticale (pixels, par rapport à la ligne de base) : champs height = glyph[2], yOffset = glyph[5].
+    accent_height = max(-glyphs[code - first][5] for code in range(0xC0, 0x100) if code not in (0xD7, 0xF7))
+    descender_depth = max(glyphs[ord(c) - first][2] + glyphs[ord(c) - first][5] for c in "gjpqy")
 
     lines = [
         "// Généré par scripts/extract-font-advances.py à partir de %s : ne pas modifier à la main." % header.replace("\\", "/").split("/")[-1],
@@ -40,6 +45,10 @@ def main(argv):
         "#define %s_ADVANCES_H" % name.upper(),
         "",
         "static const int %sYAdvance = %d;" % (name, y_advance),
+        "// Hauteur de l'accent le plus haut (U+00C0 à U+00FF) au-dessus de la ligne de base.",
+        "static const int %sAccentHeight = %d;" % (name, accent_height),
+        "// Profondeur du descendant le plus bas (g, j, p, q, y) sous la ligne de base.",
+        "static const int %sDescenderDepth = %d;" % (name, descender_depth),
         "",
         "static const int %sAdvances[] = {" % name,
     ]

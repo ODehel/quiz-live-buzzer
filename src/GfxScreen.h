@@ -15,7 +15,6 @@ class GfxScreen : public Screen
 {
 private:
     static const int margin = 10;            // px laissés libres sur chaque bord de la dalle
-    static const int lineSpacingPercent = 82; // le yAdvance natif d'Oswald (environ 1,48 em) donne environ 1,2 em
 
     lgfx::LGFX_Device &lcd;
     const lgfx::GFXfont *fonts[3]; // de la plus grande taille (0) à la plus petite
@@ -25,9 +24,9 @@ public:
     GfxScreen(lgfx::LGFX_Device &lcd)
         : lcd(lcd),
           fonts{&OswaldRegular48, &OswaldRegular38, &OswaldRegular30},
-          measurer({ReadFontMetrics(OswaldRegular48, lineSpacingPercent),
-                    ReadFontMetrics(OswaldRegular38, lineSpacingPercent),
-                    ReadFontMetrics(OswaldRegular30, lineSpacingPercent)})
+          measurer({ReadFontMetrics(OswaldRegular48, QuizLineSpacingPercent),
+                    ReadFontMetrics(OswaldRegular38, QuizLineSpacingPercent),
+                    ReadFontMetrics(OswaldRegular30, QuizLineSpacingPercent)})
     {
     }
 
