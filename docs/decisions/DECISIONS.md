@@ -166,3 +166,24 @@ Alternatives écartées :
 - LovyanGFX centre, avec une police GFX, la boîte d'encre de toute la police (accents compris, 40, 50 et 62 px) sur le point donné, et non la hauteur de ligne : `fontHeight()` ne sert donc plus d'interligne. Les boîtes d'encre de deux lignes voisines se recouvrent de quelques pixels ; seul compte le dégagement entre l'encre, figé par le test ci-dessus.
 - Le build `esp32` n'a pas été lancé dans la session (PlatformIO absent) : `GfxScreen.h` est vérifié en syntaxe contre les vraies structures `GFXfont` de LovyanGFX 1.2.36, et le Flash visé (environ 79,3 %) reste à mesurer au smoke test.
 - `MonospaceTextMeasurer` n'est plus utilisé en production (dette).
+
+
+## #11 — feat(rendering): show œ and typographic symbols in a quiz font
+
+**Contexte** — Les polices Oswald ne couvraient que Latin-1. `Œ`, `œ`, `’`, `…` et `€` n'avaient pas de glyphe : LovyanGFX ne dessine rien pour eux et avance d'un espace (« cœur » s'affichait « c ur »), alors que la mesure leur comptait la largeur d'un `?` (décision #9).
+
+**Décision** —
+- Les cinq glyphes sont rangés après les 224 de Latin-1 (indices 224 à 228) et déclarés par cinq `lgfx::EncodeRange` (`{start, end, base}`) : Latin-1, U+0152-U+0153, U+2019, U+2026, U+20AC. La police porte `last` = 0x20AC, `range_num` = 5 et le tableau de plages. Lecture du source de LovyanGFX 1.2.36 (`GFXfont::getGlyph`, `getDefaultMetric`) : le code `start` + k dessine le glyphe d'indice `base` + k.
+- `scripts/generate-gfx-font.py` génère ces glyphes (liste `EXTRA_CODES`) et les plages ; un code de la liste absent de la police arrête le script. Les trois polices sont régénérées : les bitmaps et les glyphes de Latin-1 sont inchangés, seuls des glyphes et des plages sont ajoutés.
+- `FontMetrics` reçoit, en troisième paramètre optionnel, les avances des codes hors Latin-1 (code -> avance) ; tout autre code avance toujours comme `?`. `ReadFontMetrics` lit `range_num` et `range` comme LovyanGFX (`FindAdvance`) : les codes des plages au-delà de 0xFF gardent leur avance. Sans plage (`range_num` à 0), le comportement est celui de la décision #9.
+- `scripts/extract-font-advances.py` copie aussi, dans la fixture de test, le code et l'avance des cinq glyphes (20, 21, 5, 17 et 15 px en Oswald 30 px).
+
+Alternatives écartées :
+- **Ne traiter que `œ` et `’`** : le mécanisme (plages) coûte pareil pour cinq glyphes, et la dette ne se solde qu'entière.
+- **Une table de codes écrite en dur dans `ReadFontMetrics`** : la lecture des plages de la police suffit, sans liste à tenir en double.
+- **Mesurer les codes absents comme un espace** : ne change pas, `?` reste une surestimation sans danger.
+
+**Conséquences** —
+- La boîte d'encre de la police ne change pas (33 + 7, 41 + 9 et 51 + 11 px, avec ou sans les cinq glyphes) : l'interligne à 90 % reste valable.
+- Poids : les données ajoutées pèsent 1 034 octets (764 de bitmaps, 180 de glyphes, 90 de plages), mais le smoke test du 2026-11-04 a mesuré +3 196 octets au total : Flash 79,8 % (1 046 093 octets sur 1 310 720) contre 79,6 % (1 042 897) avant. Les 2 162 octets en plus de l'estimation s'expliquent à peu près (mesure x86 en `-Os`, indicative, non Xtensa) : environ 1,4 Ko pour la `std::map` de `FontMetrics` (487 octets dans le code de la police, environ 900 dans libstdc++ : `_Rb_tree_insert_and_rebalance`, `_Rb_tree_increment`, `_Rb_tree_decrement`) et environ 0,9 Ko pour le code de lecture des plages (`ReadFontMetrics` et `FindAdvance`, 874 octets), que l'estimation ne comptait pas. Remplacer la `std::map` par un petit vecteur gagnerait environ 1,4 Ko (0,1 point de Flash), comportement inchangé : `refactor` à faire au besoin, si le Flash devient serré. Sans conséquence à ce niveau de remplissage.
+- Le générateur Python n'a pas de test : la lecture des plages a été recoupée à la main avec FreeType (avances concordantes pour 195 codes dans chacune des trois polices, aucun code hors plage résolu à tort).
