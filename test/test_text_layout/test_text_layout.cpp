@@ -378,6 +378,20 @@ TEST(TextLayoutRealFontTest, RealisticUppercaseTitleShouldFitOnTheScreenWithTheR
     EXPECT_EQ(placed.lines.size(), 4u);
 }
 
+// `question_title` ajoute « Question N : » devant le titre. Même avec un numéro à trois chiffres, le titre le plus large
+// d'un texte réel (tout en majuscules) reste dans la dalle, à la plus petite police.
+TEST(TextLayoutRealFontTest, UppercaseTitleWithItsQuestionNumberShouldFitOnTheScreenWithTheRealGlyphWidths)
+{
+    const ProportionalTextMeasurer measurer = SmallestRealFont();
+    const TextLayout layout(measurer, AreaWidth, AreaHeight);
+    const std::string text = std::string("Question 100 : ") + RealisticUppercaseTitle;
+
+    const TextLines placed = layout.Compute(text);
+
+    EXPECT_LE(HeightOf(placed, measurer), AreaHeight);
+    EXPECT_EQ(placed.lines.size(), 5u);
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

@@ -84,6 +84,40 @@ TEST(MessageDeserializerTest, ParsedQuestionOpenWithANumericTitleHasAnEmptyTitle
     EXPECT_EQ(deserializer.Parse("{\"type\":\"question_open\",\"title\":42}").Title(), "");
 }
 
+TEST(MessageDeserializerTest, ParsedQuestionTitleHasItsQuestionIndex)
+{
+    MessageDeserializer deserializer;
+
+    HubMessage message = deserializer.Parse("{\"type\":\"question_title\",\"question_index\":2,\"title\":\"Quelle est la capitale du Portugal ?\"}");
+
+    EXPECT_TRUE(message.HasQuestionIndex());
+    EXPECT_EQ(message.QuestionIndex(), 2);
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionTitleWithTheFirstQuestionIndexHasIt)
+{
+    MessageDeserializer deserializer;
+
+    HubMessage message = deserializer.Parse("{\"type\":\"question_title\",\"question_index\":0,\"title\":\"Quelle est la capitale de la France ?\"}");
+
+    EXPECT_TRUE(message.HasQuestionIndex());
+    EXPECT_EQ(message.QuestionIndex(), 0);
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionTitleWithoutQuestionIndexHasNone)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_FALSE(deserializer.Parse("{\"type\":\"question_title\",\"title\":\"Quelle est la capitale de la France ?\"}").HasQuestionIndex());
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionTitleWithATextQuestionIndexHasNone)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_FALSE(deserializer.Parse("{\"type\":\"question_title\",\"question_index\":\"2\"}").HasQuestionIndex());
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

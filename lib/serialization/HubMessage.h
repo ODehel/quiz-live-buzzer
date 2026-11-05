@@ -13,6 +13,8 @@ private:
     bool hasBuzzerUsername = false;
     std::string buzzerUsername;
     std::string title;
+    bool hasQuestionIndex = false;
+    int questionIndex = 0;
 
 public:
     explicit HubMessage(std::string type) : type(std::move(type))
@@ -70,6 +72,24 @@ public:
     const std::string &Title() const
     {
         return title;
+    }
+
+    HubMessage WithQuestionIndex(int index) const
+    {
+        HubMessage copy = *this;
+        copy.hasQuestionIndex = true;
+        copy.questionIndex = index;
+        return copy;
+    }
+
+    bool HasQuestionIndex() const
+    {
+        return hasQuestionIndex;
+    }
+
+    int QuestionIndex() const
+    {
+        return questionIndex;
     }
 };
 

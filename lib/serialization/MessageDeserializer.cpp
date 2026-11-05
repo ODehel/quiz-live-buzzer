@@ -12,5 +12,7 @@ HubMessage MessageDeserializer::Parse(const std::string &json) const
         message = message.WithBuzzerUsername(doc["buzzer_username"].as<std::string>());
     if (doc["title"].is<const char *>())
         message = message.WithTitle(doc["title"].as<std::string>());
+    if (doc["question_index"].is<int>())
+        message = message.WithQuestionIndex(doc["question_index"].as<int>());
     return message;
 }

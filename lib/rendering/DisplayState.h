@@ -16,6 +16,8 @@ public:
             return message.HasBuzzerUsername() ? LcdTextForBuzzedBy(message.BuzzerUsername()) : "";
         if (type == "question_open")
             return message.Title();
+        if (type == "question_title")
+            return LcdTextForQuestionTitle(message);
         if (type == "game_resumed")
             return "Partie en cours";
         if (type == "question_choices")
@@ -49,6 +51,13 @@ public:
     }
 
 private:
+    std::string LcdTextForQuestionTitle(const HubMessage &message) const
+    {
+        if (!message.HasQuestionIndex() || message.Title().empty())
+            return "";
+        return "Question " + std::to_string(message.QuestionIndex() + 1) + " : " + message.Title();
+    }
+
     std::string LcdTextForRemainingSeconds(int seconds) const
     {
         return std::to_string(seconds) + " s";
