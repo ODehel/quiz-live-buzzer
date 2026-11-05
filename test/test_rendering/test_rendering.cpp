@@ -67,6 +67,32 @@ TEST(DisplayStateTest, QuestionOpenWithoutTitleShouldHaveNoTextToDisplay)
     EXPECT_EQ(displayState.LcdTextFor(HubMessage{"question_open"}), "");
 }
 
+TEST(DisplayStateTest, QuestionTitleShouldDisplayTheQuestionNumberAndTitleOnScreen)
+{
+    DisplayState displayState;
+    HubMessage message = HubMessage{"question_title"}.WithQuestionIndex(0).WithTitle("Quelle est la capitale de la France ?");
+    EXPECT_EQ(displayState.LcdTextFor(message), "Question 1 : Quelle est la capitale de la France ?");
+}
+
+TEST(DisplayStateTest, QuestionTitleShouldNumberTheQuestionFromItsIndexPlusOne)
+{
+    DisplayState displayState;
+    HubMessage message = HubMessage{"question_title"}.WithQuestionIndex(4).WithTitle("Quel fleuve traverse Lisbonne ?");
+    EXPECT_EQ(displayState.LcdTextFor(message), "Question 5 : Quel fleuve traverse Lisbonne ?");
+}
+
+TEST(DisplayStateTest, QuestionTitleWithoutQuestionIndexShouldHaveNoTextToDisplay)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"question_title"}.WithTitle("Quel fleuve traverse Lisbonne ?")), "");
+}
+
+TEST(DisplayStateTest, QuestionTitleWithoutTitleShouldHaveNoTextToDisplay)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"question_title"}.WithQuestionIndex(0)), "");
+}
+
 using FixedTextCase = std::pair<std::string, std::string>;
 
 class MessageWithFixedTextTest : public ::testing::TestWithParam<FixedTextCase>

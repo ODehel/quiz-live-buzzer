@@ -171,6 +171,28 @@ TEST(LcdRendererQuestionOpenTest, LeavesTheScreenUnchangedWithoutTitle)
     lcdRenderer.Apply(HubMessage{"question_open"});
 }
 
+TEST(LcdRendererQuestionTitleTest, ShowsTheQuestionNumberAndTitleOnScreen)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, Show("Question 3 : Quel fleuve traverse Lisbonne ?")).Times(1);
+
+    lcdRenderer.Apply(HubMessage{"question_title"}.WithQuestionIndex(2).WithTitle("Quel fleuve traverse Lisbonne ?"));
+}
+
+TEST(LcdRendererQuestionTitleTest, LeavesTheScreenUnchangedWithoutQuestionIndex)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, Show(testing::_)).Times(0);
+
+    lcdRenderer.Apply(HubMessage{"question_title"}.WithTitle("Quel fleuve traverse Lisbonne ?"));
+}
+
 class MessageWithoutDisplayTest : public ::testing::TestWithParam<std::string>
 {
 };
