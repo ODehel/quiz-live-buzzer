@@ -43,10 +43,13 @@ public:
 
     // Coupe aux espaces, ligne par ligne, sans dépasser la largeur de la zone ; un mot plus large
     // qu'une ligne est coupé (au moins un caractère par ligne). Un caractère UTF-8 n'est jamais coupé en deux.
+    // Un signe de ponctuation haute (« ? ! : ; » ) ») ne commence pas une ligne : il emmène avec lui le mot qui
+    // le précède, sauf si ce mot est déjà seul sur sa ligne ou si le mot et le signe ne tiendraient pas ensemble.
     std::vector<std::string> Wrap(const std::string &text, int size) const
     {
         std::vector<std::string> lines;
         std::string line;
+        size_t anchor = 0; // début, dans `line`, du dernier mot qui n'est pas un signe (0 : aucun mot avant lui)
         size_t position = 0;
         while (position < text.size())
         {
@@ -72,15 +75,27 @@ public:
                     word = word.substr(cut);
                 }
                 line = word;
+                anchor = 0;
+            }
+            else if (SignShouldTakeItsWordToTheNextLine(line, anchor, word, size))
+            {
+                lines.push_back(line.substr(0, anchor - 1));
+                line = line.substr(anchor) + " " + word;
+                anchor = 0;
             }
             else if (!line.empty() && !Fits(line + " " + word, size))
             {
                 lines.push_back(line);
                 line = word;
+                anchor = 0;
             }
             else
             {
-                line = line.empty() ? word : line + " " + word;
+                if (!line.empty())
+                    line += " ";
+                if (!IsClosingPunctuation(word))
+                    anchor = line.size();
+                line += word;
             }
         }
         if (!line.empty())
@@ -89,6 +104,39 @@ public:
     }
 
 private:
+    // Le signe ne tient plus sur la ligne, mais il tiendrait sur la suivante avec le mot (et les signes) qui le précèdent.
+    // Quand ce mot est seul sur la ligne (`anchor` vaut 0), les deux mesures sont identiques : la condition est fausse.
+    bool SignShouldTakeItsWordToTheNextLine(const std::string &line, size_t anchor, const std::string &word, int size) const
+    {
+        return IsClosingPunctuation(word) && !Fits(line + " " + word, size) &&
+               Fits(line.substr(anchor) + " " + word, size);
+    }
+
+    // Un mot composé uniquement de signes que la typographie française sépare du mot précédent par une
+    // espace (« Quoi ? », « oui », « Quoi ?! ») : il reste sur la ligne de ce mot.
+    static bool IsClosingPunctuation(const std::string &word)
+    {
+        static const char *const signs[] = {"?", "!", ":", ";", "»", ")"};
+        size_t position = 0;
+        while (position < word.size())
+        {
+            bool found = false;
+            for (const char *sign : signs)
+            {
+                const size_t length = std::char_traits<char>::length(sign);
+                if (word.compare(position, length, sign) == 0)
+                {
+                    position += length;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+                return false;
+        }
+        return !word.empty();
+    }
+
     bool Fits(const std::string &text, int size) const
     {
         return measurer.Width(text, size) <= areaWidth;
