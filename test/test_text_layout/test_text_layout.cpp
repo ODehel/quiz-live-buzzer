@@ -120,6 +120,60 @@ TEST(TextLayoutWrapTest, SplitShouldNotCutInsideAnAccentedCharacter)
     EXPECT_EQ(WrapAtColumns("ééé", 2), (Lines{"éé", "é"}));
 }
 
+TEST(TextLayoutWrapTest, QuestionMarkShouldFollowTheWordBeforeItToTheNextLine)
+{
+    // "aaa bbb" remplit les 7 colonnes : le « ? » ne tient pas, « bbb » l'accompagne sur la ligne suivante
+    EXPECT_EQ(WrapAtColumns("aaa bbb ?", 7), (Lines{"aaa", "bbb ?"}));
+}
+
+TEST(TextLayoutWrapTest, ExclamationColonSemicolonClosingQuoteAndParenthesisShouldFollowTheWordBeforeThemToo)
+{
+    for (const std::string sign : {"!", ":", ";", "»", ")"})
+    {
+        SCOPED_TRACE(sign);
+        EXPECT_EQ(WrapAtColumns("aaa bbb " + sign, 7), (Lines{"aaa", "bbb " + sign}));
+    }
+}
+
+TEST(TextLayoutWrapTest, WordMadeOnlyOfSignsShouldFollowTheWordBeforeItLikeASingleSign)
+{
+    EXPECT_EQ(WrapAtColumns("aaa bbb ?!", 7), (Lines{"aaa", "bbb ?!"}));
+    EXPECT_EQ(WrapAtColumns("aaa bbb »?", 7), (Lines{"aaa", "bbb »?"}));
+}
+
+TEST(TextLayoutWrapTest, SignsInARowShouldAllFollowTheWordBeforeThem)
+{
+    // « bbb » » tient en fin de ligne, le « ? » non : « bbb » doit le suivre avec son « » »
+    EXPECT_EQ(WrapAtColumns("aaa bbb » ?", 9), (Lines{"aaa", "bbb » ?"}));
+}
+
+TEST(TextLayoutWrapTest, SignThatFitsShouldStayOnTheLineOfTheWordBeforeIt)
+{
+    EXPECT_EQ(WrapAtColumns("aaa bbb ?", 9), (Lines{"aaa bbb ?"}));
+}
+
+TEST(TextLayoutWrapTest, TextAfterAMovedSignShouldContinueOnTheSameLineOrTheNext)
+{
+    EXPECT_EQ(WrapAtColumns("aaa bbb ? ccc", 7), (Lines{"aaa", "bbb ?", "ccc"}));
+    EXPECT_EQ(WrapAtColumns("aaa bbb ? cc", 8), (Lines{"aaa", "bbb ? cc"}));
+}
+
+TEST(TextLayoutWrapTest, SignShouldStayAloneWhenItsWordIsAloneOnItsLine)
+{
+    EXPECT_EQ(WrapAtColumns("aaaa ?", 4), (Lines{"aaaa", "?"}));
+}
+
+TEST(TextLayoutWrapTest, SignShouldStayAloneWhenTheWordAndTheSignsAlreadyMovedBeforeItFillTheLine)
+{
+    // « ? » déplace « bbb » ; « ?! » ne tient plus avec « bbb ? » (8 colonnes) : il part seul, « bbb ? » ne bouge plus
+    EXPECT_EQ(WrapAtColumns("aaa bbb ? ?!", 7), (Lines{"aaa", "bbb ?", "?!"}));
+}
+
+TEST(TextLayoutWrapTest, SignShouldFollowTheRestOfASplitWord)
+{
+    EXPECT_EQ(WrapAtColumns("aaaaaaaaa ?", 7), (Lines{"aaaaaaa", "aa ?"}));
+}
+
 TEST(TextLayoutWrapTest, NoColumnShouldBehaveLikeOneColumn)
 {
     EXPECT_EQ(WrapAtColumns("ab", 0), (Lines{"a", "b"}));
@@ -168,6 +222,14 @@ TEST(TextLayoutProportionalTest, SpaceShouldBeMeasuredLikeAnyOtherCharacter)
     NarrowLettersMeasurer measurer;
     TextLayout layout(measurer, 7, 1000);
     EXPECT_EQ(layout.Wrap("i mm", 0), (Lines{"i", "mm"}));
+}
+
+TEST(TextLayoutProportionalTest, SignShouldStayAloneWhenItsWordAndItWouldNotFitTogetherOnTheNextLine)
+{
+    NarrowLettersMeasurer measurer;
+    TextLayout layout(measurer, 8, 1000);
+    // "i mm" (8 px) remplit la ligne ; « mm ? » ferait 10 px : déplacer « mm » ne ferait que déborder
+    EXPECT_EQ(layout.Wrap("i mm ?", 0), (Lines{"i mm", "?"}));
 }
 
 TEST(TextLayoutProportionalTest, ComputeShouldJudgeTheHeightWithTheLineHeightOfEachSize)
@@ -376,6 +438,17 @@ TEST(TextLayoutRealFontTest, RealisticUppercaseTitleShouldFitOnTheScreenWithTheR
     const TextLines placed = layout.Compute(title);
     EXPECT_LE(HeightOf(placed, measurer), AreaHeight);
     EXPECT_EQ(placed.lines.size(), 4u);
+}
+
+// Cas vu à l'écran au smoke test du 2026-11-05 : sur une ligne remplie par « … a une pieuvre », le « ? » restait seul
+// sur la ligne suivante. La zone fait ici exactement la largeur de cette ligne, avec les largeurs réelles des glyphes (« œ » compris).
+TEST(TextLayoutRealFontTest, QuestionMarkShouldNotBeLeftAloneAtTheEndOfTheQuestionTitle)
+{
+    const ProportionalTextMeasurer measurer = SmallestRealFont();
+    const std::string full = "Question 5 : Combien de cœurs a une pieuvre";
+    const TextLayout layout(measurer, measurer.Width(full, 0), AreaHeight);
+
+    EXPECT_EQ(layout.Wrap(full + " ?", 0), (Lines{"Question 5 : Combien de cœurs a une", "pieuvre ?"}));
 }
 
 // `question_title` ajoute « Question N : » devant le titre. Même avec un numéro à trois chiffres, le titre le plus large
