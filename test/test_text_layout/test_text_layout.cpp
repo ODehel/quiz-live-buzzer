@@ -174,6 +174,39 @@ TEST(TextLayoutWrapTest, SignShouldFollowTheRestOfASplitWord)
     EXPECT_EQ(WrapAtColumns("aaaaaaaaa ?", 7), (Lines{"aaaaaaa", "aa ?"}));
 }
 
+TEST(TextLayoutWrapTest, OpeningGuillemetShouldGoToTheNextLineWithTheWordItOpens)
+{
+    // « aaa bbb « » remplit les 9 colonnes, mais « « ccc » ne tient pas à sa suite : le « « » part avec « ccc »
+    EXPECT_EQ(WrapAtColumns("aaa bbb « ccc", 9), (Lines{"aaa bbb", "« ccc"}));
+}
+
+TEST(TextLayoutWrapTest, OpeningGuillemetThatFitsWithItsWordShouldStayOnTheLine)
+{
+    EXPECT_EQ(WrapAtColumns("aaa « ccc", 9), (Lines{"aaa « ccc"}));
+}
+
+TEST(TextLayoutWrapTest, OpeningGuillemetShouldStayAloneWhenItAndItsWordWouldNotFitTogetherOnALine)
+{
+    // « « aaaa » fait 6 colonnes pour 4 : le « « » n'emmène rien et garde la place d'un mot ordinaire
+    EXPECT_EQ(WrapAtColumns("« aaaa", 4), (Lines{"«", "aaaa"}));
+}
+
+TEST(TextLayoutWrapTest, OpeningGuillemetAtTheEndOfTheTextShouldStayWhereItIs)
+{
+    EXPECT_EQ(WrapAtColumns("aaa bbb «", 7), (Lines{"aaa bbb", "«"}));
+}
+
+TEST(TextLayoutWrapTest, SpacesBetweenTheOpeningGuillemetAndItsWordShouldBeIgnored)
+{
+    EXPECT_EQ(WrapAtColumns("aaa bbb «   ccc", 9), (Lines{"aaa bbb", "« ccc"}));
+}
+
+TEST(TextLayoutWrapTest, ClosingSignShouldTakeTheWholeQuotationToTheNextLine)
+{
+    // « aaa « bbb » » fait 11 colonnes pour 9 : le « » » ne tient pas, « « bbb » le suit sur la ligne suivante
+    EXPECT_EQ(WrapAtColumns("aaa « bbb »", 9), (Lines{"aaa", "« bbb »"}));
+}
+
 TEST(TextLayoutWrapTest, NoColumnShouldBehaveLikeOneColumn)
 {
     EXPECT_EQ(WrapAtColumns("ab", 0), (Lines{"a", "b"}));
@@ -449,6 +482,17 @@ TEST(TextLayoutRealFontTest, QuestionMarkShouldNotBeLeftAloneAtTheEndOfTheQuesti
     const TextLayout layout(measurer, measurer.Width(full, 0), AreaHeight);
 
     EXPECT_EQ(layout.Wrap(full + " ?", 0), (Lines{"Question 5 : Combien de cœurs a une", "pieuvre ?"}));
+}
+
+// Même modèle que ci-dessus pour le guillemet ouvrant : la zone fait exactement la largeur de « Question 5 : Qui a écrit « »,
+// qui laissait le « « » en fin de ligne et « Germinal » au début de la suivante.
+TEST(TextLayoutRealFontTest, OpeningGuillemetShouldNotBeLeftAtTheEndOfALineAwayFromItsWord)
+{
+    const ProportionalTextMeasurer measurer = SmallestRealFont();
+    const std::string full = "Question 5 : Qui a écrit «";
+    const TextLayout layout(measurer, measurer.Width(full, 0), AreaHeight);
+
+    EXPECT_EQ(layout.Wrap(full + " Germinal » ?", 0), (Lines{"Question 5 : Qui a écrit", "« Germinal » ?"}));
 }
 
 // `question_title` ajoute « Question N : » devant le titre. Même avec un numéro à trois chiffres, le titre le plus large

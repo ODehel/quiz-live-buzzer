@@ -45,6 +45,7 @@ public:
     // qu'une ligne est coupé (au moins un caractère par ligne). Un caractère UTF-8 n'est jamais coupé en deux.
     // Un signe de ponctuation haute (« ? ! : ; » ) ») ne commence pas une ligne : il emmène avec lui le mot qui
     // le précède, sauf si ce mot est déjà seul sur sa ligne ou si le mot et le signe ne tiendraient pas ensemble.
+    // Symétriquement, un guillemet ouvrant ne finit pas une ligne : il emmène avec lui le mot qui le suit.
     std::vector<std::string> Wrap(const std::string &text, int size) const
     {
         std::vector<std::string> lines;
@@ -58,11 +59,12 @@ public:
                 ++position;
                 continue;
             }
-            size_t end = text.find(' ', position);
-            if (end == std::string::npos)
-                end = text.size();
+            const size_t end = EndOfWord(text, position);
             std::string word = text.substr(position, end - position);
             position = end;
+
+            if (IsOpeningGuillemet(word))
+                JoinWithTheNextWord(text, size, word, position);
 
             if (!Fits(word, size))
             {
@@ -104,6 +106,35 @@ public:
     }
 
 private:
+    static size_t EndOfWord(const std::string &text, size_t from)
+    {
+        const size_t space = text.find(' ', from);
+        return space == std::string::npos ? text.size() : space;
+    }
+
+    static bool IsOpeningGuillemet(const std::string &word)
+    {
+        return word == "«";
+    }
+
+    // Le guillemet ouvrant, que le français sépare du mot suivant par une espace, ne finit pas une ligne : il forme
+    // un seul mot avec le mot qu'il ouvre, sauf s'il n'y a pas de mot après lui ou si les deux ne tiendraient pas
+    // ensemble sur une ligne (il garde alors la place d'un mot ordinaire).
+    void JoinWithTheNextWord(const std::string &text, int size, std::string &word, size_t &position) const
+    {
+        size_t start = position;
+        while (start < text.size() && text[start] == ' ')
+            ++start;
+        if (start == text.size())
+            return;
+        const size_t end = EndOfWord(text, start);
+        const std::string joined = word + " " + text.substr(start, end - start);
+        if (!Fits(joined, size))
+            return;
+        word = joined;
+        position = end;
+    }
+
     // Le signe ne tient plus sur la ligne, mais il tiendrait sur la suivante avec le mot (et les signes) qui le précèdent.
     // Quand ce mot est seul sur la ligne (`anchor` vaut 0), les deux mesures sont identiques : la condition est fausse.
     bool SignShouldTakeItsWordToTheNextLine(const std::string &line, size_t anchor, const std::string &word, int size) const
