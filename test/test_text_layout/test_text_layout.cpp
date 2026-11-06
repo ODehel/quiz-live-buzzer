@@ -6,7 +6,6 @@
 #include <vector>
 #include "FontMetrics.h"
 #include "GfxFontMetrics.h"
-#include "MonospaceTextMeasurer.h"
 #include "ProportionalTextMeasurer.h"
 #include "TextLayout.h"
 #include "../fixtures/OswaldRegular30Advances.h"
@@ -284,10 +283,35 @@ TEST(TextLayoutProportionalTest, TextFillingTheHeightExactlyShouldKeepTheSize)
     EXPECT_EQ(result.size, 0);
 }
 
+// Trois tailles d'une cellule fixe agrandie par un facteur entier : la taille 0 est à l'échelle 5, la dernière à l'échelle 3.
+class ScaledCellMeasurer : public TextMeasurer
+{
+public:
+    int SizeCount() const override
+    {
+        return 3;
+    }
+
+    int Width(const std::string &text, int size) const override
+    {
+        return static_cast<int>(Utf8::CharacterCount(text)) * CellWidth * ScaleOf(size);
+    }
+
+    int LineHeight(int size) const override
+    {
+        return CellHeight * ScaleOf(size);
+    }
+
+    int ScaleOf(int size) const
+    {
+        return 5 - size;
+    }
+};
+
 class TextLayoutComputeTest : public ::testing::Test
 {
 protected:
-    MonospaceTextMeasurer measurer{CellWidth, CellHeight};
+    ScaledCellMeasurer measurer;
     TextLayout layout{measurer, AreaWidth, AreaHeight};
 };
 
