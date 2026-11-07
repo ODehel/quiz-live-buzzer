@@ -14,5 +14,17 @@ HubMessage MessageDeserializer::Parse(const std::string &json) const
         message = message.WithTitle(doc["title"].as<std::string>());
     if (doc["question_index"].is<int>())
         message = message.WithQuestionIndex(doc["question_index"].as<int>());
+    if (doc["choices"].is<JsonArray>())
+    {
+        std::vector<std::string> choices;
+        bool allText = true;
+        for (JsonVariant choice : doc["choices"].as<JsonArray>())
+        {
+            allText = allText && choice.is<const char *>();
+            choices.push_back(choice.as<std::string>());
+        }
+        if (allText)
+            message = message.WithChoices(choices);
+    }
     return message;
 }

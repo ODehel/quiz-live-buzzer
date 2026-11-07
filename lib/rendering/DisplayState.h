@@ -2,6 +2,7 @@
 #define DISPLAY_STATE_H
 
 #include <string>
+#include <vector>
 #include "HubMessage.h"
 
 class DisplayState
@@ -21,7 +22,7 @@ public:
         if (type == "game_resumed")
             return "Partie en cours";
         if (type == "question_choices")
-            return "Question QCM en cours";
+            return message.HasChoices() ? LcdTextForChoices(message.Choices()) : "";
         if (type == "auth_success")
             return "Connecté";
         if (type == "answer_received")
@@ -51,6 +52,18 @@ public:
     }
 
 private:
+    std::string LcdTextForChoices(const std::vector<std::string> &choices) const
+    {
+        std::string text;
+        for (size_t i = 0; i < choices.size(); ++i)
+        {
+            if (i > 0)
+                text += "\n";
+            text += std::string(1, static_cast<char>('A' + i)) + " : " + choices[i];
+        }
+        return text;
+    }
+
     std::string LcdTextForQuestionTitle(const HubMessage &message) const
     {
         if (!message.HasQuestionIndex() || message.Title().empty())

@@ -187,3 +187,22 @@ Alternatives écartées :
 - La boîte d'encre de la police ne change pas (33 + 7, 41 + 9 et 51 + 11 px, avec ou sans les cinq glyphes) : l'interligne à 90 % reste valable.
 - Poids : les données ajoutées pèsent 1 034 octets (764 de bitmaps, 180 de glyphes, 90 de plages), mais le smoke test du 2026-11-04 a mesuré +3 196 octets au total : Flash 79,8 % (1 046 093 octets sur 1 310 720) contre 79,6 % (1 042 897) avant. Les 2 162 octets en plus de l'estimation s'expliquent à peu près (mesure x86 en `-Os`, indicative, non Xtensa) : environ 1,4 Ko pour la `std::map` de `FontMetrics` (487 octets dans le code de la police, environ 900 dans libstdc++ : `_Rb_tree_insert_and_rebalance`, `_Rb_tree_increment`, `_Rb_tree_decrement`) et environ 0,9 Ko pour le code de lecture des plages (`ReadFontMetrics` et `FindAdvance`, 874 octets), que l'estimation ne comptait pas. Remplacer la `std::map` par un petit vecteur gagnerait environ 1,4 Ko (0,1 point de Flash), comportement inchangé : `refactor` à faire au besoin, si le Flash devient serré. Sans conséquence à ce niveau de remplissage.
 - Le générateur Python n'a pas de test : la lecture des plages a été recoupée à la main avec FreeType (avances concordantes pour 195 codes dans chacune des trois polices, aucun code hors plage résolu à tort).
+
+
+## #12 — feat(rendering): show the four choices when a question is opened
+
+**Contexte** — `question_choices` portait un texte provisoire (« Question QCM en cours »). Le §8.2 demande « les 4 propositions A/B/C/D » avec l'effet `Zones actives`, sans dire comment les composer en un seul texte LCD.
+
+**Décision** —
+- Le texte est composé : « A : … » à « D : … », une proposition par ligne (séparateur `\n`, que `TextLayout` coupe depuis la session `break a text at line feeds`).
+- `HubMessage` porte `choices` comme un `std::vector<std::string>` ; `MessageDeserializer` le lit seulement si `choices` est un tableau **dont tous les éléments sont du texte**. Sinon le message n'a pas de `choices` et l'écran reste inchangé (règle de la décision #6).
+- La cardinalité n'est pas vérifiée : le contrat du hub garantit quatre propositions (choix d'Olivier, « gravé dans le marbre pour l'instant »). `DisplayState` composera pourtant ce qu'on lui donne, avec les lettres A, B, C… selon la position, sans indexer en dur : un tableau plus court n'est pas un comportement indéfini.
+
+Alternatives écartées :
+- **Un rendu par zone** (une proposition dans chaque zone tactile) : relève de la feature « disposition dynamique des zones » (dette de `main.cpp`), pas de cette session.
+- **Écran inchangé si le nombre de propositions n'est pas quatre** : une validation de plus que le contrat du hub ne demande ; à rouvrir si le hub cesse de garantir quatre.
+
+**Conséquences** —
+- `HubMessage::HasChoices()` n'a pas de consommateur de production : `DisplayState` s'en sert, mais le tableau vide donnerait le même texte vide (mutant équivalent). On le garde par cohérence avec les autres champs.
+- L'effet `Zones actives` n'est pas porté par cette session (feature « effets d'écran »).
+- Non vu à l'écran : le rendu de quatre lignes, et d'une proposition longue qui passe à la ligne, se juge au smoke test (`fake-hub.ps1`, entrées `d` et `f`).

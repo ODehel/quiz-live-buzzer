@@ -13,10 +13,17 @@ TEST(DisplayStateTest, GameResumedShouldDisplayPartieEnCoursOnScreen)
     EXPECT_EQ(displayState.LcdTextFor(HubMessage{"game_resumed"}), "Partie en cours");
 }
 
-TEST(DisplayStateTest, QuestionChoicesShouldDisplayQuestionQcmEnCoursOnScreen)
+TEST(DisplayStateTest, QuestionChoicesShouldDisplayTheFourChoicesOnScreen)
 {
     DisplayState displayState;
-    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"question_choices"}), "Question QCM en cours");
+    HubMessage message = HubMessage{"question_choices"}.WithChoices({"Paris", "Lyon", "Nice", "Lille"});
+    EXPECT_EQ(displayState.LcdTextFor(message), "A : Paris\nB : Lyon\nC : Nice\nD : Lille");
+}
+
+TEST(DisplayStateTest, QuestionChoicesWithoutChoicesShouldLeaveTheScreenUnchanged)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"question_choices"}), "");
 }
 
 TEST(DisplayStateTest, AnswerSentShouldDisplayReponseEnvoyeeOnScreen)
