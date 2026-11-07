@@ -19,7 +19,8 @@
     Optional file receiving a copy of the log (UTF-8).
 .NOTES
     One-time setup, in an elevated PowerShell (or run this script elevated):
-      netsh http add urlacl url=http://+:3000/ user=Everyone
+      netsh http add urlacl url=http://+:3000/ sddl=D:(A;;GX;;;WD)
+    (sddl WD = Everyone whatever the Windows language: user=Everyone fails on a French Windows.)
       New-NetFirewallRule -DisplayName 'fake-hub' -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow
     Cleanup:
       netsh http delete urlacl url=http://+:3000/
