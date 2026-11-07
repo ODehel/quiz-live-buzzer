@@ -115,7 +115,7 @@ function Handle-Context($context) {
     $request = $context.Request
     $path = $request.Url.AbsolutePath
     if ($request.IsWebSocketRequest -and $path -eq '/ws') {
-        $accept = $context.AcceptWebSocketAsync([string]$null)
+        $accept = $context.AcceptWebSocketAsync([System.Management.Automation.Language.NullString]::Value)   # no sub-protocol: [string]$null would become '' and be refused
         $accept.Wait()
         Close-Socket
         $script:socket = $accept.Result.WebSocket
