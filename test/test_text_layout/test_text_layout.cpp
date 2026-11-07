@@ -206,6 +206,42 @@ TEST(TextLayoutWrapTest, ClosingSignShouldTakeTheWholeQuotationToTheNextLine)
     EXPECT_EQ(WrapAtColumns("aaa « bbb »", 9), (Lines{"aaa", "« bbb »"}));
 }
 
+TEST(TextLayoutWrapTest, LineFeedShouldBreakTheLineEvenWhenTheTextFits)
+{
+    EXPECT_EQ(WrapAtColumns("ab\ncd", 10), (Lines{"ab", "cd"}));
+}
+
+TEST(TextLayoutWrapTest, EachPartBetweenLineFeedsShouldBeWrappedOnItsOwn)
+{
+    // « ccc » ne rejoint pas la ligne de « aaa bbb », et « ddd » ne rejoint pas celle de « ccc » : chaque partie repart d'une ligne vide
+    EXPECT_EQ(WrapAtColumns("aaa bbb\nccc ddd eee", 7), (Lines{"aaa bbb", "ccc ddd", "eee"}));
+}
+
+TEST(TextLayoutWrapTest, LineFeedShouldNotChangeHowALongPartIsWrapped)
+{
+    EXPECT_EQ(WrapAtColumns("aaa bbb ccc\nd", 7), (Lines{"aaa bbb", "ccc", "d"}));
+}
+
+TEST(TextLayoutWrapTest, ConsecutiveLineFeedsShouldNotLeaveAnEmptyLine)
+{
+    EXPECT_EQ(WrapAtColumns("ab\n\ncd", 10), (Lines{"ab", "cd"}));
+}
+
+TEST(TextLayoutWrapTest, LineFeedAtTheStartOrAtTheEndOfTheTextShouldAddNoLine)
+{
+    EXPECT_EQ(WrapAtColumns("\nab\n", 10), (Lines{"ab"}));
+}
+
+TEST(TextLayoutWrapTest, TextMadeOnlyOfLineFeedsShouldHaveNoLine)
+{
+    EXPECT_EQ(WrapAtColumns("\n\n", 10), Lines{});
+}
+
+TEST(TextLayoutWrapTest, SignAfterALineFeedShouldNotFollowTheWordBeforeTheLineFeed)
+{
+    EXPECT_EQ(WrapAtColumns("aaa\n? bbb", 10), (Lines{"aaa", "? bbb"}));
+}
+
 TEST(TextLayoutWrapTest, NoColumnShouldBehaveLikeOneColumn)
 {
     EXPECT_EQ(WrapAtColumns("ab", 0), (Lines{"a", "b"}));
@@ -270,6 +306,16 @@ TEST(TextLayoutProportionalTest, ComputeShouldJudgeTheHeightWithTheLineHeightOfE
     TextLayout layout(measurer, 6, 3);
     // "mm mm" fait 2 lignes : 2 x 2 = 4 px en taille 0 (trop haut), 2 x 1 = 2 px en taille 1 (tient)
     TextLines result = layout.Compute("mm mm");
+    EXPECT_EQ(result.size, 1);
+    EXPECT_EQ(result.lines, (Lines{"mm", "mm"}));
+}
+
+TEST(TextLayoutProportionalTest, ComputeShouldCountTheLinesMadeByLineFeeds)
+{
+    NarrowLettersMeasurer measurer;
+    TextLayout layout(measurer, 6, 3);
+    // « mm » et « mm » tiendraient sur une ligne sans le saut de ligne : 2 lignes x 2 px = 4 px en taille 0 (trop haut)
+    TextLines result = layout.Compute("mm\nmm");
     EXPECT_EQ(result.size, 1);
     EXPECT_EQ(result.lines, (Lines{"mm", "mm"}));
 }

@@ -41,12 +41,33 @@ public:
         return TextLines{smallest, Wrap(text, smallest)};
     }
 
+    // Un saut de ligne (`\n`) termine la ligne en cours ; chaque partie qu'il sépare est ensuite coupée
+    // comme un texte à part (voir `WrapParagraph`). Une partie vide (sauts consécutifs, saut au début ou à la fin
+    // du texte) n'ajoute aucune ligne, comme les espaces en trop.
+    std::vector<std::string> Wrap(const std::string &text, int size) const
+    {
+        std::vector<std::string> lines;
+        size_t start = 0;
+        while (true)
+        {
+            const size_t feed = text.find('\n', start);
+            const std::string paragraph = text.substr(start, feed == std::string::npos ? std::string::npos : feed - start);
+            for (const std::string &line : WrapParagraph(paragraph, size))
+                lines.push_back(line);
+            if (feed == std::string::npos)
+                break;
+            start = feed + 1;
+        }
+        return lines;
+    }
+
+private:
     // Coupe aux espaces, ligne par ligne, sans dépasser la largeur de la zone ; un mot plus large
     // qu'une ligne est coupé (au moins un caractère par ligne). Un caractère UTF-8 n'est jamais coupé en deux.
     // Un signe de ponctuation haute (« ? ! : ; » ) ») ne commence pas une ligne : il emmène avec lui le mot qui
     // le précède, sauf si ce mot est déjà seul sur sa ligne ou si le mot et le signe ne tiendraient pas ensemble.
     // Symétriquement, un guillemet ouvrant ne finit pas une ligne : il emmène avec lui le mot qui le suit.
-    std::vector<std::string> Wrap(const std::string &text, int size) const
+    std::vector<std::string> WrapParagraph(const std::string &text, int size) const
     {
         std::vector<std::string> lines;
         std::string line;
@@ -105,7 +126,6 @@ public:
         return lines;
     }
 
-private:
     static size_t EndOfWord(const std::string &text, size_t from)
     {
         const size_t space = text.find(' ', from);
