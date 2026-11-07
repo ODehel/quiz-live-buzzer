@@ -118,6 +118,37 @@ TEST(MessageDeserializerTest, ParsedQuestionTitleWithATextQuestionIndexHasNone)
     EXPECT_FALSE(deserializer.Parse("{\"type\":\"question_title\",\"question_index\":\"2\"}").HasQuestionIndex());
 }
 
+TEST(MessageDeserializerTest, ParsedQuestionChoicesHasItsFourChoicesInOrder)
+{
+    MessageDeserializer deserializer;
+
+    HubMessage message = deserializer.Parse("{\"type\":\"question_choices\",\"choices\":[\"Paris\",\"Lyon\",\"Nice\",\"Lille\"]}");
+
+    EXPECT_TRUE(message.HasChoices());
+    EXPECT_EQ(message.Choices(), (std::vector<std::string>{"Paris", "Lyon", "Nice", "Lille"}));
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionChoicesWithoutChoicesHasNone)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_FALSE(deserializer.Parse("{\"type\":\"question_choices\"}").HasChoices());
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionChoicesWithATextChoicesFieldHasNone)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_FALSE(deserializer.Parse("{\"type\":\"question_choices\",\"choices\":\"Paris\"}").HasChoices());
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionChoicesWithANumberAmongTheChoicesHasNone)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_FALSE(deserializer.Parse("{\"type\":\"question_choices\",\"choices\":[\"Paris\",2,\"Nice\",\"Lille\"]}").HasChoices());
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

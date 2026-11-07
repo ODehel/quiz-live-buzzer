@@ -3,6 +3,7 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 
 class HubMessage
 {
@@ -15,6 +16,8 @@ private:
     std::string title;
     bool hasQuestionIndex = false;
     int questionIndex = 0;
+    bool hasChoices = false;
+    std::vector<std::string> choices;
 
 public:
     explicit HubMessage(std::string type) : type(std::move(type))
@@ -90,6 +93,24 @@ public:
     int QuestionIndex() const
     {
         return questionIndex;
+    }
+
+    HubMessage WithChoices(std::vector<std::string> questionChoices) const
+    {
+        HubMessage copy = *this;
+        copy.hasChoices = true;
+        copy.choices = std::move(questionChoices);
+        return copy;
+    }
+
+    bool HasChoices() const
+    {
+        return hasChoices;
+    }
+
+    const std::vector<std::string> &Choices() const
+    {
+        return choices;
     }
 };
 

@@ -69,10 +69,12 @@ $menu = @(
        Json = '{"type":"game_resumed"}' },
     @{ Key = 'c'; Label = 'timer_end'
        Json = '{"type":"timer_end"}' },
-    @{ Key = 'd'; Label = 'question_choices (type seul)'
-       Json = '{"type":"question_choices"}' },
+    @{ Key = 'd'; Label = 'question_choices : Paris, Lyon, Nice, Lille'
+       Json = '{"type":"question_choices","choices":["Paris","Lyon","Nice","Lille"]}' },
     @{ Key = 'e'; Label = 'auth_success (renvoi)'
-       Json = '{"type":"auth_success","username":"buzzer-test","role":"buzzer","expires_in":3600}' }
+       Json = '{"type":"auth_success","username":"buzzer-test","role":"buzzer","expires_in":3600}' },
+    @{ Key = 'f'; Label = 'question_choices : une proposition de 36 caracteres'
+       Json = '{"type":"question_choices","choices":["Paris","Cr\u00e8me br\u00fbl\u00e9e au caramel de Normandie","Nice","Lille"]}' }
 )
 
 function Show-Menu {
