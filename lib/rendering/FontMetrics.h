@@ -2,14 +2,13 @@
 #define FONT_METRICS_H
 
 #include <cstdint>
-#include <map>
 #include <utility>
 #include <vector>
 
 // Dimensions d'une police à l'écran, en pixels : hauteur de ligne et avance horizontale de
 // chaque glyphe Latin-1 (de 0x20 à 0xFF, dans l'ordre des codes), plus celle des quelques glyphes
-// hors Latin-1 que la police dessine (`extraAdvances`, code -> avance : œ, ’, …). Tout autre code
-// avance comme `?`.
+// hors Latin-1 que la police dessine (`extraAdvances`, paires code / avance : œ, ’, …, cherchées une à une :
+// elles sont une poignée). Tout autre code avance comme `?`.
 class FontMetrics
 {
 public:
@@ -22,10 +21,10 @@ public:
 private:
     int lineHeight;
     std::vector<int> advances;
-    std::map<uint32_t, int> extraAdvances;
+    std::vector<std::pair<uint32_t, int>> extraAdvances;
 
 public:
-    FontMetrics(int lineHeight, std::vector<int> advances, std::map<uint32_t, int> extraAdvances = {})
+    FontMetrics(int lineHeight, std::vector<int> advances, std::vector<std::pair<uint32_t, int>> extraAdvances = {})
         : lineHeight(lineHeight), advances(std::move(advances)), extraAdvances(std::move(extraAdvances))
     {
     }
@@ -34,9 +33,11 @@ public:
     {
         if (code >= FirstCode && code <= LastCode)
             return advances[code - FirstCode];
-        const auto extra = extraAdvances.find(code);
-        if (extra != extraAdvances.end())
-            return extra->second;
+        for (const auto &extra : extraAdvances)
+        {
+            if (extra.first == code)
+                return extra.second;
+        }
         return advances['?' - FirstCode];
     }
 
