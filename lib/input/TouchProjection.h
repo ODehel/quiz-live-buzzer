@@ -24,8 +24,8 @@ public:
         int screenMaxX = sensorResolution.x - 1;
         int screenMaxY = sensorResolution.y - 1;
         return {
-            MapAxis(touchPoint.x, sensorResolution.x, sensorOrigin.x, 0, screenMaxX),
-            MapAxis(touchPoint.y, sensorResolution.y, sensorOrigin.y, 0, screenMaxY)};
+            MapAxis(touchPoint.x, sensorOrigin.x, sensorResolution.x, 0, screenMaxX),
+            MapAxis(touchPoint.y, sensorOrigin.y, sensorResolution.y, 0, screenMaxY)};
     }
 };
 
