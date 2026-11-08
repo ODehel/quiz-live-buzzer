@@ -1,6 +1,7 @@
 #ifndef DISPLAY_STATE_H
 #define DISPLAY_STATE_H
 
+#include <optional>
 #include <string>
 #include <vector>
 #include "HubMessage.h"
@@ -44,6 +45,13 @@ public:
         for (size_t i = 0; i < message.Choices().size(); ++i)
             zones.push_back(std::string(1, static_cast<char>('A' + i)) + " : " + message.Choices()[i]);
         return zones;
+    }
+
+    std::optional<size_t> HighlightedZoneFor(const HubMessage &message) const
+    {
+        if (message.Type() != "question_result" || !IsLetterAnswer(message.CorrectAnswer()))
+            return std::nullopt;
+        return static_cast<size_t>(message.CorrectAnswer()[0] - 'A');
     }
 
     std::string LcdTextForTimeUp() const
