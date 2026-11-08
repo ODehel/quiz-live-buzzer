@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <iterator>
-#include <map>
 #include <string>
 #include <vector>
 #include "FontMetrics.h"
@@ -469,9 +468,9 @@ TEST(TextLayoutProportionalTest, SizeShouldBeChosenFromGlyphWidthsNotFromTheNumb
 static ProportionalTextMeasurer SmallestRealFont()
 {
     const std::vector<int> advances(std::begin(OswaldRegular30Advances), std::end(OswaldRegular30Advances));
-    std::map<uint32_t, int> extraAdvances;
+    std::vector<std::pair<uint32_t, int>> extraAdvances;
     for (size_t i = 0; i < std::size(OswaldRegular30ExtraCodes); ++i)
-        extraAdvances[OswaldRegular30ExtraCodes[i]] = OswaldRegular30ExtraAdvances[i];
+        extraAdvances.emplace_back(OswaldRegular30ExtraCodes[i], OswaldRegular30ExtraAdvances[i]);
     const int lineHeight = (OswaldRegular30YAdvance * QuizLineSpacingPercent + 50) / 100;
     return ProportionalTextMeasurer({FontMetrics(lineHeight, advances, extraAdvances)});
 }

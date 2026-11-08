@@ -161,6 +161,18 @@ TEST(GfxFontMetricsTest, CodeBetweenFirstAndLastButInNoEncodeRangeShouldAdvanceL
     EXPECT_EQ(metrics.Advance(0x20AD), AdvanceOfIndex('?' - 0x20)); // après la dernière plage
 }
 
+TEST(GfxFontMetricsTest, CodeOfAnEncodeRangeBeyondTheLastGlyphShouldAdvanceLikeAQuestionMark)
+{
+    const std::vector<FakeGlyph> glyphs = LatinOneThenFiveSymbols();
+    const FakeFont font{glyphs.data(), 0x20, 0x2019, 44, 5, SymbolRanges}; // `last` s'arrête à ’ : … et € sont hors de portée
+
+    const FontMetrics metrics = ReadFontMetrics(font, 100);
+
+    EXPECT_EQ(metrics.Advance(0x2019), 93);                        // ’ reste dessiné
+    EXPECT_EQ(metrics.Advance(0x2026), AdvanceOfIndex('?' - 0x20)); // …
+    EXPECT_EQ(metrics.Advance(0x20AC), AdvanceOfIndex('?' - 0x20)); // €
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

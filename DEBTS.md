@@ -48,11 +48,11 @@ Inventaire initial dressé le 2026-10-31 à partir du diagnostic du dépôt (lec
 - **Runner et actions non épinglés** — `ubuntu-latest` (qui migre vers Ubuntu 26) et les actions par tag majeur (`checkout@v5`, `setup-python@v6`, `cache@v5`, premières versions Node 24, non les dernières). *Pas séparé* : `chore(ci)` d'épinglage, ou Dependabot.
 - **Dépendances flottantes** — LovyanGFX est tirée depuis `https://github.com/lovyan03/LovyanGFX.git` sans révision ; `ArduinoJson@^7.4.3` et `WebSockets@^2.7.3` acceptent les mises à jour mineures. Seule `TAMC_GT911` est figée (`1.0.2`). *Pas séparé* : épingler LovyanGFX sur un commit ou un tag.
 - **Avertissements du compilateur limités à `-Werror=switch`** — pas de `-Wall -Wextra`. *Pas séparé* : `chore(build)` d'activation, puis une session de corrections si le volume l'exige.
-- **Aucune mesure de couverture** — les 76 tests natifs ne sont pas rapportés à un taux de lignes ou de branches. *Pas séparé* : `chore(ci)` couverture (gcov/lcov) avec seuil.
+- **Aucune mesure de couverture** — les tests natifs ne sont pas rapportés à un taux de lignes ou de branches. *Pas séparé* : `chore(ci)` couverture (gcov/lcov) avec seuil.
 
 ## outillage
 
-- **Ni format ni lint** — pas de `.clang-format`, `.clang-tidy`, `.editorconfig` ni `.gitattributes` (le hub en a). Le style existant est Allman. Un `clang-format` en style LLVM par défaut ferait diverger les 69 fichiers : le style est à déduire du code. *Pas séparé* : `chore(format)`, puis `chore(lint)` une famille de règles par session.
+- **Ni format ni lint** — pas de `.clang-format`, `.clang-tidy`, `.editorconfig` ni `.gitattributes` (le hub en a). Le style existant est Allman. Un `clang-format` en style LLVM par défaut ferait diverger les fichiers existants : le style est à déduire du code. *Pas séparé* : `chore(format)`, puis `chore(lint)` une famille de règles par session.
 - **Pas de hook de commit** — le hub a un `pre-commit` qui refuse un fichier sans retour à la ligne final. *Pas séparé* : à décider avec le format.
 - **`fake-hub.ps1` validé au smoke test seulement** — script PowerShell pour Windows (`HttpListener`), non exécutable dans la session de développement ; son protocole (login, `auth` → `auth_success`, formats des messages de rendu) est recopié du CDC §8.1 et de `ws-route.ts` du hub, sans vérification automatique : un écart avec le vrai hub ne se verrait qu'à l'intégration. Menu limité aux messages de rendu déjà traités par `DisplayState` (`question_result` : entrées `g` à `j`) ; pas de `token_expiring_soon`. *Pas séparé* : étendre le menu avec le `feat` qui ajoute chaque rendu ; rouvrir si le protocole du hub change.
 

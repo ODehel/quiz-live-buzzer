@@ -2,7 +2,7 @@
 #define GFX_FONT_METRICS_H
 
 #include <cstdint>
-#include <map>
+#include <utility>
 #include <vector>
 #include "FontMetrics.h"
 
@@ -52,14 +52,14 @@ FontMetrics ReadFontMetrics(const GfxFont &font, int lineSpacingPercent)
         const int advance = FindAdvance(font, code, notFound);
         advances.push_back(advance == notFound ? questionMarkAdvance : advance);
     }
-    std::map<uint32_t, int> extraAdvances;
+    std::vector<std::pair<uint32_t, int>> extraAdvances;
     for (int i = 0; i < font.range_num; ++i)
     {
         for (uint32_t code = font.range[i].start; code <= font.range[i].end; ++code)
         {
             const int advance = FindAdvance(font, code, notFound);
             if (code > FontMetrics::LastCode && advance != notFound)
-                extraAdvances[code] = advance;
+                extraAdvances.emplace_back(code, advance);
         }
     }
     const int lineHeight = (font.yAdvance * lineSpacingPercent + 50) / 100;
