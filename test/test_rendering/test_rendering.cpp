@@ -179,6 +179,43 @@ TEST(DisplayStateTest, SpeedQuestionResultWhoseAnswerStartsWithAChoiceLetterShou
     EXPECT_EQ(displayState.LcdTextFor(message), "Validé");
 }
 
+using HighlightCase = std::pair<std::string, size_t>;
+
+class HighlightedZoneTest : public ::testing::TestWithParam<HighlightCase>
+{
+};
+
+TEST_P(HighlightedZoneTest, McqQuestionResultShouldHighlightTheZoneOfTheCorrectAnswer)
+{
+    DisplayState displayState;
+    HubMessage message = HubMessage{"question_result"}.WithCorrectAnswer(GetParam().first).WithPlayerAnswer("C");
+    EXPECT_EQ(displayState.HighlightedZoneFor(message), static_cast<int>(GetParam().second));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    TheFourChoiceLetters,
+    HighlightedZoneTest,
+    ::testing::Values(HighlightCase{"A", 0}, HighlightCase{"B", 1}, HighlightCase{"C", 2}, HighlightCase{"D", 3}));
+
+TEST(DisplayStateTest, SpeedQuestionResultShouldHighlightNoZone)
+{
+    DisplayState displayState;
+    HubMessage message = HubMessage{"question_result"}.WithCorrectAnswer("Paris").WithCorrect(true);
+    EXPECT_EQ(displayState.HighlightedZoneFor(message), DisplayState::NoZone);
+}
+
+TEST(DisplayStateTest, QuestionResultWithoutCorrectAnswerShouldHighlightNoZone)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.HighlightedZoneFor(HubMessage{"question_result"}.WithPlayerAnswer("C")), DisplayState::NoZone);
+}
+
+TEST(DisplayStateTest, AMessageOtherThanQuestionResultShouldHighlightNoZone)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.HighlightedZoneFor(HubMessage{"auth_success"}.WithCorrectAnswer("B")), DisplayState::NoZone);
+}
+
 using FixedTextCase = std::pair<std::string, std::string>;
 
 class MessageWithFixedTextTest : public ::testing::TestWithParam<FixedTextCase>

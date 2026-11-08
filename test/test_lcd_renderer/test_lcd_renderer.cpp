@@ -229,6 +229,39 @@ TEST(LcdRendererTest, QuestionChoicesShowsTheFourChoicesAsZonesOnScreen)
     lcdRenderer.Apply(HubMessage{"question_choices"}.WithChoices({"Paris", "Lyon", "Nice", "Lille"}));
 }
 
+TEST(LcdRendererTest, McqQuestionResultHighlightsTheCorrectZoneWithTheResultText)
+{
+    testing::StrictMock<MockScreen> mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, HighlightZone(1, "Bonne réponse : B\nVotre réponse : C")).Times(1);
+
+    lcdRenderer.Apply(HubMessage{"question_result"}.WithCorrectAnswer("B").WithPlayerAnswer("C"));
+}
+
+TEST(LcdRendererTest, McqQuestionResultWithCorrectAnswerAHighlightsTheFirstZone)
+{
+    testing::StrictMock<MockScreen> mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, HighlightZone(0, "Bonne réponse : A")).Times(1);
+
+    lcdRenderer.Apply(HubMessage{"question_result"}.WithCorrectAnswer("A"));
+}
+
+TEST(LcdRendererTest, SpeedQuestionResultShowsItsTextWithoutHighlightingAZone)
+{
+    testing::StrictMock<MockScreen> mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, Show("Validé")).Times(1);
+
+    lcdRenderer.Apply(HubMessage{"question_result"}.WithCorrectAnswer("Paris").WithCorrect(true));
+}
+
 TEST(LcdRendererTest, QuestionChoicesWithoutChoicesLeavesTheScreenUnchanged)
 {
     testing::StrictMock<MockScreen> mockScreen;

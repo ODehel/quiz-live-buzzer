@@ -244,3 +244,24 @@ Alternatives écartées :
 - Le tactile reste actif sur tout l'écran (zones figées de `main.cpp`) : seul le dessin change. Les effets « Zones masquées » et « Mettre en évidence » restent à faire ; un appui MCQ affiche toujours « Réponse envoyée » en plein écran, ce qui efface les quadrants.
 - Le découpage 2×2 vit à deux endroits (`GfxScreen`, `main.cpp`) : noté dans `DEBTS.md`.
 - Non vu à l'écran : une proposition de 40 caractères dans un quadrant de 400×240 px (zone de texte 380×220), à juger au smoke test (`fake-hub.ps1`, entrées `d` et `f`).
+
+## #15 — feat(rendering): highlight the correct answer in the result
+
+**Contexte** — `question_result` MCQ affichait « Bonne réponse : B » en texte plein écran (décision #12), alors que le §8.2 lui donne l'effet `Mettre en évidence zone(correct_answer)`. Le message ne porte pas les propositions : pour garder les quadrants visibles, quelqu'un doit les retenir.
+
+**Décision** (choix d'Olivier à la porte 1 : texte dans un bandeau en haut, quadrants rétrécis dessous, mise en évidence statique) —
+- `Screen` gagne `HighlightZone(zoneIndex, text)` : le texte dans un bandeau (le quart de la hauteur), les quadrants des dernières propositions dessous, la zone `zoneIndex` en blanc plein.
+- `DisplayState::HighlightedZoneFor(message)` donne l'indice (0 à 3) pour un `question_result` dont `correct_answer` est une lettre A–D, `DisplayState::NoZone` (−1) sinon. Il reste sans état. Un entier plutôt qu'un `std::optional` : le build `esp32` a refusé `<optional>` (le toolchain n'est pas en C++17), alors que les tests natifs le compilaient.
+- `LcdRenderer` appelle `HighlightZone(zone, texte)` quand une zone est désignée, sinon l'ancien chemin (`ShowZones`, `Show`).
+- `GfxScreen` retient les textes du dernier `ShowZones` (`lastZoneTexts`) et les redessine.
+
+Alternatives écartées :
+- **`DisplayState` retient les propositions** : il deviendrait à état, et les deux instances (`LcdRenderer`, `ScreenLocalFeedback`) devraient être partagées ; c'est la feature « effets d'écran », pas cette tranche.
+- **Un seul `ShowZones(textes, zone, bandeau)`** : paramètres facultatifs sur un contrat qui n'a qu'un appelant par cas, YAGNI.
+- **Rétrécir aussi les quadrants de `question_choices`** : le tactile couvre 800×480 en dur (`main.cpp`) ; des quadrants dessinés plus petits que les zones tactiles se liraient de travers à l'appui. `question_choices` reste plein écran.
+
+**Conséquences** —
+- Le clignotement n'est pas porté (horloge absente) : dette au `DEBTS.md`. La mise en évidence de la lettre choisie à l'appui local non plus (`AcknowledgeAnswer` sans lettre) : elle reste dans « Table de rendu §8.2 incomplète ».
+- L'état des propositions vit dans l'adaptateur, non testable nativement, et peut être périmé : voir `DEBTS.md`.
+- Non vu à l'écran : la hauteur des quadrants rétrécis (180 px) avec une proposition de 36 caractères, et le contraste du texte noir sur la zone blanche (`fake-hub.ps1`, entrées `d`, `f`, `g`, `h`, `i`).
+

@@ -8,6 +8,8 @@
 class DisplayState
 {
 public:
+    static constexpr int NoZone = -1; // pas d'`std::optional` : le toolchain esp32 n'est pas en C++17
+
     std::string LcdTextFor(const HubMessage &message) const
     {
         const std::string &type = message.Type();
@@ -44,6 +46,13 @@ public:
         for (size_t i = 0; i < message.Choices().size(); ++i)
             zones.push_back(std::string(1, static_cast<char>('A' + i)) + " : " + message.Choices()[i]);
         return zones;
+    }
+
+    int HighlightedZoneFor(const HubMessage &message) const
+    {
+        if (message.Type() != "question_result" || !IsLetterAnswer(message.CorrectAnswer()))
+            return NoZone;
+        return message.CorrectAnswer()[0] - 'A';
     }
 
     std::string LcdTextForTimeUp() const

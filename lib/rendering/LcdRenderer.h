@@ -30,6 +30,12 @@ public:
         if (!zones.empty())
             screen.ShowZones(zones);
         std::string text = displayState.LcdTextFor(message);
+        const int highlightedZone = displayState.HighlightedZoneFor(message);
+        if (highlightedZone != DisplayState::NoZone)
+        {
+            screen.HighlightZone(static_cast<size_t>(highlightedZone), text);
+            return;
+        }
         if (!text.empty())
             screen.Show(text);
     }
