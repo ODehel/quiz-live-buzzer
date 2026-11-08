@@ -251,7 +251,7 @@ Alternatives écartées :
 
 **Décision** (choix d'Olivier à la porte 1 : texte dans un bandeau en haut, quadrants rétrécis dessous, mise en évidence statique) —
 - `Screen` gagne `HighlightZone(zoneIndex, text)` : le texte dans un bandeau (le quart de la hauteur), les quadrants des dernières propositions dessous, la zone `zoneIndex` en blanc plein.
-- `DisplayState::HighlightedZoneFor(message)` donne l'indice (0 à 3) pour un `question_result` dont `correct_answer` est une lettre A–D, rien sinon. Il reste sans état.
+- `DisplayState::HighlightedZoneFor(message)` donne l'indice (0 à 3) pour un `question_result` dont `correct_answer` est une lettre A–D, `DisplayState::NoZone` (−1) sinon. Il reste sans état. Un entier plutôt qu'un `std::optional` : le build `esp32` a refusé `<optional>` (le toolchain n'est pas en C++17), alors que les tests natifs le compilaient.
 - `LcdRenderer` appelle `HighlightZone(zone, texte)` quand une zone est désignée, sinon l'ancien chemin (`ShowZones`, `Show`).
 - `GfxScreen` retient les textes du dernier `ShowZones` (`lastZoneTexts`) et les redessine.
 

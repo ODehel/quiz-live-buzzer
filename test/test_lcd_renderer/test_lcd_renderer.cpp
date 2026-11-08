@@ -240,6 +240,17 @@ TEST(LcdRendererTest, McqQuestionResultHighlightsTheCorrectZoneWithTheResultText
     lcdRenderer.Apply(HubMessage{"question_result"}.WithCorrectAnswer("B").WithPlayerAnswer("C"));
 }
 
+TEST(LcdRendererTest, McqQuestionResultWithCorrectAnswerAHighlightsTheFirstZone)
+{
+    testing::StrictMock<MockScreen> mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, HighlightZone(0, "Bonne réponse : A")).Times(1);
+
+    lcdRenderer.Apply(HubMessage{"question_result"}.WithCorrectAnswer("A"));
+}
+
 TEST(LcdRendererTest, SpeedQuestionResultShowsItsTextWithoutHighlightingAZone)
 {
     testing::StrictMock<MockScreen> mockScreen;

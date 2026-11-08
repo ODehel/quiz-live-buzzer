@@ -1,7 +1,6 @@
 #ifndef LCD_RENDERER_H
 #define LCD_RENDERER_H
 
-#include <optional>
 #include "ArmedModeReader.h"
 #include "DisplayState.h"
 #include "MessageRenderer.h"
@@ -31,10 +30,10 @@ public:
         if (!zones.empty())
             screen.ShowZones(zones);
         std::string text = displayState.LcdTextFor(message);
-        const std::optional<size_t> highlightedZone = displayState.HighlightedZoneFor(message);
-        if (highlightedZone)
+        const int highlightedZone = displayState.HighlightedZoneFor(message);
+        if (highlightedZone != DisplayState::NoZone)
         {
-            screen.HighlightZone(*highlightedZone, text);
+            screen.HighlightZone(static_cast<size_t>(highlightedZone), text);
             return;
         }
         if (!text.empty())

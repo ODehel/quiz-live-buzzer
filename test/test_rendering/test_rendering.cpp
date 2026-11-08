@@ -189,7 +189,7 @@ TEST_P(HighlightedZoneTest, McqQuestionResultShouldHighlightTheZoneOfTheCorrectA
 {
     DisplayState displayState;
     HubMessage message = HubMessage{"question_result"}.WithCorrectAnswer(GetParam().first).WithPlayerAnswer("C");
-    EXPECT_EQ(displayState.HighlightedZoneFor(message), std::optional<size_t>{GetParam().second});
+    EXPECT_EQ(displayState.HighlightedZoneFor(message), static_cast<int>(GetParam().second));
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -201,19 +201,19 @@ TEST(DisplayStateTest, SpeedQuestionResultShouldHighlightNoZone)
 {
     DisplayState displayState;
     HubMessage message = HubMessage{"question_result"}.WithCorrectAnswer("Paris").WithCorrect(true);
-    EXPECT_EQ(displayState.HighlightedZoneFor(message), std::nullopt);
+    EXPECT_EQ(displayState.HighlightedZoneFor(message), DisplayState::NoZone);
 }
 
 TEST(DisplayStateTest, QuestionResultWithoutCorrectAnswerShouldHighlightNoZone)
 {
     DisplayState displayState;
-    EXPECT_EQ(displayState.HighlightedZoneFor(HubMessage{"question_result"}.WithPlayerAnswer("C")), std::nullopt);
+    EXPECT_EQ(displayState.HighlightedZoneFor(HubMessage{"question_result"}.WithPlayerAnswer("C")), DisplayState::NoZone);
 }
 
 TEST(DisplayStateTest, AMessageOtherThanQuestionResultShouldHighlightNoZone)
 {
     DisplayState displayState;
-    EXPECT_EQ(displayState.HighlightedZoneFor(HubMessage{"auth_success"}.WithCorrectAnswer("B")), std::nullopt);
+    EXPECT_EQ(displayState.HighlightedZoneFor(HubMessage{"auth_success"}.WithCorrectAnswer("B")), DisplayState::NoZone);
 }
 
 using FixedTextCase = std::pair<std::string, std::string>;

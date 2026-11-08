@@ -1,7 +1,6 @@
 #ifndef DISPLAY_STATE_H
 #define DISPLAY_STATE_H
 
-#include <optional>
 #include <string>
 #include <vector>
 #include "HubMessage.h"
@@ -9,6 +8,8 @@
 class DisplayState
 {
 public:
+    static constexpr int NoZone = -1; // pas d'`std::optional` : le toolchain esp32 n'est pas en C++17
+
     std::string LcdTextFor(const HubMessage &message) const
     {
         const std::string &type = message.Type();
@@ -47,11 +48,11 @@ public:
         return zones;
     }
 
-    std::optional<size_t> HighlightedZoneFor(const HubMessage &message) const
+    int HighlightedZoneFor(const HubMessage &message) const
     {
         if (message.Type() != "question_result" || !IsLetterAnswer(message.CorrectAnswer()))
-            return std::nullopt;
-        return static_cast<size_t>(message.CorrectAnswer()[0] - 'A');
+            return NoZone;
+        return message.CorrectAnswer()[0] - 'A';
     }
 
     std::string LcdTextForTimeUp() const

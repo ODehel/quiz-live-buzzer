@@ -84,7 +84,7 @@ private:
     }
 
     // Dessine le texte, centré dans le rectangle (x, y, width, height), sans effacer l'écran.
-    void DrawTextIn(const std::string &text, int x, int y, int width, int height, uint32_t color = TFT_WHITE)
+    void DrawTextIn(const std::string &text, int x, int y, int width, int height, int color = TFT_WHITE)
     {
         const TextLayout layout(measurer, width - 2 * margin, height - 2 * margin);
         const TextLines placed = layout.Compute(text); // taille et lignes
