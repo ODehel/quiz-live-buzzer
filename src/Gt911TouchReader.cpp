@@ -76,7 +76,6 @@ void Gt911TouchReader::Begin()
     ts.begin();
     // INVERTED = identité dans TAMC_GT911 v1.0.2 ;
     // neutralise la rotation lib pour que TouchProjection soit seule autorité du repérage.
-    // Réserve : sens final des axes NON validé matériellement ; divergence du repère factory ;
-    // correction au smoke en point unique (rotation lib OU bornes TouchProjection).
+    // Sens des axes validé au smoke test du 2026-11-08 : les quatre coins donnent A, B, C, D.
     ts.setRotation(ROTATION_INVERTED);
 }
