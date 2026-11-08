@@ -206,3 +206,23 @@ Alternatives écartées :
 - `HubMessage::HasChoices()` n'a pas de consommateur de production : `DisplayState` s'en sert, mais le tableau vide donnerait le même texte vide (mutant équivalent). On le garde par cohérence avec les autres champs.
 - L'effet `Zones actives` n'est pas porté par cette session (feature « effets d'écran »).
 - Non vu à l'écran : le rendu de quatre lignes, et d'une proposition longue qui passe à la ligne, se juge au smoke test (`fake-hub.ps1`, entrées `d` et `f`).
+
+## #13 — feat(rendering): show the result of a question
+
+**Contexte** — Le §8.2 demande pour `question_result` un « Résultat (bonne réponse + réponse joueur) » en MCQ, « validé » ou « raté » en SPEED, sans en fixer les mots. La distinction MCQ/SPEED se déduit du contenu du message (§8.2). Le hub (US-011 CA-25, US-012 CA-31) envoie aussi `points_earned` et `cumulative_score`.
+
+**Décision** (libellés choisis par Olivier à la porte 1) —
+- **MCQ** (`correct_answer` est une seule lettre de `A` à `D`) : « Bonne réponse : B », puis, à la ligne suivante, « Votre réponse : C » seulement si `player_answer` est présent et textuel. Sans réponse du joueur, une seule ligne.
+- **SPEED** (sinon) : « Validé » si `correct` est `true`, « Raté » s'il est `false`. La bonne réponse en clair n'est pas affichée.
+- **Champ requis absent ou de mauvais type** : écran inchangé (décision #6) — `correct_answer` dans tous les cas, `correct` en plus en SPEED. `player_answer` est facultatif.
+- `HubMessage` porte `correct_answer` (texte), `correct` (booléen, distinguant `false` d'absent) et `player_answer` (texte). `points_earned` et `cumulative_score` ne sont pas lus : aucun rendu ne les demande.
+
+Alternatives écartées :
+- **Afficher la bonne réponse en SPEED** (« Validé » puis « Réponse : Paris ») : le texte de la réponse peut être long et le §8.2 ne la demande pas.
+- **Déduire MCQ/SPEED de `player_answer`** : absent aussi pour un MCQ sans réponse du joueur ; le §8.2 fixe la règle sur `correct_answer`.
+
+**Conséquences** —
+- Une réponse SPEED qui serait une seule lettre de `A` à `D` (« B ») serait prise pour un MCQ : le contrat du hub (SPEED renvoie un texte de réponse) l'exclut, la limite est assumée.
+- `player_answer` à `null` (joueur sans réponse, enregistré avec `answer: null` côté hub, US-011 CA-34) est traité comme absent ; non vérifié contre le hub, qui n'émet pas encore ce message.
+- Les effets d'écran (zone mise en évidence, bandeau clignotant, zones masquées) ne sont pas portés par cette session (feature « effets d'écran »).
+- Non vu à l'écran : le rendu se juge au smoke test (`fake-hub.ps1`, entrées `g` à `j`).

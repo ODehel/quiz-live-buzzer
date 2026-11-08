@@ -149,6 +149,95 @@ TEST(MessageDeserializerTest, ParsedQuestionChoicesWithANumberAmongTheChoicesHas
     EXPECT_FALSE(deserializer.Parse("{\"type\":\"question_choices\",\"choices\":[\"Paris\",2,\"Nice\",\"Lille\"]}").HasChoices());
 }
 
+TEST(MessageDeserializerTest, ParsedQuestionResultHasItsCorrectAnswer)
+{
+    MessageDeserializer deserializer;
+
+    HubMessage message = deserializer.Parse("{\"type\":\"question_result\",\"correct_answer\":\"B\"}");
+
+    EXPECT_TRUE(message.HasCorrectAnswer());
+    EXPECT_EQ(message.CorrectAnswer(), "B");
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionResultHasItsCorrectFlag)
+{
+    MessageDeserializer deserializer;
+
+    HubMessage message = deserializer.Parse("{\"type\":\"question_result\",\"correct\":true}");
+
+    EXPECT_TRUE(message.HasCorrect());
+    EXPECT_TRUE(message.Correct());
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionResultWithAFalseCorrectFlagIsNotCorrect)
+{
+    MessageDeserializer deserializer;
+
+    HubMessage message = deserializer.Parse("{\"type\":\"question_result\",\"correct\":false}");
+
+    EXPECT_TRUE(message.HasCorrect());
+    EXPECT_FALSE(message.Correct());
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionResultHasItsPlayerAnswer)
+{
+    MessageDeserializer deserializer;
+
+    HubMessage message = deserializer.Parse("{\"type\":\"question_result\",\"player_answer\":\"C\"}");
+
+    EXPECT_TRUE(message.HasPlayerAnswer());
+    EXPECT_EQ(message.PlayerAnswer(), "C");
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionResultWithoutCorrectAnswerHasNone)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_FALSE(deserializer.Parse("{\"type\":\"question_result\"}").HasCorrectAnswer());
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionResultWithANumberAsCorrectAnswerHasNone)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_FALSE(deserializer.Parse("{\"type\":\"question_result\",\"correct_answer\":2}").HasCorrectAnswer());
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionResultWithoutCorrectFlagHasNone)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_FALSE(deserializer.Parse("{\"type\":\"question_result\"}").HasCorrect());
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionResultWithATextCorrectFlagHasNone)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_FALSE(deserializer.Parse("{\"type\":\"question_result\",\"correct\":\"true\"}").HasCorrect());
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionResultWithoutPlayerAnswerHasNone)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_FALSE(deserializer.Parse("{\"type\":\"question_result\"}").HasPlayerAnswer());
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionResultWithANumberAsPlayerAnswerHasNone)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_FALSE(deserializer.Parse("{\"type\":\"question_result\",\"player_answer\":3}").HasPlayerAnswer());
+}
+
+TEST(MessageDeserializerTest, ParsedQuestionResultWithANullPlayerAnswerHasNone)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_FALSE(deserializer.Parse("{\"type\":\"question_result\",\"player_answer\":null}").HasPlayerAnswer());
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

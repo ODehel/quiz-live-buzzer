@@ -18,6 +18,12 @@ private:
     int questionIndex = 0;
     bool hasChoices = false;
     std::vector<std::string> choices;
+    bool hasCorrectAnswer = false;
+    std::string correctAnswer;
+    bool hasCorrect = false;
+    bool correct = false;
+    bool hasPlayerAnswer = false;
+    std::string playerAnswer;
 
 public:
     explicit HubMessage(std::string type) : type(std::move(type))
@@ -111,6 +117,60 @@ public:
     const std::vector<std::string> &Choices() const
     {
         return choices;
+    }
+
+    HubMessage WithCorrectAnswer(std::string answer) const
+    {
+        HubMessage copy = *this;
+        copy.hasCorrectAnswer = true;
+        copy.correctAnswer = std::move(answer);
+        return copy;
+    }
+
+    bool HasCorrectAnswer() const
+    {
+        return hasCorrectAnswer;
+    }
+
+    const std::string &CorrectAnswer() const
+    {
+        return correctAnswer;
+    }
+
+    HubMessage WithCorrect(bool isCorrect) const
+    {
+        HubMessage copy = *this;
+        copy.hasCorrect = true;
+        copy.correct = isCorrect;
+        return copy;
+    }
+
+    bool HasCorrect() const
+    {
+        return hasCorrect;
+    }
+
+    bool Correct() const
+    {
+        return correct;
+    }
+
+    HubMessage WithPlayerAnswer(std::string answer) const
+    {
+        HubMessage copy = *this;
+        copy.hasPlayerAnswer = true;
+        copy.playerAnswer = std::move(answer);
+        return copy;
+    }
+
+    bool HasPlayerAnswer() const
+    {
+        return hasPlayerAnswer;
+    }
+
+    const std::string &PlayerAnswer() const
+    {
+        return playerAnswer;
     }
 };
 
