@@ -265,3 +265,22 @@ Alternatives écartées :
 - L'état des propositions vit dans l'adaptateur, non testable nativement, et peut être périmé : voir `DEBTS.md`.
 - Non vu à l'écran : la hauteur des quadrants rétrécis (180 px) avec une proposition de 36 caractères, et le contraste du texte noir sur la zone blanche (`fake-hub.ps1`, entrées `d`, `f`, `g`, `h`, `i`).
 
+
+## #16 — feat(rendering): highlight the chosen answer when the player taps
+
+**Contexte** — La décision #3 donne à l'appui MCQ l'effet `Mettre en évidence zone(x)` et le texte « Réponse envoyée ». Le firmware n'affichait que le texte, en plein écran, ce qui effaçait les quadrants : `AcknowledgeAnswer()` ne portait pas la lettre choisie.
+
+**Décision** (choix d'Olivier à la porte 1 : mise en évidence en plein écran, **sans texte**, « plus proche du rendu final ») —
+- `LocalFeedback::AcknowledgeAnswer(char)` porte la lettre ; `BuzzerBehavior::OnMcqPressed` la transmet.
+- `Screen` gagne `HighlightChosenZone(zoneIndex)` : les dernières zones affichées, en plein écran (le découpage de `ShowZones`, donc celui des zones tactiles), la zone touchée en blanc plein, aucun texte ajouté.
+- `DisplayState::ZoneIndexForAnswer(letter)` (statique, sans état) donne l'indice 0 à 3, `NoZone` hors A–D ; `HighlightedZoneFor` et `IsLetterAnswer` s'appuient sur lui (un seul endroit définit l'intervalle A–D). `ScreenLocalFeedback` ne fait rien pour une lettre inconnue.
+- Le texte « Réponse envoyée » est retiré (`LcdTextForAnswerSent` supprimé). Cette décision remplace la partie « texte » de la #3 pour l'appui MCQ ; le texte de l'appui SPEED (« Buzz envoyé ») est inchangé.
+
+Alternatives écartées :
+- **La lettre en paramètre avec `HighlightZone` et son bandeau** : ajoute un second écran au dessin rétréci, à 40 % de la hauteur près des zones tactiles ; le texte aurait gardé une place que le rendu final n'a pas.
+- **`DisplayState` retient la zone choisie, instance partagée** : YAGNI, aucun rouge ne l'exige. Les deux instances restent sans état.
+
+**Conséquences** —
+- Avec le vrai hub, `answer_received` arrive juste après l'appui et affiche « Réponse enregistrée » en plein écran (§8.2) : la mise en évidence ne dure que jusqu'à ce message. Voir `DEBTS.md`.
+- `HighlightChosenZone` redessine les textes retenus par `GfxScreen` (`lastZoneTexts`) : périmés si l'appui suit une `question_choices` dont les propositions étaient inexploitables (le buzzer est armé, l'écran n'a pas été redessiné).
+- Non vu à l'écran : le blanc plein sous la zone touchée, texte noir (`fake-hub.ps1`, entrée `d`, puis un appui par quadrant).

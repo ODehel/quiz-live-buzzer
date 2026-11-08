@@ -248,7 +248,7 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 | `question_result` | `correct_answer` = lettre A–D (MCQ) | Mettre en évidence zone(correct_answer) | Résultat (bonne réponse + réponse joueur) | — |
 | `question_result` | sinon (SPEED), `correct: true` | Bandeau clignotant | Résultat (validé) | — |
 | `question_result` | sinon (SPEED), `correct: false` | Zones masquées | Résultat (raté) | — |
-| *(local : appui sur la zone x, MCQ armé)* | — | Mettre en évidence zone(x) | Réponse envoyée (« Réponse envoyée ») | — |
+| *(local : appui sur la zone x, MCQ armé)* | — | Mettre en évidence zone(x), en plein écran | — | — |
 | *(local : appui sur le bouton rouge, SPEED armé)* | — | Zones masquées | Buzz envoyé (« Buzz envoyé ») | — |
 | `play_sound_url` | — | inchangé | inchangé | fichier distant (HTTP GET) |
 | `play_system_sound` | — | inchangé | inchangé | son préchargé (selon `sound_id`) |

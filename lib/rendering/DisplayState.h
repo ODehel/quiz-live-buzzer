@@ -52,17 +52,19 @@ public:
     {
         if (message.Type() != "question_result" || !IsLetterAnswer(message.CorrectAnswer()))
             return NoZone;
-        return message.CorrectAnswer()[0] - 'A';
+        return ZoneIndexForAnswer(message.CorrectAnswer()[0]);
+    }
+
+    static int ZoneIndexForAnswer(char letter)
+    {
+        if (letter < 'A' || letter > 'D')
+            return NoZone;
+        return letter - 'A';
     }
 
     std::string LcdTextForTimeUp() const
     {
         return "Trop tard";
-    }
-
-    std::string LcdTextForAnswerSent() const
-    {
-        return "Réponse envoyée";
     }
 
     std::string LcdTextForBuzzSent() const
@@ -80,7 +82,7 @@ private:
 
     static bool IsLetterAnswer(const std::string &answer)
     {
-        return answer.size() == 1 && answer[0] >= 'A' && answer[0] <= 'D';
+        return answer.size() == 1 && ZoneIndexForAnswer(answer[0]) != NoZone;
     }
 
     std::string LcdTextForQuestionResult(const HubMessage &message) const

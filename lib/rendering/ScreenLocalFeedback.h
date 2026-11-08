@@ -16,9 +16,12 @@ public:
     {
     }
 
-    void AcknowledgeAnswer() override
+    void AcknowledgeAnswer(char value) override
     {
-        screen.Show(displayState.LcdTextForAnswerSent());
+        const int zone = displayState.ZoneIndexForAnswer(value);
+        if (zone == DisplayState::NoZone)
+            return;
+        screen.HighlightChosenZone(static_cast<size_t>(zone));
     }
 
     void AcknowledgeBuzz() override

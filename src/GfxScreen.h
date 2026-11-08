@@ -60,6 +60,13 @@ public:
         DrawZones(bandHeight, lcd.height() - bandHeight, zoneIndex);
     }
 
+    // Les dernières zones affichées en plein écran, la zone zoneIndex (celle que le joueur a touchée) en blanc plein, sans texte ajouté.
+    void HighlightChosenZone(size_t zoneIndex) override
+    {
+        lcd.fillScreen(TFT_BLACK);
+        DrawZones(0, lcd.height(), zoneIndex);
+    }
+
 private:
     // Dessine les zones de lastZoneTexts dans la bande (top, areaHeight), sans effacer l'écran.
     void DrawZones(int top, int areaHeight, size_t highlightedZone)

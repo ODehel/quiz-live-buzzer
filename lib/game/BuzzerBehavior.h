@@ -42,7 +42,7 @@ public:
         if (mode == Mode::McqArmed)
         {
             mode = Mode::Inert;
-            localFeedback.AcknowledgeAnswer();
+            localFeedback.AcknowledgeAnswer(value);
             hubMessageSender.SendAnswer(value);
         }
     }

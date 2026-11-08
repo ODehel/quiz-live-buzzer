@@ -42,12 +42,6 @@ TEST(DisplayStateTest, QuestionChoicesWithoutChoicesShouldGiveNoZoneText)
     EXPECT_TRUE(displayState.ZoneTextsFor(HubMessage{"question_choices"}).empty());
 }
 
-TEST(DisplayStateTest, AnswerSentShouldDisplayReponseEnvoyeeOnScreen)
-{
-    DisplayState displayState;
-    EXPECT_EQ(displayState.LcdTextForAnswerSent(), "Réponse envoyée");
-}
-
 TEST(DisplayStateTest, BuzzSentShouldDisplayBuzzEnvoyeOnScreen)
 {
     DisplayState displayState;
@@ -214,6 +208,31 @@ TEST(DisplayStateTest, AMessageOtherThanQuestionResultShouldHighlightNoZone)
 {
     DisplayState displayState;
     EXPECT_EQ(displayState.HighlightedZoneFor(HubMessage{"auth_success"}.WithCorrectAnswer("B")), DisplayState::NoZone);
+}
+
+using ChosenLetterCase = std::pair<char, int>;
+
+class ChosenZoneTest : public ::testing::TestWithParam<ChosenLetterCase>
+{
+};
+
+TEST_P(ChosenZoneTest, AChosenLetterShouldMapToItsZone)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.ZoneIndexForAnswer(GetParam().first), GetParam().second);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    TheFourChoiceLetters,
+    ChosenZoneTest,
+    ::testing::Values(ChosenLetterCase{'A', 0}, ChosenLetterCase{'B', 1}, ChosenLetterCase{'C', 2}, ChosenLetterCase{'D', 3}));
+
+TEST(DisplayStateTest, ACharacterOutsideTheFourLettersShouldChooseNoZone)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.ZoneIndexForAnswer('E'), DisplayState::NoZone);
+    EXPECT_EQ(displayState.ZoneIndexForAnswer('@'), DisplayState::NoZone);
+    EXPECT_EQ(displayState.ZoneIndexForAnswer('a'), DisplayState::NoZone);
 }
 
 using FixedTextCase = std::pair<std::string, std::string>;
