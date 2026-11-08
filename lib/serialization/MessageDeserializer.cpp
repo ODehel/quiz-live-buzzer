@@ -26,5 +26,11 @@ HubMessage MessageDeserializer::Parse(const std::string &json) const
         if (allText)
             message = message.WithChoices(choices);
     }
+    if (doc["correct_answer"].is<const char *>())
+        message = message.WithCorrectAnswer(doc["correct_answer"].as<std::string>());
+    if (doc["correct"].is<bool>())
+        message = message.WithCorrect(doc["correct"].as<bool>());
+    if (doc["player_answer"].is<const char *>())
+        message = message.WithPlayerAnswer(doc["player_answer"].as<std::string>());
     return message;
 }

@@ -74,7 +74,15 @@ $menu = @(
     @{ Key = 'e'; Label = 'auth_success (renvoi)'
        Json = '{"type":"auth_success","username":"buzzer-test","role":"buzzer","expires_in":3600}' },
     @{ Key = 'f'; Label = 'question_choices : une proposition de 36 caracteres'
-       Json = '{"type":"question_choices","choices":["Paris","Cr\u00e8me br\u00fbl\u00e9e au caramel de Normandie","Nice","Lille"]}' }
+       Json = '{"type":"question_choices","choices":["Paris","Cr\u00e8me br\u00fbl\u00e9e au caramel de Normandie","Nice","Lille"]}' },
+    @{ Key = 'g'; Label = 'question_result : MCQ, bonne reponse B, reponse du joueur C'
+       Json = '{"type":"question_result","correct_answer":"B","correct":false,"player_answer":"C"}' },
+    @{ Key = 'h'; Label = 'question_result : MCQ, bonne reponse B, pas de reponse du joueur'
+       Json = '{"type":"question_result","correct_answer":"B","correct":false}' },
+    @{ Key = 'i'; Label = 'question_result : SPEED, valide'
+       Json = '{"type":"question_result","correct_answer":"Berlin","correct":true}' },
+    @{ Key = 'j'; Label = 'question_result : SPEED, rate'
+       Json = '{"type":"question_result","correct_answer":"Berlin","correct":false}' }
 )
 
 function Show-Menu {

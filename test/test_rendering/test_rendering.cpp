@@ -100,6 +100,69 @@ TEST(DisplayStateTest, QuestionTitleWithoutTitleShouldHaveNoTextToDisplay)
     EXPECT_EQ(displayState.LcdTextFor(HubMessage{"question_title"}.WithQuestionIndex(0)), "");
 }
 
+TEST(DisplayStateTest, McqQuestionResultShouldDisplayTheCorrectAndThePlayerAnswerOnScreen)
+{
+    DisplayState displayState;
+    HubMessage message = HubMessage{"question_result"}.WithCorrectAnswer("B").WithPlayerAnswer("C");
+    EXPECT_EQ(displayState.LcdTextFor(message), "Bonne réponse : B\nVotre réponse : C");
+}
+
+TEST(DisplayStateTest, McqQuestionResultWithoutPlayerAnswerShouldDisplayOnlyTheCorrectAnswer)
+{
+    DisplayState displayState;
+    HubMessage message = HubMessage{"question_result"}.WithCorrectAnswer("B");
+    EXPECT_EQ(displayState.LcdTextFor(message), "Bonne réponse : B");
+}
+
+TEST(DisplayStateTest, SpeedQuestionResultThatIsCorrectShouldDisplayValideOnScreen)
+{
+    DisplayState displayState;
+    HubMessage message = HubMessage{"question_result"}.WithCorrectAnswer("Paris").WithCorrect(true);
+    EXPECT_EQ(displayState.LcdTextFor(message), "Validé");
+}
+
+TEST(DisplayStateTest, SpeedQuestionResultThatIsNotCorrectShouldDisplayRateOnScreen)
+{
+    DisplayState displayState;
+    HubMessage message = HubMessage{"question_result"}.WithCorrectAnswer("Paris").WithCorrect(false);
+    EXPECT_EQ(displayState.LcdTextFor(message), "Raté");
+}
+
+TEST(DisplayStateTest, QuestionResultWithoutCorrectAnswerShouldLeaveTheScreenUnchanged)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"question_result"}.WithCorrect(true).WithPlayerAnswer("C")), "");
+}
+
+TEST(DisplayStateTest, SpeedQuestionResultWithoutCorrectFlagShouldLeaveTheScreenUnchanged)
+{
+    DisplayState displayState;
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"question_result"}.WithCorrectAnswer("Paris")), "");
+}
+
+class McqLetterTest : public ::testing::TestWithParam<std::string>
+{
+};
+
+TEST_P(McqLetterTest, QuestionResultShouldTreatTheLetterAsAnMcqAnswer)
+{
+    DisplayState displayState;
+    HubMessage message = HubMessage{"question_result"}.WithCorrectAnswer(GetParam());
+    EXPECT_EQ(displayState.LcdTextFor(message), "Bonne réponse : " + GetParam());
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    TheFourChoiceLetters,
+    McqLetterTest,
+    ::testing::Values("A", "B", "C", "D"));
+
+TEST(DisplayStateTest, SpeedQuestionResultWhoseAnswerStartsWithAChoiceLetterShouldStillBeASpeedResult)
+{
+    DisplayState displayState;
+    HubMessage message = HubMessage{"question_result"}.WithCorrectAnswer("Berlin").WithCorrect(true);
+    EXPECT_EQ(displayState.LcdTextFor(message), "Validé");
+}
+
 using FixedTextCase = std::pair<std::string, std::string>;
 
 class MessageWithFixedTextTest : public ::testing::TestWithParam<FixedTextCase>

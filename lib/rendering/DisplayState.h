@@ -19,6 +19,8 @@ public:
             return message.Title();
         if (type == "question_title")
             return LcdTextForQuestionTitle(message);
+        if (type == "question_result")
+            return LcdTextForQuestionResult(message);
         if (type == "game_resumed")
             return "Partie en cours";
         if (type == "question_choices")
@@ -69,6 +71,30 @@ private:
         if (!message.HasQuestionIndex() || message.Title().empty())
             return "";
         return "Question " + std::to_string(message.QuestionIndex() + 1) + " : " + message.Title();
+    }
+
+    static bool IsLetterAnswer(const std::string &answer)
+    {
+        return answer.size() == 1 && answer[0] >= 'A' && answer[0] <= 'D';
+    }
+
+    std::string LcdTextForQuestionResult(const HubMessage &message) const
+    {
+        if (!message.HasCorrectAnswer())
+            return "";
+        if (IsLetterAnswer(message.CorrectAnswer()))
+            return LcdTextForMcqResult(message);
+        if (!message.HasCorrect())
+            return "";
+        return message.Correct() ? "Validé" : "Raté";
+    }
+
+    std::string LcdTextForMcqResult(const HubMessage &message) const
+    {
+        std::string text = "Bonne réponse : " + message.CorrectAnswer();
+        if (message.HasPlayerAnswer())
+            text += "\nVotre réponse : " + message.PlayerAnswer();
+        return text;
     }
 
     std::string LcdTextForRemainingSeconds(int seconds) const
