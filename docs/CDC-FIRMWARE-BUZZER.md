@@ -223,6 +223,7 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 > - `Zones masquées` : aucune zone tactile affichée ni active.
 > - `Zones actives` : les zones A–D sont affichées et tactiles.
 > - `Mettre en évidence zone(x)` : les zones sont affichées mais inactives, la zone x clignote (x = contenu du message, ou lettre choisie pour un appui local).
+> - `Zones conservées` : les zones affichées restent à l'écran, inactives, sous un bandeau en haut qui porte le texte LCD ; la zone en évidence (celle que le joueur a touchée) le reste.
 > - `Bandeau clignotant` : un bandeau de l'écran alterne entre deux teintes ; le texte LCD reste lisible.
 > - Durée : un effet dure tant que le message qui l'a posé reste l'état d'affichage courant, jusqu'au message suivant qui change l'effet (à revoir si besoin).
 >
@@ -240,7 +241,7 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 | `timer_tick` | — | inchangé | Chrono (« N s ») | — |
 | `timer_end` | mode armé courant | Zones masquées | Temps écoulé (« Trop tard ») | — |
 | `timer_end` | Inerte | inchangé | inchangé | — |
-| `answer_received` | — | Zones masquées | Réponse prise en compte (« Réponse enregistrée ») | — |
+| `answer_received` | — | Zones conservées | Réponse prise en compte (« Réponse enregistrée ») | — |
 | `buzz_accepted` | — | Bandeau clignotant | Tu as buzzé (« À toi ! ») | — |
 | `buzz_locked` | — | Zones masquées | Un autre a buzzé (« X a buzzé ») | — |
 | `buzz_invalidated` | — | Zones masquées | Éliminé pour la question (« Raté ») | — |

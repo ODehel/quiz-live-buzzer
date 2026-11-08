@@ -30,6 +30,11 @@ public:
         if (!zones.empty())
             screen.ShowZones(zones);
         std::string text = displayState.LcdTextFor(message);
+        if (displayState.KeepsZonesFor(message))
+        {
+            screen.ShowBanner(text);
+            return;
+        }
         const int highlightedZone = displayState.HighlightedZoneFor(message);
         if (highlightedZone != DisplayState::NoZone)
         {

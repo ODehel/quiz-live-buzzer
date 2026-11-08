@@ -36,7 +36,6 @@ INSTANTIATE_TEST_SUITE_P(
     MessagesWithAFixedText,
     MessageWithFixedTextTest,
     ::testing::Values(
-        FixedTextCase{"answer_received", "Réponse enregistrée"},
         FixedTextCase{"buzz_accepted", "À toi !"},
         FixedTextCase{"buzz_invalidated", "Raté"},
         FixedTextCase{"buzz_unlocked", "À nouveau possible de buzzer"}));
@@ -269,4 +268,16 @@ TEST(LcdRendererTest, QuestionChoicesWithoutChoicesLeavesTheScreenUnchanged)
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
     lcdRenderer.Apply(HubMessage{"question_choices"});
+}
+
+TEST(LcdRendererTest, AnswerReceivedShowsItsTextInABannerKeepingTheZones)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, ShowBanner("Réponse enregistrée")).Times(1);
+    EXPECT_CALL(mockScreen, Show(testing::_)).Times(0);
+
+    lcdRenderer.Apply(HubMessage{"answer_received"});
 }
