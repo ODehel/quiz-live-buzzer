@@ -28,10 +28,7 @@ public:
         }
         const std::vector<std::string> zones = displayState.ZoneTextsFor(message);
         if (!zones.empty())
-        {
             screen.ShowZones(zones);
-            return;
-        }
         std::string text = displayState.LcdTextFor(message);
         if (!text.empty())
             screen.Show(text);
