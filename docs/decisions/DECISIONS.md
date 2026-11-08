@@ -284,3 +284,23 @@ Alternatives écartées :
 - Avec le vrai hub, `answer_received` arrive juste après l'appui et affiche « Réponse enregistrée » en plein écran (§8.2) : la mise en évidence ne dure que jusqu'à ce message. Voir `DEBTS.md`.
 - `HighlightChosenZone` redessine les textes retenus par `GfxScreen` (`lastZoneTexts`) : périmés si l'appui suit une `question_choices` dont les propositions étaient inexploitables (le buzzer est armé, l'écran n'a pas été redessiné).
 - Non vu à l'écran : le blanc plein sous la zone touchée, texte noir (`fake-hub.ps1`, entrée `d`, puis un appui par quadrant).
+
+
+## #17 — feat(rendering): keep the chosen answer visible when the hub acknowledges it
+
+**Contexte** — `answer_received` affichait « Réponse enregistrée » en plein écran (§8.2 : `Zones masquées`), ce qui effaçait la zone mise en évidence par l'appui local (#16) presque aussitôt avec le vrai hub : le retour visuel du choix ne durait pas.
+
+**Décision** (choix d'Olivier à la porte 1 : zones conservées, texte dans un bandeau **en haut**) —
+- Le CDC §8.2 gagne l'effet `Zones conservées` et l'applique à `answer_received` : zones inactives sous un bandeau, zone choisie toujours en évidence. Déroge à la ligne précédente du tableau (`Zones masquées`).
+- `Screen` gagne `ShowBanner(text)`. `DisplayState::KeepsZonesFor(message)` (sans état) dit quels messages gardent les zones (aujourd'hui : `answer_received`) ; `LcdRenderer` appelle `ShowBanner` au lieu de `Show`.
+- `GfxScreen` retient la zone touchée (`lastChosenZone`, posée par `HighlightChosenZone`, effacée par `ShowZones`) et redessine le même écran que `question_result` (`HighlightZone`) : bandeau en quart de hauteur, quadrants rétrécis dessous.
+
+Alternatives écartées :
+- **Bandeau posé par-dessus l'écran courant, sans redessiner** : il aurait recouvert la moitié haute des zones A et B (texte centré à mi-hauteur).
+- **`DisplayState` retient la lettre choisie** : YAGNI, aucun rouge ne l'exige ; l'état reste au bord, déjà porteur des textes de zones.
+
+**Conséquences** —
+- Les quadrants rétrécissent quand l'accusé arrive (plein écran → sous le bandeau) : saut de mise en page assumé, identique à l'écran de résultat.
+- `answer_received` sans appui local préalable (hub qui répond à un `answer` venu d'ailleurs) : aucune zone en évidence, bandeau + zones seulement.
+- Un `answer_received` reçu sans `question_choices` préalable redessinerait les propositions de la question précédente (`Show` ne les efface pas) : voir `DEBTS.md`.
+- Non vu à l'écran : le bandeau au-dessus du quadrant touché, après un appui puis `a` du faux hub.

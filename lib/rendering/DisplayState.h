@@ -55,6 +55,11 @@ public:
         return ZoneIndexForAnswer(message.CorrectAnswer()[0]);
     }
 
+    bool KeepsZonesFor(const HubMessage &message) const
+    {
+        return message.Type() == "answer_received";
+    }
+
     static int ZoneIndexForAnswer(char letter)
     {
         if (letter < 'A' || letter > 'D')

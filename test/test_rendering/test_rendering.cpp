@@ -276,3 +276,23 @@ int main(int argc, char **argv)
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
+TEST(DisplayStateTest, AnswerReceivedShouldKeepTheZonesOnScreen)
+{
+    DisplayState displayState;
+    EXPECT_TRUE(displayState.KeepsZonesFor(HubMessage{"answer_received"}));
+}
+
+class MessageThatReplacesTheZonesTest : public ::testing::TestWithParam<std::string>
+{
+};
+
+TEST_P(MessageThatReplacesTheZonesTest, ShouldNotKeepTheZonesOnScreen)
+{
+    DisplayState displayState;
+    EXPECT_FALSE(displayState.KeepsZonesFor(HubMessage{GetParam()}));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    MessagesOtherThanAnswerReceived,
+    MessageThatReplacesTheZonesTest,
+    ::testing::Values("auth_success", "buzz_accepted", "question_choices", "question_result", "timer_end"));

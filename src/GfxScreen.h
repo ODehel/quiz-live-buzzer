@@ -25,6 +25,7 @@ private:
     const lgfx::GFXfont *fonts[3]; // de la plus grande taille (0) à la plus petite
     ProportionalTextMeasurer measurer;
     std::vector<std::string> lastZoneTexts; // textes du dernier ShowZones, redessinés par HighlightZone
+    size_t lastChosenZone = noZone;         // zone touchée par le joueur (HighlightChosenZone), effacée par ShowZones
 
 public:
     GfxScreen(lgfx::LGFX_Device &lcd)
@@ -47,6 +48,7 @@ public:
     void ShowZones(const std::vector<std::string> &zoneTexts) override
     {
         lastZoneTexts = zoneTexts;
+        lastChosenZone = noZone;
         lcd.fillScreen(TFT_BLACK);
         DrawZones(0, lcd.height(), noZone);
     }
@@ -63,8 +65,15 @@ public:
     // Les dernières zones affichées en plein écran, la zone zoneIndex (celle que le joueur a touchée) en blanc plein, sans texte ajouté.
     void HighlightChosenZone(size_t zoneIndex) override
     {
+        lastChosenZone = zoneIndex;
         lcd.fillScreen(TFT_BLACK);
         DrawZones(0, lcd.height(), zoneIndex);
+    }
+
+    // Texte dans un bandeau en haut, les dernières zones affichées dessous, la zone choisie par le joueur toujours en évidence.
+    void ShowBanner(const std::string &text) override
+    {
+        HighlightZone(lastChosenZone, text);
     }
 
 private:
