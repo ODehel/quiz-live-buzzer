@@ -218,3 +218,22 @@ int main(int argc, char **argv)
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
+TEST(LcdRendererTest, QuestionChoicesShowsTheFourChoicesAsZonesOnScreen)
+{
+    testing::StrictMock<MockScreen> mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, ShowZones(std::vector<std::string>{"A : Paris", "B : Lyon", "C : Nice", "D : Lille"})).Times(1);
+
+    lcdRenderer.Apply(HubMessage{"question_choices"}.WithChoices({"Paris", "Lyon", "Nice", "Lille"}));
+}
+
+TEST(LcdRendererTest, QuestionChoicesWithoutChoicesLeavesTheScreenUnchanged)
+{
+    testing::StrictMock<MockScreen> mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    lcdRenderer.Apply(HubMessage{"question_choices"});
+}

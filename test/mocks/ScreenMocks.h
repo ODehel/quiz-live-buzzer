@@ -8,6 +8,7 @@ class MockScreen : public Screen
 {
 public:
     MOCK_METHOD(void, Show, (const std::string &text), (override));
+    MOCK_METHOD(void, ShowZones, (const std::vector<std::string> &zoneTexts), (override));
 };
 
 #endif

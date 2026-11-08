@@ -226,3 +226,21 @@ Alternatives écartées :
 - `player_answer` à `null` (joueur sans réponse, enregistré avec `answer: null` côté hub, US-011 CA-34) est traité comme absent ; non vérifié contre le hub, qui n'émet pas encore ce message.
 - Les effets d'écran (zone mise en évidence, bandeau clignotant, zones masquées) ne sont pas portés par cette session (feature « effets d'écran »).
 - Non vu à l'écran : le rendu se juge au smoke test (`fake-hub.ps1`, entrées `g` à `j`).
+
+## #14 — feat(rendering): show the four choices as tappable zones
+
+**Contexte** — `question_choices` s'affichait comme un seul texte de quatre lignes (décision #12). Le §8.2 lui donne l'effet `Zones actives` : les zones A–D sont affichées. `Screen` ne savait que `Show(texte)`.
+
+**Décision** (choix d'Olivier à la porte 1 : chaque quadrant contient la proposition entière) —
+- `Screen` gagne `ShowZones(zoneTexts)` : un texte par zone, en grille 2×2 (A en haut à gauche, B en haut à droite, C en bas à gauche, D en bas à droite), le découpage des zones tactiles de `main.cpp`. Chaque texte est mis en page dans son quadrant (`TextLayout`), avec un cadre.
+- `DisplayState::ZoneTextsFor(message)` donne les textes (« A : … » à « D : … », lettre selon la position) pour `question_choices`, une liste vide pour tout autre type de message ou sans `choices`. Il reste sans état.
+- `LcdRenderer` appelle `ShowZones` quand la liste n'est pas vide, `Show` sinon. `question_choices` n'a plus de texte plat (`LcdTextFor` rend une chaîne vide).
+
+Alternatives écartées :
+- **Un paramètre d'effet sur `Show`** (`Show(texte, effet)`) : un seul effet existe ; un type d'effet se justifiera avec le deuxième (« Mettre en évidence »), pas avant.
+- **La lettre seule dans le quadrant, le texte ailleurs** : le texte des propositions ne serait plus relié à la zone qu'on touche.
+
+**Conséquences** —
+- Le tactile reste actif sur tout l'écran (zones figées de `main.cpp`) : seul le dessin change. Les effets « Zones masquées » et « Mettre en évidence » restent à faire ; un appui MCQ affiche toujours « Réponse envoyée » en plein écran, ce qui efface les quadrants.
+- Le découpage 2×2 vit à deux endroits (`GfxScreen`, `main.cpp`) : noté dans `DEBTS.md`.
+- Non vu à l'écran : une proposition de 40 caractères dans un quadrant de 400×240 px (zone de texte 380×220), à juger au smoke test (`fake-hub.ps1`, entrées `d` et `f`).
