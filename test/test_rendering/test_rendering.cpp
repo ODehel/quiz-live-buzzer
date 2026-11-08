@@ -13,17 +13,33 @@ TEST(DisplayStateTest, GameResumedShouldDisplayPartieEnCoursOnScreen)
     EXPECT_EQ(displayState.LcdTextFor(HubMessage{"game_resumed"}), "Partie en cours");
 }
 
-TEST(DisplayStateTest, QuestionChoicesShouldDisplayTheFourChoicesOnScreen)
+TEST(DisplayStateTest, QuestionChoicesShouldGiveOneZoneTextPerChoice)
 {
     DisplayState displayState;
     HubMessage message = HubMessage{"question_choices"}.WithChoices({"Paris", "Lyon", "Nice", "Lille"});
-    EXPECT_EQ(displayState.LcdTextFor(message), "A : Paris\nB : Lyon\nC : Nice\nD : Lille");
+    EXPECT_EQ(displayState.ZoneTextsFor(message),
+              (std::vector<std::string>{"A : Paris", "B : Lyon", "C : Nice", "D : Lille"}));
 }
 
-TEST(DisplayStateTest, QuestionChoicesWithoutChoicesShouldLeaveTheScreenUnchanged)
+TEST(DisplayStateTest, QuestionChoicesShouldLabelEachZoneWithItsOwnLetter)
 {
     DisplayState displayState;
-    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"question_choices"}), "");
+    HubMessage message = HubMessage{"question_choices"}.WithChoices({"1789", "1792", "1804", "1815"});
+    EXPECT_EQ(displayState.ZoneTextsFor(message),
+              (std::vector<std::string>{"A : 1789", "B : 1792", "C : 1804", "D : 1815"}));
+}
+
+TEST(DisplayStateTest, AMessageOtherThanQuestionChoicesShouldGiveNoZoneText)
+{
+    DisplayState displayState;
+    HubMessage message = HubMessage{"auth_success"}.WithChoices({"Paris", "Lyon", "Nice", "Lille"});
+    EXPECT_TRUE(displayState.ZoneTextsFor(message).empty());
+}
+
+TEST(DisplayStateTest, QuestionChoicesWithoutChoicesShouldGiveNoZoneText)
+{
+    DisplayState displayState;
+    EXPECT_TRUE(displayState.ZoneTextsFor(HubMessage{"question_choices"}).empty());
 }
 
 TEST(DisplayStateTest, AnswerSentShouldDisplayReponseEnvoyeeOnScreen)

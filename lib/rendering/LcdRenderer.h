@@ -26,6 +26,9 @@ public:
                 screen.Show(displayState.LcdTextForTimeUp());
             return;
         }
+        const std::vector<std::string> zones = displayState.ZoneTextsFor(message);
+        if (!zones.empty())
+            screen.ShowZones(zones);
         std::string text = displayState.LcdTextFor(message);
         if (!text.empty())
             screen.Show(text);
