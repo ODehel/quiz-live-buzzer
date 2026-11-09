@@ -598,3 +598,17 @@ Alternatives écartées :
 - **Choix d'ordre de Claude** : F3 (login refusé) est une variante de D1 ; « bonne réponse » est l'écran principal du résultat, « fausse » et « sans réponse » ses variantes ; le classement provisoire (K1) est rangé avec le classement final, alors qu'il tombe entre deux questions.
 - **Non tranché** : la répartition des réponses par proposition (« nombre de personnes par réponse », CSV d'origine) n'a ni maquette ni carte ; la question a été posée à Olivier sans réponse.
 - La plaquette est une seconde liste à tenir à jour à côté de `index.html` : voir `DEBTS.md`.
+
+## #36 — docs(mockups): add the configuration screen
+
+**Contexte** — La décision #33 renvoyait l'écran de configuration à une session séparée et citait un aperçu validé (engrenage or, « Configuration », QR). Aucun fichier n'avait été commité, et Olivier n'en avait pas non plus en local : la plaquette (#35) l'affichait donc comme « À maquetter ». Olivier a demandé de le refaire.
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **Une page** `start-06-config` (D6) ; index mis à jour (section « Démarrage et attente »). **Code D6 plutôt que D0**, pour ne pas renuméroter D1 à D5, déjà cités dans le CDC et les décisions ; la plaquette la place en tête du démarrage.
+- **Mise en page** : engrenage plein or dans l'anneau (même gabarit que D2 à D4), « Configuration » à la taille des titres d'attente, QR code dans une carte blanche à droite ; **aucune consigne** (règle de #33 : seul le maître du jeu paramètre le buzzer avec son téléphone). Quatre règles nouvelles dans `mockup.css` (`.center.config`, `.config .side`, `.qr`, `.qr svg`), aucune couleur nouvelle.
+- **Bandeau du haut** comme à l'écran de démarrage (D1) : sans joueur, hub injoignable (pas encore configuré), batterie.
+
+**Conséquences** —
+- **Le QR est une valeur d'exemple** (`buzzolive://setup?b=7F3A91`, 25 modules, généré avec `segno`) ; son contenu réel dépend du canal d'appairage.
+- **Non décidé** : le canal d'appairage (BLE, point d'accès temporaire, autre), le déclencheur de l'écran (premier démarrage, appui long, absence de configuration), l'application mobile, et la sortie de l'écran une fois configuré. Aucun message du §8.1 ne le concerne : l'écran est local, avant toute connexion au hub.
+- Le code ne change pas ; le CDC ne décrit pas cet écran : voir `DEBTS.md`.

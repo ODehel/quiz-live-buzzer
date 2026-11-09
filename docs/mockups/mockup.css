@@ -451,3 +451,9 @@ body {
 /* Sur une photo, les capsules prennent un fond opaque : la photo peut être claire. */
 .photo .cap { background: var(--status); }
 .sound-art { width: calc(var(--u) * 66); height: calc(var(--u) * 19.8); }
+
+/* ---- Configuration (D6) : engrenage et titre à gauche, QR code à droite ---- */
+.center.config { flex-direction: row; gap: calc(var(--u) * 6); }
+.config .side { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 3); }
+.qr { flex: none; width: calc(var(--u) * 36); height: calc(var(--u) * 36); padding: calc(var(--u) * 2.5); border-radius: calc(var(--u) * 2.5); background: var(--card); }
+.qr svg { display: block; width: 100%; height: 100%; }
