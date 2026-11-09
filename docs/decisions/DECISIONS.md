@@ -531,8 +531,9 @@ Alternatives écartées :
 - **Trois pages** : `rank-01-interim` (K1, six joueurs, la ligne du joueur en blanc, cercles or, argent et bronze pour les trois premiers), `rank-01b-interim-leader` (K1b, « Tu es en tête ! », bandeau et ligne or, à la place du clignotement des LED du premier de l'ancienne liste), `rank-01c-interim-long` (K1c, plus de joueurs que de lignes : cinq premiers, « … », ligne du joueur avec son vrai rang) ; section « Classements » dans l'index.
 
 **Conséquences** (si la proposition est validée) —
-- **Hypothèses de Claude, non confirmées par Olivier** : « provisoire » = « intermédiaire » (le message et la spec disent « intermédiaire ») ; six joueurs au plus tiennent à l'écran (le « /6 » du bandeau) ; l'écran remplace l'écran courant (zones masquées).
+- **Confirmé par Olivier (2026-11-09)** : « provisoire » = « intermédiaire » ; dix joueurs au plus (six lignes tiennent à l'écran, K1c couvre de 7 à 10) ; la reconnaissance de sa propre ligne lui convient ; la durée d'affichage est décidée par le maître du jeu dans son animation (le firmware ne minute rien).
+- **Proposé par Claude, non tranché** : l'écran remplace l'écran courant (zones masquées).
 - **Libellés proposés par Claude, absents du CDC** : « Classement provisoire », « Tu es en tête ! », « N pts », temps total en secondes.
-- **Le firmware devra reconnaître sa ligne** : par `participant_name` comparé au `username` d'`auth_success` ; la spec ne dit pas qu'ils sont identiques.
-- **Non tranché** : la durée d'affichage, et ce que devient une question armée pendant que le classement est à l'écran (le hub ne l'interrompt pas, CA-13) ; même famille que la dette « Buzzer armé sans zone tactile à l'écran ».
+- **Le firmware reconnaît sa ligne** (principe validé) : par `participant_name` comparé au `username` d'`auth_success` ; la spec du hub ne dit pas qu'ils sont identiques, à garantir côté hub.
+- **Non tranché** : ce que devient une question armée pendant que le classement est à l'écran (le hub ne l'interrompt pas, CA-13) ; même famille que la dette « Buzzer armé sans zone tactile à l'écran ».
 - Le code ne change pas ; le CDC ne décrit pas encore ce message ni ces écrans : voir `DEBTS.md`.
