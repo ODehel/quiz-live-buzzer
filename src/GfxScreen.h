@@ -2,14 +2,17 @@
 #define GFX_SCREEN_H
 
 #include "GfxFontMetrics.h"
+#include "Overloaded.h"
 #include "ProportionalTextMeasurer.h"
 #include "Screen.h"
+#include "ScreenModel.h"
 #include "TextLayout.h"
 #include "ZoneGrid.h"
 #include "fonts/OswaldRegular30.h"
 #include "fonts/OswaldRegular38.h"
 #include "fonts/OswaldRegular48.h"
 #include <string>
+#include <variant>
 #include <vector>
 #include <LovyanGFX.hpp>
 
@@ -38,7 +41,22 @@ public:
     {
     }
 
-    void Show(const std::string &text) override
+    // Un type d'écran, un dessin : le modèle dit quoi montrer, les méthodes privées savent comment.
+    void Display(const ScreenModel &screenModel) override
+    {
+        std::visit(Overloaded{
+                       [](const ScreenUnchanged &) {},
+                       [this](const TextScreen &textScreen) { Show(textScreen.text); },
+                       [this](const ZonesScreen &zonesScreen) { ShowZones(zonesScreen.zoneTexts); },
+                       [this](const HighlightedZoneScreen &highlightedZoneScreen)
+                       { HighlightZone(highlightedZoneScreen.zoneIndex, highlightedZoneScreen.bannerText); },
+                       [this](const ChosenZoneScreen &chosenZoneScreen) { HighlightChosenZone(chosenZoneScreen.zoneIndex); },
+                       [this](const BannerScreen &bannerScreen) { ShowBanner(bannerScreen.bannerText); }},
+                   screenModel);
+    }
+
+private:
+    void Show(const std::string &text)
     {
         lcd.fillScreen(TFT_BLACK); // efface l'écran (pas d'empilement)
         DrawTextIn(text, 0, 0, lcd.width(), lcd.height());
@@ -46,7 +64,7 @@ public:
 
     // Une zone par texte, en grille 2x2 : A en haut à gauche, B en haut à droite, C en bas à gauche, D en bas à droite
     // (`ZoneGrid`, le même découpage que les zones tactiles de `TappableZonesScreen`). Au-delà de quatre textes, les suivants ne sont pas dessinés.
-    void ShowZones(const std::vector<std::string> &zoneTexts) override
+    void ShowZones(const std::vector<std::string> &zoneTexts)
     {
         lastZoneTexts = zoneTexts;
         lastChosenZone = noZone;
@@ -55,7 +73,7 @@ public:
     }
 
     // Texte dans un bandeau en haut, les dernières zones affichées dessous (hauteur réduite), la zone zoneIndex en blanc plein.
-    void HighlightZone(size_t zoneIndex, const std::string &text) override
+    void HighlightZone(size_t zoneIndex, const std::string &text)
     {
         const int bandHeight = lcd.height() / resultBandDivisor;
         lcd.fillScreen(TFT_BLACK);
@@ -64,7 +82,7 @@ public:
     }
 
     // Les dernières zones affichées en plein écran, la zone zoneIndex (celle que le joueur a touchée) en blanc plein, sans texte ajouté.
-    void HighlightChosenZone(size_t zoneIndex) override
+    void HighlightChosenZone(size_t zoneIndex)
     {
         lastChosenZone = zoneIndex;
         lcd.fillScreen(TFT_BLACK);
@@ -72,12 +90,11 @@ public:
     }
 
     // Texte dans un bandeau en haut, les dernières zones affichées dessous, la zone choisie par le joueur toujours en évidence.
-    void ShowBanner(const std::string &text) override
+    void ShowBanner(const std::string &text)
     {
         HighlightZone(lastChosenZone, text);
     }
 
-private:
     // Dessine les zones de lastZoneTexts dans la bande (top, areaHeight), sans effacer l'écran.
     void DrawZones(int top, int areaHeight, size_t highlightedZone)
     {

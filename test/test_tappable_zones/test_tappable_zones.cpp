@@ -18,42 +18,47 @@ protected:
     {
         return reader.DeduceButton({x, y});
     }
+
+    void ShowTheFourZones()
+    {
+        screen.Display(ZonesScreen{{"A : un", "B : deux", "C : trois", "D : quatre"}});
+    }
 };
 
-TEST_F(TappableZonesScreenTest, ShowForwardsTheTextToTheScreen)
+TEST_F(TappableZonesScreenTest, DisplayForwardsATextScreenToTheScreen)
 {
-    EXPECT_CALL(inner, Show("Connecté"));
+    EXPECT_CALL(inner, Display(ScreenModel{TextScreen{"Connecté"}}));
 
-    screen.Show("Connecté");
+    screen.Display(TextScreen{"Connecté"});
 }
 
-TEST_F(TappableZonesScreenTest, ShowZonesForwardsTheTextsToTheScreen)
+TEST_F(TappableZonesScreenTest, DisplayForwardsAZonesScreenToTheScreen)
 {
-    const std::vector<std::string> texts{"A : un", "B : deux"};
-    EXPECT_CALL(inner, ShowZones(texts));
+    const ScreenModel zones = ZonesScreen{{"A : un", "B : deux"}};
+    EXPECT_CALL(inner, Display(zones));
 
-    screen.ShowZones(texts);
+    screen.Display(zones);
 }
 
-TEST_F(TappableZonesScreenTest, HighlightZoneForwardsTheZoneAndTheTextToTheScreen)
+TEST_F(TappableZonesScreenTest, DisplayForwardsAHighlightedZoneScreenToTheScreen)
 {
-    EXPECT_CALL(inner, HighlightZone(2, "Bonne réponse : C"));
+    EXPECT_CALL(inner, Display(ScreenModel{HighlightedZoneScreen{2, "Bonne réponse : C"}}));
 
-    screen.HighlightZone(2, "Bonne réponse : C");
+    screen.Display(HighlightedZoneScreen{2, "Bonne réponse : C"});
 }
 
-TEST_F(TappableZonesScreenTest, HighlightChosenZoneForwardsTheZoneToTheScreen)
+TEST_F(TappableZonesScreenTest, DisplayForwardsAChosenZoneScreenToTheScreen)
 {
-    EXPECT_CALL(inner, HighlightChosenZone(1));
+    EXPECT_CALL(inner, Display(ScreenModel{ChosenZoneScreen{1}}));
 
-    screen.HighlightChosenZone(1);
+    screen.Display(ChosenZoneScreen{1});
 }
 
-TEST_F(TappableZonesScreenTest, ShowBannerForwardsTheTextToTheScreen)
+TEST_F(TappableZonesScreenTest, DisplayForwardsABannerScreenToTheScreen)
 {
-    EXPECT_CALL(inner, ShowBanner("Réponse enregistrée"));
+    EXPECT_CALL(inner, Display(ScreenModel{BannerScreen{"Réponse enregistrée"}}));
 
-    screen.ShowBanner("Réponse enregistrée");
+    screen.Display(BannerScreen{"Réponse enregistrée"});
 }
 
 TEST_F(TappableZonesScreenTest, NoZoneIsTouchableBeforeAnyZoneIsShown)
@@ -63,7 +68,7 @@ TEST_F(TappableZonesScreenTest, NoZoneIsTouchableBeforeAnyZoneIsShown)
 
 TEST_F(TappableZonesScreenTest, EachQuarterIsTouchableOnceTheFourZonesAreShown)
 {
-    screen.ShowZones({"A : un", "B : deux", "C : trois", "D : quatre"});
+    ShowTheFourZones();
 
     EXPECT_EQ(TouchedAt(100, 100), ButtonInput::A);
     EXPECT_EQ(TouchedAt(600, 100), ButtonInput::B);
@@ -73,7 +78,7 @@ TEST_F(TappableZonesScreenTest, EachQuarterIsTouchableOnceTheFourZonesAreShown)
 
 TEST_F(TappableZonesScreenTest, OnlyTheShownZonesAreTouchable)
 {
-    screen.ShowZones({"A : un", "B : deux"});
+    screen.Display(ZonesScreen{{"A : un", "B : deux"}});
 
     EXPECT_EQ(TouchedAt(600, 100), ButtonInput::B);
     EXPECT_EQ(TouchedAt(100, 400), ButtonInput::Unknown);
@@ -81,9 +86,9 @@ TEST_F(TappableZonesScreenTest, OnlyTheShownZonesAreTouchable)
 
 TEST_F(TappableZonesScreenTest, ShowingZonesAgainReplacesThePreviousOnes)
 {
-    screen.ShowZones({"A : un", "B : deux", "C : trois", "D : quatre"});
+    ShowTheFourZones();
 
-    screen.ShowZones({"A : un", "B : deux"});
+    screen.Display(ZonesScreen{{"A : un", "B : deux"}});
 
     EXPECT_EQ(TouchedAt(100, 100), ButtonInput::A);
     EXPECT_EQ(TouchedAt(100, 400), ButtonInput::Unknown);
@@ -91,45 +96,55 @@ TEST_F(TappableZonesScreenTest, ShowingZonesAgainReplacesThePreviousOnes)
 
 TEST_F(TappableZonesScreenTest, NoMoreThanFourZonesAreTouchable)
 {
-    screen.ShowZones({"A : un", "B : deux", "C : trois", "D : quatre", "E : cinq"});
+    screen.Display(ZonesScreen{{"A : un", "B : deux", "C : trois", "D : quatre", "E : cinq"}});
 
     EXPECT_EQ(TouchedAt(100, 500), ButtonInput::Unknown);
 }
 
-TEST_F(TappableZonesScreenTest, ShowDeactivatesTheZones)
+TEST_F(TappableZonesScreenTest, ATextScreenDeactivatesTheZones)
 {
-    screen.ShowZones({"A : un", "B : deux", "C : trois", "D : quatre"});
+    ShowTheFourZones();
 
-    screen.Show("12 s");
+    screen.Display(TextScreen{"12 s"});
 
     EXPECT_EQ(TouchedAt(100, 100), ButtonInput::Unknown);
 }
 
-TEST_F(TappableZonesScreenTest, HighlightChosenZoneDeactivatesTheZones)
+TEST_F(TappableZonesScreenTest, AChosenZoneScreenDeactivatesTheZones)
 {
-    screen.ShowZones({"A : un", "B : deux", "C : trois", "D : quatre"});
+    ShowTheFourZones();
 
-    screen.HighlightChosenZone(1);
+    screen.Display(ChosenZoneScreen{1});
 
     EXPECT_EQ(TouchedAt(600, 100), ButtonInput::Unknown);
 }
 
-TEST_F(TappableZonesScreenTest, HighlightZoneDeactivatesTheZones)
+TEST_F(TappableZonesScreenTest, AHighlightedZoneScreenDeactivatesTheZones)
 {
-    screen.ShowZones({"A : un", "B : deux", "C : trois", "D : quatre"});
+    ShowTheFourZones();
 
-    screen.HighlightZone(2, "Bonne réponse : C");
+    screen.Display(HighlightedZoneScreen{2, "Bonne réponse : C"});
 
     EXPECT_EQ(TouchedAt(100, 400), ButtonInput::Unknown);
 }
 
-TEST_F(TappableZonesScreenTest, ShowBannerDeactivatesTheZones)
+TEST_F(TappableZonesScreenTest, ABannerScreenDeactivatesTheZones)
 {
-    screen.ShowZones({"A : un", "B : deux", "C : trois", "D : quatre"});
+    ShowTheFourZones();
 
-    screen.ShowBanner("Réponse enregistrée");
+    screen.Display(BannerScreen{"Réponse enregistrée"});
 
     EXPECT_EQ(TouchedAt(600, 400), ButtonInput::Unknown);
+}
+
+TEST_F(TappableZonesScreenTest, AnUnchangedScreenTouchesNeitherTheScreenNorTheZones)
+{
+    ShowTheFourZones();
+    EXPECT_CALL(inner, Display(testing::_)).Times(0);
+
+    screen.Display(ScreenUnchanged{});
+
+    EXPECT_EQ(TouchedAt(100, 100), ButtonInput::A);
 }
 
 int main(int argc, char **argv)

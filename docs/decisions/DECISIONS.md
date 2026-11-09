@@ -664,3 +664,23 @@ Alternatives écartées :
 - **Le refus de `<optional>` (#15) avait vraisemblablement la même cause** (standard C++ trop bas, pas un manque de la toolchain ; `<optional>` n'a pas été resondé) : sa justification est à considérer comme obsolète. La décision #15 n'est pas réécrite (le fichier est en ajout seul) ; le code concerné est en dette dans `DEBTS.md`.
 - **Non prouvé** : le comportement à l'exécution sur la carte (smoke test matériel non lancé) ; le changement n'affecte que la compilation, les 76 tests natifs ne sont pas concernés.
 - **Ordre des sessions inchangé** : `refactor(rendering)` qui place les écrans existants derrière la couture, puis `feat(rendering)` du bandeau du haut.
+
+## #40 — refactor(rendering): describe each screen before drawing it
+
+**Contexte** — La décision #38 laissait à cette session la forme de la couture `Screen` : rester impérative (cinq méthodes, une par effet) ou devenir « afficher un modèle d'écran ». Le dispatch message → effet vivait dans `LcdRenderer`, celui de l'appui local dans `ScreenLocalFeedback`.
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09, option A) —
+- **`Screen` n'a plus qu'une méthode : `Display(const ScreenModel &)`.** `ScreenModel` (`lib/rendering/ScreenModel.h`) est un `std::variant` de valeurs comparables : `TextScreen`, `ZonesScreen`, `HighlightedZoneScreen` (bandeau et évidence de la bonne réponse), `ChosenZoneScreen` (zone touchée), `BannerScreen` (bandeau, zones et zone choisie conservées) et `ScreenUnchanged` (rien à redessiner).
+- **`ScreenPresenter` (`lib/rendering/`)** : message et état armé → `ScreenModel` ; `ScreenForTappedAnswer` et `ScreenForBuzzSent` pour le retour local. Il compose `DisplayState` pour les textes et les zones.
+- **`LcdRenderer` et `ScreenLocalFeedback` délèguent au presenter** et n'appellent `Display` que si le modèle n'est pas `ScreenUnchanged`.
+- **`TappableZonesScreen` et `GfxScreen` visitent le modèle** (`std::visit` avec `Overloaded`). `GfxScreen` est exhaustif : une variante sans dessin ne compile pas.
+
+**Écarts à la proposition de la porte 1** (choisis par Claude, à relire en PR) —
+- Cinq variantes d'écran plus `ScreenUnchanged`, et non quatre : `BannerScreen` reste distinct de `HighlightedZoneScreen` parce que la zone choisie qu'il garde en évidence vit dans l'adaptateur (`lastChosenZone`, dette « Textes des zones retenus par l'adaptateur »).
+- « Rien à redessiner » est une variante du modèle plutôt qu'un `std::optional` : `std::variant` est prouvé sur l'env `esp32` (#39), `std::optional` n'a pas été resondé.
+
+**Conséquences** —
+- **Comportement voulu inchangé.** Les attentes des tests de `LcdRenderer`, `ScreenLocalFeedback`, `TappableZonesScreen` et `test_connection` sont traduites vers `Display(...)` ; le presenter naît sous 19 tests, dont 6 mutations ciblées toutes tuées.
+- **`IsArmed()` est lu à chaque message** (avant : seulement sur `timer_end`). C'est un getter `const` sans effet de bord, lu au même instant (avant le traitement du message par le comportement).
+- **Non prouvé** : le build `esp32` (Flash, `std::visit` sans exceptions) et le rendu à l'écran, laissés au smoke test d'Olivier ; `GfxScreen` n'a été compilé qu'à blanc contre des stubs LovyanGFX.
+- **Ordre des sessions inchangé** : `feat(rendering)` du bandeau du haut sur tous les écrans vient ensuite.

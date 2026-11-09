@@ -1,17 +1,18 @@
 #ifndef LCD_RENDERER_H
 #define LCD_RENDERER_H
 
+#include <variant>
 #include "ArmedModeReader.h"
-#include "DisplayState.h"
 #include "MessageRenderer.h"
 #include "Screen.h"
+#include "ScreenPresenter.h"
 
 class LcdRenderer : public MessageRenderer
 {
 private:
     Screen &screen;
     const ArmedModeReader &armedModeReader;
-    DisplayState displayState;
+    ScreenPresenter presenter;
 
 public:
     LcdRenderer(Screen &screen, const ArmedModeReader &armedModeReader) : screen(screen), armedModeReader(armedModeReader)
@@ -20,29 +21,9 @@ public:
 
     void Apply(const HubMessage &message) override
     {
-        if (message.Type() == "timer_end")
-        {
-            if (armedModeReader.IsArmed())
-                screen.Show(displayState.LcdTextForTimeUp());
-            return;
-        }
-        const std::vector<std::string> zones = displayState.ZoneTextsFor(message);
-        if (!zones.empty())
-            screen.ShowZones(zones);
-        std::string text = displayState.LcdTextFor(message);
-        if (displayState.KeepsZonesFor(message))
-        {
-            screen.ShowBanner(text);
-            return;
-        }
-        const int highlightedZone = displayState.HighlightedZoneFor(message);
-        if (highlightedZone != DisplayState::NoZone)
-        {
-            screen.HighlightZone(static_cast<size_t>(highlightedZone), text);
-            return;
-        }
-        if (!text.empty())
-            screen.Show(text);
+        const ScreenModel screenModel = presenter.ScreenFor(message, armedModeReader.IsArmed());
+        if (!std::holds_alternative<ScreenUnchanged>(screenModel))
+            screen.Display(screenModel);
     }
 };
 

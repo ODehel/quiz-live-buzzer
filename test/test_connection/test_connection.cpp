@@ -161,7 +161,7 @@ TEST(ConnectionEventHandlerRenderingTest, TimerEndIsRenderedWithTheModeOfBeforeT
     ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer};
     buzzerBehavior.OnQuestionOpen();
 
-    EXPECT_CALL(mockScreen, Show("Trop tard")).Times(1);
+    EXPECT_CALL(mockScreen, Display(ScreenModel{TextScreen{"Trop tard"}})).Times(1);
 
     handler.OnMessageReceived("{\"type\":\"timer_end\"}");
 }
