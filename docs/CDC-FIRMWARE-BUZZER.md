@@ -234,7 +234,7 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 > - **Données du bandeau** : la liaison avec le hub existe (§5) ; la charge de la batterie est mesurée par le firmware, sans message du hub ; **le nom du joueur, ses points et son classement sont à définir** (aucun message du §8.1 ne les porte ; `question_result` donne `cumulative_score` après la question).
 > - **Chrono** : resynchronisé à chaque `timer_tick` (toutes les 5 s, US-011 CA-11), le firmware décompte localement entre deux (à confirmer à l'implémentation).
 > - **Capsules du titre** : le temps imparti vient de `time_limit` ; le **thème** et les **points à gagner** sont **à définir** côté hub.
-> - **Reporté** : les écrans QCM et SPEED ci-dessous. Les réactions du personnage (maquettes `reaction-*`) ne le sont pas encore ; les lignes qui les mentionnent les renvoient à cette session.
+> - **Reporté** : les écrans QCM et SPEED ci-dessous et les réactions du personnage (maquettes `reaction-*`), décrites dans le sous-tableau qui suit le tableau.
 
 | Message | Condition | Effet écran | LCD | Son |
 |---|---|---|---|---|
@@ -250,9 +250,11 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 | `answer_received` | — | Zones conservées | En-tête « Réponse enregistrée » à la place de « Question N » ; le chrono continue | — |
 | `buzz_accepted` | — | Bandeau clignotant | Bandeau or « À toi ! » à la place de l'en-tête ; la question reste affichée, « Réponds à voix haute » ; pas de chrono (la réponse se dit à l'oral, le maître du jeu tranche) | — |
 | `buzz_locked` | — | Zones masquées | Bandeau sobre « X a buzzé » (nom en or) ; la question reste affichée, atténuée ; ni chrono ni bouton rouge | — |
-| `buzz_invalidated` | — | Zones masquées | « Raté… » et « Éliminé pour cette question », avec la réaction du personnage (voir la session des réactions) | — |
+| `buzz_invalidated` | — | Zones masquées | Réaction R9 « Sonné » (fixe), puis « Raté… » et « Éliminé pour cette question » | — |
 | `buzz_unlocked` | — | Zones masquées | Même écran que `question_open` ; le chrono reprend à `remaining_seconds` | — |
-| `question_result` | `correct_answer` = lettre A–D (MCQ) | Mettre en évidence zone(correct_answer) | En-tête « Bonne réponse : B » puis « Votre réponse : C » si `player_answer` est présent ; la réponse fausse du joueur est cerclée de rouge | — |
+| `question_result` | `correct_answer` = lettre A–D (MCQ), `correct: true` | Mettre en évidence zone(correct_answer) | Réaction « bonne réponse », puis en-tête « Bonne réponse : B » et « Votre réponse : B », les deux lettres en or | — |
+| `question_result` | `correct_answer` = lettre A–D (MCQ), `correct: false`, `player_answer` présent | Mettre en évidence zone(correct_answer) | Réaction « mauvaise réponse », puis en-tête « Bonne réponse : B » et « Votre réponse : C » ; la réponse fausse du joueur est cerclée de rouge | — |
+| `question_result` | `correct_answer` = lettre A–D (MCQ), `correct: false`, `player_answer` absent | Mettre en évidence zone(correct_answer) | Réaction « sans réponse » (Endormi), puis en-tête sur une seule ligne « Bonne réponse : B » | — |
 | `question_result` | sinon (SPEED), `correct: true` | Bandeau clignotant | Réaction du personnage, puis bandeau or « Validé » avec une coche, capsule « +10 pts » (`points_earned`), « Bonne réponse » et `correct_answer` | — |
 | `question_result` | sinon (SPEED), `correct: false`, ce buzzer a buzzé | Zones masquées | Réaction « mauvaise réponse », puis bandeau rose « Raté », « Bonne réponse » et `correct_answer` ; pas de points perdus | — |
 | `question_result` | sinon (SPEED), `correct: false`, ce buzzer n'a pas buzzé | Zones masquées | Réaction « sans réponse » (Endormi), puis bandeau sobre « Question terminée », « Bonne réponse » et `correct_answer` ; ni gain ni perte | — |
@@ -268,6 +270,30 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 > **Rendu local** : le rendu d'un appui armé s'exécute dans la séquence lock-first (§4.2), après la pose du verrou et avant l'émission. Il vaut jusqu'au message suivant du hub (`answer_received`, `buzz_accepted`, `buzz_locked`…), qui le remplace selon le tableau. Le SPEED n'affiche pas `Bandeau clignotant` à l'appui : le hub peut avoir accepté un autre buzzer d'abord, le bandeau n'est donc posé qu'à `buzz_accepted`.
 
 > **Sons et messages métier** : le hub déclenche les sons système via des messages `play_system_sound` **distincts** des messages métier (US-018 : « message métier d'abord, son système ensuite »). La colonne Son n'est donc renseignée que sur les lignes `play_sound_url` / `play_system_sound` ; les sons associés aux événements (buzz, résultat, timer) arrivent par ces messages séparés.
+
+#### Réactions du personnage
+
+> Rendu cible des maquettes `reaction-*` (décisions #20, #21 et #27). Une réaction est un **écran plein écran** : le personnage en grand dans un médaillon dont le fond dit la situation, le libellé à côté, le bandeau du haut conservé. Elle précède l'écran de la ligne du tableau qui la mentionne (QCM comme SPEED) ; cet écran est posé à l'issue de la durée et reste jusqu'au message suivant.
+
+| # | Réaction | Situation | Libellé | Fond | Durée |
+|---|---|---|---|---|---|
+| R1 | Ravi | bonne réponse | « Bravo ! » | or | 2000 ms |
+| R2 | Hilare | bonne réponse | « Excellent ! » | or | 2000 ms |
+| R3 | Amoureux | bonne réponse | « Magnifique ! » | or | 2000 ms |
+| R4 | Malin | bonne réponse | « Facile ! » | or | 2000 ms |
+| R5 | Taquin | bonne réponse | « Et voilà ! » | or | 2000 ms |
+| R6 | Déçu | mauvaise réponse | « Raté… » | rose | 2000 ms |
+| R7 | En colère | mauvaise réponse | « Zut ! » | rose | 2000 ms |
+| R8 | Dépité | mauvaise réponse | « Oh non… » | rose | 2000 ms |
+| R9 | Sonné (yeux en croix) | élimination (`buzz_invalidated`) | « Aïe ! » | rose | 2000 ms |
+| R10 | Endormi | sans réponse | « Pas de réponse » | lavande | 2000 ms |
+
+> **Choix de la réaction** :
+> - `question_result` : `correct: true` → bonne réponse ; `correct: false` avec `player_answer` (QCM) ou si ce buzzer a buzzé (SPEED) → mauvaise réponse ; `correct: false` sans `player_answer` (QCM) ou sans avoir buzzé (SPEED) → sans réponse. Le firmware tire au hasard une réaction parmi celles de la situation (R1 à R5, R6 à R8, ou R10 seule), sans mémoire du tirage précédent.
+> - `buzz_invalidated` : R9, fixe. R9 n'est **pas** dans le tirage « mauvaise réponse » : un joueur éliminé ne revoit pas les yeux en croix au résultat qui suit.
+> - **Durée** : 2000 ms, identique pour les dix réactions. Valeur indicative, pas un contrat : la colonne permet de la faire varier par réaction.
+> - **Personnage** : celui du joueur. La table décrit des expressions ; l'origine du personnage (catalogue, génération, transmission) n'est pas définie : voir `DEBTS.md`.
+> - **Non tranché** : un message du hub reçu pendant les 2000 ms (`timer_tick`, nouvelle question…) interrompt-il la réaction ou attend-il sa fin ?
 
 ---
 

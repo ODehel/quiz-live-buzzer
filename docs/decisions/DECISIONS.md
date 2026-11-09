@@ -453,3 +453,22 @@ Alternatives écartées :
 - **Un état mémorisé de plus dans le rendu** : le CDC distinguait MCQ et SPEED par le contenu du message, sans état ; l'exception est écrite dans la note de §8.2. Limites : un buzzer qui a appuyé trop tard voit « Raté » ; une reconnexion en cours de question efface l'état (écran « Question terminée »).
 - Le code ne change pas : voir `DEBTS.md`.
 - Les libellés « Appuie sur le bouton rouge », « En attente de confirmation », « Réponds à voix haute » et « Éliminé pour cette question », proposés dans #22 et #23, sont repris dans le CDC.
+
+## #27 — docs(rendering): report the character reactions in the render table
+
+**Contexte** — Suite de #26. Dernière des trois sessions de report : les réactions du personnage (#20, #21). Deux points laissés ouverts : la réaction de `buzz_invalidated` (« fixe ou tirée au hasard », #26) et l'avatar par joueur, sans source ni protocole (`DEBTS.md`).
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **`buzz_invalidated` : R9 « Sonné » (yeux en croix), fixe**, puis l'écran « Raté… / Éliminé pour cette question » qui reste. **R9 est réservée à cet écran** (option « réserver ») : le tirage « mauvaise réponse » se fait parmi R6, R7 et R8, pour qu'un joueur éliminé ne revoie pas les yeux en croix au résultat qui suit. Cela corrige #20 (quatre réactions de mauvaise réponse tirées au hasard) et la proposition « Déçu (R6) » de la maquette `speed-05`.
+- **Durée : 2000 ms**, dans le CDC, en colonne d'un sous-tableau « Réactions du personnage », la même pour les dix réactions (#20 disait « environ 1,5 s »). Valeur indicative : la colonne permet d'en changer une seule.
+- **Avatar** : la table décrit des expressions appliquées au « personnage du joueur » ; son origine n'est pas définie et reste en dette.
+- **Port `Clock` et source aléatoire : non cités** dans le CDC (YAGNI) ; ils naîtront sous le premier rouge du `feat(rendering)`.
+- **Lignes du §8.2** : `question_result` QCM scindé en trois cas (bonne réponse, mauvaise réponse, sans réponse), chacun précédé de sa réaction ; `buzz_invalidated` réécrit ; la note « Reporté » mise à jour.
+- **Maquettes alignées** : 20 pages `reaction-*` (durée de 2 s ; trois réactions au tirage de mauvaise réponse ; R9 fixe), `speed-05` et l'index, dans le même commit.
+- Écarté : laisser R9 dans le tirage (simple, mais la même tête deux fois de suite sur un joueur éliminé).
+
+**Conséquences** (si la proposition est validée) —
+- Le code ne change pas : voir `DEBTS.md`.
+- **Déduction de Claude à confirmer** : la situation d'une réaction QCM se lit dans `correct` et `player_answer`. Le désérialiseur du firmware et le faux hub portent ces champs pour un QCM ; le contrat du vrai hub n'a pas été relu pour ce cas.
+- **Non tranché** : un message du hub reçu pendant les 2000 ms (interrompt-il la réaction ou attend-il ?) : dette ajoutée.
+- Fin du report des maquettes dans le CDC §8.2 (#25, #26, #27) ; restent sans maquette l'init, le buzz refusé, l'élimination par reconnexion et la connexion perdue.
