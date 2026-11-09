@@ -1,15 +1,16 @@
 #ifndef SCREEN_LOCAL_FEEDBACK_H
 #define SCREEN_LOCAL_FEEDBACK_H
 
-#include "DisplayState.h"
+#include <variant>
 #include "LocalFeedback.h"
 #include "Screen.h"
+#include "ScreenPresenter.h"
 
 class ScreenLocalFeedback : public LocalFeedback
 {
 private:
     Screen &screen;
-    DisplayState displayState;
+    ScreenPresenter presenter;
 
 public:
     ScreenLocalFeedback(Screen &screen) : screen(screen)
@@ -18,15 +19,14 @@ public:
 
     void AcknowledgeAnswer(char value) override
     {
-        const int zone = displayState.ZoneIndexForAnswer(value);
-        if (zone == DisplayState::NoZone)
-            return;
-        screen.HighlightChosenZone(static_cast<size_t>(zone));
+        const ScreenModel screenModel = presenter.ScreenForTappedAnswer(value);
+        if (!std::holds_alternative<ScreenUnchanged>(screenModel))
+            screen.Display(screenModel);
     }
 
     void AcknowledgeBuzz() override
     {
-        screen.Show(displayState.LcdTextForBuzzSent());
+        screen.Display(presenter.ScreenForBuzzSent());
     }
 };
 
