@@ -583,3 +583,18 @@ Alternatives écartées :
 - **Aucun message du hub ne déclenche P1 ni P2** : à définir côté hub. Pour le son, `play_sound_url` laisse l'écran inchangé (§8.2) : il faudra un message ou un champ qui dise « affiche l'écran Écoute avant la question ».
 - **Non spécifié** : ce qui met fin à l'écran (le message suivant, la fin du son, ou les deux) ; si la photo reste visible pendant la question ; la source de l'image (URL à télécharger, comme le son, ou fichier embarqué) et son format.
 - Le code ne change pas ; le CDC ne décrit pas ces écrans : voir `DEBTS.md`.
+
+## #35 — docs(mockups): add the game-ordered screen overview
+
+**Contexte** — Après #34, les 59 maquettes existent mais `index.html` les groupe par famille (démarrage, coupures, QCM, rapidité…), pas dans l'ordre où un joueur les voit. Olivier a demandé une plaquette complète des écrans, dans l'ordre d'une partie.
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **Une page séparée** `docs/mockups/plaquette.html`, imprimable (A4 paysage, export PDF par le navigateur), `index.html` inchangé (option B ; réordonner `index.html` lui-même avait été proposé et écarté).
+- **Ordre** : démarrage, attente et présentation, avant la question, question à choix multiple, question de rapidité, réactions, classements, puis les coupures « à tout moment ».
+- **Variantes en miniature** à droite de l'écran principal (recommandation de Claude acceptée) ; les réactions en planche compacte (masculin et féminin côte à côte).
+- **Écrans manquants en cartes « À maquetter »** : la configuration initiale (QR code) en tête, la fin de partie après le classement final.
+
+**Conséquences** —
+- **Choix d'ordre de Claude** : F3 (login refusé) est une variante de D1 ; « bonne réponse » est l'écran principal du résultat, « fausse » et « sans réponse » ses variantes ; le classement provisoire (K1) est rangé avec le classement final, alors qu'il tombe entre deux questions.
+- **Non tranché** : la répartition des réponses par proposition (« nombre de personnes par réponse », CSV d'origine) n'a ni maquette ni carte ; la question a été posée à Olivier sans réponse.
+- La plaquette est une seconde liste à tenir à jour à côté de `index.html` : voir `DEBTS.md`.
