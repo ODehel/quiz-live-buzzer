@@ -553,3 +553,18 @@ Alternatives écartées :
 - **Non spécifié** : une partie à moins de trois joueurs ; l'effet « gagnant » pour le premier (non demandé).
 - La durée est celle du maître du jeu, comme pour le classement provisoire ; la reconnaissance de la ligne suit la décision #31.
 - Le code ne change pas ; le CDC ne décrit pas encore ces écrans (report à la session suivante) : voir `DEBTS.md`.
+
+## #33 — docs(mockups): add the waiting and game presentation screens
+
+**Contexte** — Après #32, Olivier a demandé deux écrans absents du CDC §8.2 : « en attente du maître du jeu » et une présentation de la partie (« Quiz #08 », son thème, le nombre de questions et de joueurs). Il a aussi demandé un écran de configuration initiale avec un QR code destiné à l'application mobile ; il a d'abord dit « on verra plus tard », puis a validé un aperçu sans consigne.
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **Deux pages** : `start-04-waiting-master` (D4) et `start-05-game-intro` (D5), même habillage que D1 à D3 ; index mis à jour (section « Démarrage et attente »). Trois règles nouvelles dans `mockup.css` (`.wait-title.md`, `.intro-title`, `.cap.mid`).
+- **D4** : anneau or avec une horloge, « En attente du maître du jeu » sur deux lignes, « La partie va bientôt commencer » en dessous.
+- **D5** : « Quiz #08 » en grand, le thème en capsule or, puis le nombre de questions et le nombre de joueurs en capsules ; valeurs d'exemple (Cinéma, 12, 6).
+- **L'écran de configuration (QR) est une session séparée** : le canal d'appairage (BLE, point d'accès temporaire, autre) et l'application mobile ne sont pas décidés. Règle déjà tranchée : **aucune consigne à l'écran**, seul le maître du jeu paramètre le buzzer avec son téléphone ; l'aperçu validé montre un engrenage or, « Configuration » et le QR.
+
+**Conséquences** (si la proposition est validée) —
+- **Libellés proposés par Claude, absents du CDC** : « En attente du maître du jeu », « La partie va bientôt commencer », « Quiz #08 » ; le bandeau du haut affiche « 0 pt » sans classement avant la première question (le rang n'existe pas encore).
+- **Aucun message du hub ne déclenche D4 ni D5** : à définir côté hub (numéro et thème de la partie, nombre de questions et de joueurs). **Non spécifié** : si D4 remplace « Connecté » (D2) ou lui succède, ce que « #08 » numérote (partie globale ou de la soirée), et si le nombre de joueurs se met à jour pendant l'attente.
+- Le code ne change pas ; le CDC ne décrit pas encore ces écrans : voir `DEBTS.md`.
