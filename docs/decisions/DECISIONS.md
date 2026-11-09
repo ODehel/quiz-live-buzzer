@@ -537,3 +537,19 @@ Alternatives écartées :
 - **Le firmware reconnaît sa ligne** (principe validé) : par `participant_name` comparé au `username` d'`auth_success` ; la spec du hub ne dit pas qu'ils sont identiques, à garantir côté hub.
 - **Non tranché** : ce que devient une question armée pendant que le classement est à l'écran (le hub ne l'interrompt pas, CA-13) ; même famille que la dette « Buzzer armé sans zone tactile à l'écran ».
 - Le code ne change pas ; le CDC ne décrit pas encore ce message ni ces écrans : voir `DEBTS.md`.
+
+## #32 — docs(mockups): add the final ranking screens
+
+**Contexte** — Après #31 (classement provisoire), restait le classement de fin de partie. Aucun message du hub ne le porte vers les buzzers : la partie passe en `COMPLETED` sans diffusion, le classement final n'existe qu'en REST (US-013).
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **Un podium** : les trois premiers, le premier au centre et plus haut, avec **la place du candidat en dessous** ; le classement complet n'est pas affiché, le maître du jeu le donne à voix haute.
+- **Deux pages** : `rank-02-final` (K2, le candidat n'est pas sur le podium : « Tu es 5e sur 8 » et son score sur une ligne blanche) et `rank-02b-final-podium` (K2b, il est sur le podium : sa marche est cernée de blanc et son nom passe en pastille blanche) ; section « Classements » de l'index complétée.
+- Pas de révélation du gagnant de l'ancienne liste des états (`RevealWinnerState`) : hors périmètre.
+
+**Conséquences** (si la proposition est validée) —
+- **Proposé par Claude, non tranché** : la ligne du bas reste la même quand le candidat est sur le podium (le firmware dessine toujours la même chose) ; la couronne sur le premier ; les libellés « Classement final » et « Tu es 5e sur 8 ».
+- **Aucun message du hub ne déclenche cet écran** : hypothèse d'un message du même corps que `intermediate_ranking` envoyé à la fin de la partie, à décider côté hub.
+- **Non spécifié** : une partie à moins de trois joueurs ; l'effet « gagnant » pour le premier (non demandé).
+- La durée est celle du maître du jeu, comme pour le classement provisoire ; la reconnaissance de la ligne suit la décision #31.
+- Le code ne change pas ; le CDC ne décrit pas encore ces écrans (report à la session suivante) : voir `DEBTS.md`.
