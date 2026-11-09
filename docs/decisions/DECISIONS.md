@@ -628,3 +628,20 @@ Alternatives écartées :
 - **Libellé proposé par Claude, validé par Olivier** : « Merci d'avoir joué ! » ; effet écran « Zones masquées » proposé par Claude, non tranché.
 - **Non spécifié** : ce que devient l'écran ensuite (retour à l'attente, extinction, nouvelle partie) et la durée d'affichage.
 - Le code ne change pas ; le CDC ne décrit pas cet écran (report à la session des classements) : voir `DEBTS.md`.
+
+## #38 — docs(decisions): render the screens through a passive view
+
+**Contexte** — Les maquettes (#19 à #37) fixent un rendu cible (bandeau, capsules, quadrants, personnages) que le code ne reflète pas encore. Avant d'y porter ce design system, Olivier a demandé s'il fallait un équivalent de MVVM ou de MVP sur le firmware. Le découpage existe déjà en partie : `DisplayState` (`lib/rendering/`) calcule ce qu'il faut afficher à partir d'un message, `LcdRenderer` l'applique, et l'interface `Screen` (`Show`, `ShowZones`, `HighlightZone`, `HighlightChosenZone`, `ShowBanner`) est la couture vers `GfxScreen` (adaptateur de `src/`) et vers le décorateur `TappableZonesScreen`. Trois contraintes pèsent sur la suite : le moteur de rendu n'est pas tranché (LovyanGFX aujourd'hui, LVGL candidat, écran peut-être remplacé, #19) ; le build `esp32` a refusé `<optional>` (#15), `platformio.ini` ne fixe aucun `-std` pour cet environnement ; la Flash est à 80,2 %.
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **MVP en passive view, pas de MVVM.** Le flux est événementiel (un message du hub, un rendu) : un modèle poussé suffit, sans mécanisme de liaison. Seule exception à envisager, quand le bandeau du haut sera posé : la batterie et l'état du lien avec le hub, sources continues, par un petit mécanisme d'observation limité à ces deux valeurs.
+- **Modèle d'écran sémantique, dans `lib/`.** Il décrit *quoi* montrer (tons, réactions, textes, zones), jamais des pixels ni des couleurs.
+- **Presenter dans `lib/`** : message et état → modèle d'écran, en suivant la table du CDC §8.2. Il se teste en natif par comparaison de valeurs.
+- **La couture vers l'écran existe déjà : `Screen`.** Elle est impérative (une méthode par effet) ; son évolution vers « afficher un modèle d'écran » est à décider à la session qui la touche, avec son nom. Aucune nouvelle interface n'est créée avant qu'un rouge la demande.
+- **Tokens, composants et moteur de rendu côté `src/`** (couleurs, espacements, tailles, bandeau, capsules, quadrants, avatars), pour que changer de moteur reste un changement d'adaptateur.
+
+**Conséquences** —
+- **Ordre des sessions annoncé** : `chore(rendering)` de vérification de `std::variant` sur l'env `esp32` ; `refactor(rendering)` qui place les écrans existants derrière la couture, comportement inchangé, les 76 tests natifs restant verts ; puis `feat(rendering)` du bandeau du haut sur tous les écrans, première brique du design system.
+- **YAGNI sur les composants** : bandeau et un seul écran d'abord, on généralise au deuxième écran qui en a besoin.
+- **`std::variant` non vérifié** : probablement absent (`<variant>` est du C++17, comme `<optional>`). Repli prévu : un enum et une structure. Voir `DEBTS.md`.
+- Le code ne change pas.
