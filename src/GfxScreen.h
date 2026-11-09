@@ -5,6 +5,7 @@
 #include "ProportionalTextMeasurer.h"
 #include "Screen.h"
 #include "TextLayout.h"
+#include "ZoneGrid.h"
 #include "fonts/OswaldRegular30.h"
 #include "fonts/OswaldRegular38.h"
 #include "fonts/OswaldRegular48.h"
@@ -44,7 +45,7 @@ public:
     }
 
     // Une zone par texte, en grille 2x2 : A en haut à gauche, B en haut à droite, C en bas à gauche, D en bas à droite
-    // (même découpage que les zones tactiles de main.cpp). Au-delà de quatre textes, les suivants ne sont pas dessinés.
+    // (`ZoneGrid`, le même découpage que les zones tactiles de `TappableZonesScreen`). Au-delà de quatre textes, les suivants ne sont pas dessinés.
     void ShowZones(const std::vector<std::string> &zoneTexts) override
     {
         lastZoneTexts = zoneTexts;
@@ -80,22 +81,20 @@ private:
     // Dessine les zones de lastZoneTexts dans la bande (top, areaHeight), sans effacer l'écran.
     void DrawZones(int top, int areaHeight, size_t highlightedZone)
     {
-        const int zoneWidth = lcd.width() / 2;
-        const int zoneHeight = areaHeight / 2;
+        const ZoneGrid grid(lcd.width(), top, areaHeight);
         for (size_t i = 0; i < lastZoneTexts.size() && i < zoneCount; ++i)
         {
-            const int x = static_cast<int>(i % 2) * zoneWidth;
-            const int y = top + static_cast<int>(i / 2) * zoneHeight;
+            const ZoneRect zone = grid.At(i);
             const bool highlighted = (i == highlightedZone);
-            const int frameX = x + zoneBorderInset;
-            const int frameY = y + zoneBorderInset;
-            const int frameWidth = zoneWidth - 2 * zoneBorderInset;
-            const int frameHeight = zoneHeight - 2 * zoneBorderInset;
+            const int frameX = zone.x + zoneBorderInset;
+            const int frameY = zone.y + zoneBorderInset;
+            const int frameWidth = zone.width - 2 * zoneBorderInset;
+            const int frameHeight = zone.height - 2 * zoneBorderInset;
             if (highlighted)
                 lcd.fillRect(frameX, frameY, frameWidth, frameHeight, TFT_WHITE);
             else
                 lcd.drawRect(frameX, frameY, frameWidth, frameHeight, TFT_WHITE);
-            DrawTextIn(lastZoneTexts[i], x, y, zoneWidth, zoneHeight, highlighted ? TFT_BLACK : TFT_WHITE);
+            DrawTextIn(lastZoneTexts[i], zone.x, zone.y, zone.width, zone.height, highlighted ? TFT_BLACK : TFT_WHITE);
         }
     }
 

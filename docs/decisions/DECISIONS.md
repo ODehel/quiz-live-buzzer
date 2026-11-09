@@ -304,3 +304,23 @@ Alternatives écartées :
 - `answer_received` sans appui local préalable (hub qui répond à un `answer` venu d'ailleurs) : aucune zone en évidence, bandeau + zones seulement.
 - Un `answer_received` reçu sans `question_choices` préalable redessinerait les propositions de la question précédente (`Show` ne les efface pas) : voir `DEBTS.md`.
 - Non vu à l'écran : le bandeau au-dessus du quadrant touché, après un appui puis `a` du faux hub.
+
+
+## #18 — fix(input): ignore touches on answer zones that are not displayed
+
+**Contexte** — La décision #2 pose que les zones ne sont tactiles que sous `Zones actives`. Le firmware gardait pourtant quatre zones codées en dur (800×480, `main.cpp`), actives sur tous les écrans : seul l'armement de `BuzzerBehavior` empêchait de lire un appui sur une zone absente de l'écran. Le découpage vivait en deux endroits (`main.cpp` pour le tactile, `GfxScreen::DrawZones` pour le dessin, qui divisait `lcd.width()` par deux).
+
+**Décision** (cadrage validé par Olivier à la porte 1, 2026-11-09) —
+- `ZoneGrid` (`lib/rendering`) : la grille 2×2 (largeur, haut, hauteur de l'aire → rectangle de chaque zone), pure et testée. `GfxScreen::DrawZones` et les zones tactiles s'en servent : un seul découpage.
+- `TappableZonesScreen` décore `Screen` : `ShowZones` pose une zone tactile par texte affiché (quatre au plus, comme le dessin) sur la grille plein écran ; `Show`, `HighlightZone`, `HighlightChosenZone` et `ShowBanner` les retirent. `LcdRenderer` et `ScreenLocalFeedback` reçoivent le décorateur ; `TouchZoneReader` lit son vecteur, inchangé.
+- `PanelWidth` et `PanelHeight` (`main.cpp`) : source unique de la configuration LGFX et des zones tactiles.
+
+Alternatives écartées :
+- **`DisplayState` porte l'état tactile (effet d'écran)** : il deviendrait à état et les deux instances devraient être partagées, c'est la feature « effets d'écran » (décision #2), pas cette tranche.
+- **Zones tactiles sous le bandeau** (`HighlightZone`, `ShowBanner`) : sans objet, les zones y sont inactives (§8.2).
+- **Lire la taille par `lcd.width()`** : `lcd` est construit comme global et initialisé dans `setup()` ; non vérifié que la taille est déjà connue à la construction, d'où des constantes partagées avec la configuration.
+
+**Conséquences** —
+- Un appui sur une zone qui n'est pas à l'écran est ignoré. Le comportement change dans deux cas limites, acceptés (voir `DEBTS.md`) : `timer_tick` pendant un MCQ armé (`Show` efface les zones et le tactile ; l'appui sur l'écran vide marchait avant) ; `question_choices` aux propositions inexploitables (écran et zones tactiles inchangés).
+- Zones retirées : un doigt resté posé sur un quadrant pendant qu'un nouveau `ShowZones` arrive déclencherait un appui (`lastButton` repassé à `Unknown`). Improbable, non vu.
+- Non vu à l'écran : tout le smoke test (`TappableZonesScreen`, `GfxScreen::DrawZones` refactoré et `main.cpp` ne sont validés que par lui et par une vérification de syntaxe `gnu++11` sur stub).

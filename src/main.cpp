@@ -19,6 +19,7 @@
 #include "BuzzerEventTranslator.h"
 #include "WebSocketEventListener.h"
 #include "TouchZoneReader.h"
+#include "TappableZonesScreen.h"
 #include "Gt911TouchReader.h"
 #include "TouchButtonReader.h"
 #include "ServerCredentials.h"
@@ -31,6 +32,10 @@
 #include <lgfx/v1/platforms/esp32s3/Panel_RGB.hpp>
 #include <lgfx/v1/platforms/esp32s3/Bus_RGB.hpp>
 #include "GfxScreen.h"
+
+// Taille de la dalle : source unique de la configuration LGFX et des zones tactiles (`TappableZonesScreen`).
+constexpr int PanelWidth = 800;
+constexpr int PanelHeight = 480;
 
 class LGFX : public lgfx::LGFX_Device
 {
@@ -78,10 +83,10 @@ public:
         }
         {
             auto cfg = _panel_instance.config();
-            cfg.memory_width = 800;
-            cfg.memory_height = 480;
-            cfg.panel_width = 800;
-            cfg.panel_height = 480;
+            cfg.memory_width = PanelWidth;
+            cfg.memory_height = PanelHeight;
+            cfg.panel_width = PanelWidth;
+            cfg.panel_height = PanelHeight;
             cfg.offset_x = 0;
             cfg.offset_y = 0;
             _panel_instance.config(cfg);
@@ -94,26 +99,20 @@ LGFX lcd;
 
 ArduinoGpioPinReader pinBuzzReader(38);
 
-// DETTE: zones figées en 2x2 provisoire pour valider la chaîne tactile au smoke.
-// La disposition réelle est DYNAMIQUE par écran (change à chaque rendu LVGL, §8.2) :
-// ce vecteur devra être réécrit/piloté par l'état de jeu, pas codé en dur ici.
-std::vector<TouchZone> touchZones{
-    {0, 0, 400, 240, ButtonInput::A},
-    {400, 0, 800, 240, ButtonInput::B},
-    {0, 240, 400, 480, ButtonInput::C},
-    {400, 240, 800, 480, ButtonInput::D}};
 Gt911TouchReader gt911;
-TouchZoneReader touchZoneReader{touchZones};
 GfxScreen gfxScreen{lcd};
+// Les zones tactiles suivent l'affichage : actives seulement quand les propositions A–D sont à l'écran (CDC §8.2).
+TappableZonesScreen tappableZonesScreen{gfxScreen, PanelWidth, PanelHeight};
+TouchZoneReader touchZoneReader{tappableZonesScreen.Zones()};
 TouchButtonReader touchButtonReader{gt911, touchZoneReader};
-ScreenLocalFeedback localFeedback{gfxScreen};
+ScreenLocalFeedback localFeedback{tappableZonesScreen};
 ReconnectionPolicy reconnectionPolicy;
 WebSocketsClient client;
 WebSocketPayloadSocketWriter payloadSocketWriter{client};
 WebSocketMessageSender messageSender{MessageSerializer{}, client};
 PhysicalButtonReader physicalButtonReader{pinBuzzReader};
 BuzzerBehavior buzzerBehavior{messageSender, localFeedback};
-LcdRenderer lcdRenderer{gfxScreen, buzzerBehavior};
+LcdRenderer lcdRenderer{tappableZonesScreen, buzzerBehavior};
 HttpTokenFetcher httpTokenFetcher{"http://192.168.1.183:3000", ServerCredentials{HUB_USERNAME, HUB_PASSWORD}};
 TokenSessionMessageSender tokenSessionMessageSender{payloadSocketWriter, MessageSerializer{}, httpTokenFetcher};
 BuzzerButtonPressTranslator buzzerButtonPressTranslator{buzzerBehavior};
