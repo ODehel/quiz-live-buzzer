@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <string>
 #include <vector>
-#include "ScreenMocks.h"
+#include "../mocks/ScreenMocks.h"
 #include "TappableZonesScreen.h"
 #include "TouchZoneReader.h"
 
