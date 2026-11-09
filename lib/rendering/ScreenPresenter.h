@@ -4,6 +4,7 @@
 #include "DisplayState.h"
 #include "HubMessage.h"
 #include "ScreenModel.h"
+#include "TopBar.h"
 
 class ScreenPresenter
 {
@@ -27,6 +28,14 @@ public:
         if (text.empty())
             return ScreenUnchanged{};
         return TextScreen{text};
+    }
+
+    // Seul l'écran « Connecté » porte le bandeau du haut (CDC §8.2) : le nom vient de l'`username` d'`auth_success`.
+    TopBar TopBarFor(const HubMessage &message) const
+    {
+        if (message.Type() == "auth_success")
+            return TopBar::ForPlayer(message.Username());
+        return TopBar::Hidden();
     }
 
     ScreenModel ScreenForBuzzSent() const

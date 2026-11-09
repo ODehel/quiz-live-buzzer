@@ -24,6 +24,7 @@ private:
     static const int zoneBorderInset = 2;    // px entre le bord de la zone et son cadre
     static const int resultBandDivisor = 4;  // le bandeau de résultat occupe 1/4 de la hauteur de la dalle, les zones le reste
     static const size_t noZone = zoneCount;  // indice hors grille : aucune zone en évidence
+    static const int topBarHeight = 60;      // hauteur du bandeau du haut, trait de séparation compris
 
     lgfx::LGFX_Device &lcd;
     const lgfx::GFXfont *fonts[3]; // de la plus grande taille (0) à la plus petite
@@ -42,11 +43,12 @@ public:
     }
 
     // Un type d'écran, un dessin : le modèle dit quoi montrer, les méthodes privées savent comment.
-    void Display(const ScreenModel &screenModel) override
+    // Le bandeau du haut n'est dessiné qu'avec un `TextScreen` (le seul écran qui le porte aujourd'hui) ; les autres écrans l'ignorent.
+    void Display(const TopBar &topBar, const ScreenModel &screenModel) override
     {
         std::visit(Overloaded{
                        [](const ScreenUnchanged &) {},
-                       [this](const TextScreen &textScreen) { Show(textScreen.text); },
+                       [this, &topBar](const TextScreen &textScreen) { Show(topBar, textScreen.text); },
                        [this](const ZonesScreen &zonesScreen) { ShowZones(zonesScreen.zoneTexts); },
                        [this](const HighlightedZoneScreen &highlightedZoneScreen)
                        { HighlightZone(highlightedZoneScreen.zoneIndex, highlightedZoneScreen.bannerText); },
@@ -56,10 +58,30 @@ public:
     }
 
 private:
-    void Show(const std::string &text)
+    void Show(const TopBar &topBar, const std::string &text)
     {
         lcd.fillScreen(TFT_BLACK); // efface l'écran (pas d'empilement)
-        DrawTextIn(text, 0, 0, lcd.width(), lcd.height());
+        if (!topBar.visible)
+        {
+            DrawTextIn(text, 0, 0, lcd.width(), lcd.height());
+            return;
+        }
+        DrawTopBar(topBar);
+        DrawTextIn(text, 0, topBarHeight, lcd.width(), lcd.height() - topBarHeight);
+    }
+
+    // Le nom du joueur à gauche, « Buzz’O’Live » au centre, un trait dessous ; en petite police, sur une seule ligne.
+    void DrawTopBar(const TopBar &topBar)
+    {
+        lcd.setFont(fonts[2]);
+        lcd.setTextSize(1);
+        lcd.setTextColor(TFT_WHITE);
+        const int middle = (topBarHeight - 1) / 2;
+        lcd.setTextDatum(middle_left);
+        lcd.drawString(topBar.playerName.c_str(), margin, middle);
+        lcd.setTextDatum(middle_center);
+        lcd.drawString("Buzz’O’Live", lcd.width() / 2, middle);
+        lcd.drawFastHLine(0, topBarHeight - 1, lcd.width(), TFT_WHITE);
     }
 
     // Une zone par texte, en grille 2x2 : A en haut à gauche, B en haut à droite, C en bas à gauche, D en bas à droite

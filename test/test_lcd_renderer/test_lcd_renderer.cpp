@@ -10,9 +10,9 @@ TEST(LcdRendererTest, AuthSuccessMessageShowsConnecteOnScreen)
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(ScreenModel{TextScreen{"Connecté"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"Connecté"}})).Times(1);
 
-    lcdRenderer.Apply(HubMessage{"auth_success"});
+    lcdRenderer.Apply(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"));
 }
 
 using FixedTextCase = std::pair<std::string, std::string>;
@@ -27,7 +27,7 @@ TEST_P(MessageWithFixedTextTest, ShowsItsFixedTextOnScreen)
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(ScreenModel{TextScreen{GetParam().second}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{GetParam().second}})).Times(1);
 
     lcdRenderer.Apply(HubMessage{GetParam().first});
 }
@@ -47,7 +47,7 @@ TEST(LcdRendererTimerEndTest, ShowsTooLateWhenAQuestionIsArmed)
     ON_CALL(armedModeReader, IsArmed()).WillByDefault(testing::Return(true));
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(ScreenModel{TextScreen{"Trop tard"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{"Trop tard"}})).Times(1);
 
     lcdRenderer.Apply(HubMessage{"timer_end"});
 }
@@ -59,7 +59,7 @@ TEST(LcdRendererTimerEndTest, LeavesTheScreenUnchangedWhenNoQuestionIsArmed)
     ON_CALL(armedModeReader, IsArmed()).WillByDefault(testing::Return(false));
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(testing::_)).Times(0);
+    EXPECT_CALL(mockScreen, Display(testing::_, testing::_)).Times(0);
 
     lcdRenderer.Apply(HubMessage{"timer_end"});
 }
@@ -76,7 +76,7 @@ TEST_P(TimerTickTest, ShowsTheRemainingSecondsOnScreen)
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(ScreenModel{TextScreen{GetParam().second}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{GetParam().second}})).Times(1);
 
     lcdRenderer.Apply(HubMessage{"timer_tick"}.WithRemainingSeconds(GetParam().first));
 }
@@ -95,7 +95,7 @@ TEST(LcdRendererTimerTickTest, LeavesTheScreenUnchangedWithoutRemainingSeconds)
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(testing::_)).Times(0);
+    EXPECT_CALL(mockScreen, Display(testing::_, testing::_)).Times(0);
 
     lcdRenderer.Apply(HubMessage{"timer_tick"});
 }
@@ -112,7 +112,7 @@ TEST_P(BuzzLockedTest, ShowsWhoBuzzedFirstOnScreen)
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(ScreenModel{TextScreen{GetParam().second}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{GetParam().second}})).Times(1);
 
     lcdRenderer.Apply(HubMessage{"buzz_locked"}.WithBuzzerUsername(GetParam().first));
 }
@@ -130,7 +130,7 @@ TEST(LcdRendererBuzzLockedTest, LeavesTheScreenUnchangedWithoutBuzzerUsername)
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(testing::_)).Times(0);
+    EXPECT_CALL(mockScreen, Display(testing::_, testing::_)).Times(0);
 
     lcdRenderer.Apply(HubMessage{"buzz_locked"});
 }
@@ -147,7 +147,7 @@ TEST_P(QuestionOpenTest, ShowsTheQuestionTitleOnScreen)
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(ScreenModel{TextScreen{GetParam().second}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{GetParam().second}})).Times(1);
 
     lcdRenderer.Apply(HubMessage{"question_open"}.WithTitle(GetParam().first));
 }
@@ -165,7 +165,7 @@ TEST(LcdRendererQuestionOpenTest, LeavesTheScreenUnchangedWithoutTitle)
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(testing::_)).Times(0);
+    EXPECT_CALL(mockScreen, Display(testing::_, testing::_)).Times(0);
 
     lcdRenderer.Apply(HubMessage{"question_open"});
 }
@@ -176,7 +176,7 @@ TEST(LcdRendererQuestionTitleTest, ShowsTheQuestionNumberAndTitleOnScreen)
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(ScreenModel{TextScreen{"Question 3 : Quel fleuve traverse Lisbonne ?"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{"Question 3 : Quel fleuve traverse Lisbonne ?"}})).Times(1);
 
     lcdRenderer.Apply(HubMessage{"question_title"}.WithQuestionIndex(2).WithTitle("Quel fleuve traverse Lisbonne ?"));
 }
@@ -187,7 +187,7 @@ TEST(LcdRendererQuestionTitleTest, LeavesTheScreenUnchangedWithoutQuestionIndex)
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(testing::_)).Times(0);
+    EXPECT_CALL(mockScreen, Display(testing::_, testing::_)).Times(0);
 
     lcdRenderer.Apply(HubMessage{"question_title"}.WithTitle("Quel fleuve traverse Lisbonne ?"));
 }
@@ -202,7 +202,7 @@ TEST_P(MessageWithoutDisplayTest, LeavesTheScreenUnchanged)
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(testing::_)).Times(0);
+    EXPECT_CALL(mockScreen, Display(testing::_, testing::_)).Times(0);
 
     lcdRenderer.Apply(HubMessage{GetParam()});
 }
@@ -212,18 +212,13 @@ INSTANTIATE_TEST_SUITE_P(
     MessageWithoutDisplayTest,
     ::testing::Values("play_sound_url", "play_system_sound", "token_expiring_soon", "unknown_type"));
 
-int main(int argc, char **argv)
-{
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
 TEST(LcdRendererTest, QuestionChoicesShowsTheFourChoicesAsZonesOnScreen)
 {
     testing::StrictMock<MockScreen> mockScreen;
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(ScreenModel{ZonesScreen{std::vector<std::string>{"A : Paris", "B : Lyon", "C : Nice", "D : Lille"}}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{ZonesScreen{std::vector<std::string>{"A : Paris", "B : Lyon", "C : Nice", "D : Lille"}}})).Times(1);
 
     lcdRenderer.Apply(HubMessage{"question_choices"}.WithChoices({"Paris", "Lyon", "Nice", "Lille"}));
 }
@@ -234,7 +229,7 @@ TEST(LcdRendererTest, McqQuestionResultHighlightsTheCorrectZoneWithTheResultText
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(ScreenModel{HighlightedZoneScreen{1, "Bonne réponse : B\nVotre réponse : C"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{HighlightedZoneScreen{1, "Bonne réponse : B\nVotre réponse : C"}})).Times(1);
 
     lcdRenderer.Apply(HubMessage{"question_result"}.WithCorrectAnswer("B").WithPlayerAnswer("C"));
 }
@@ -245,7 +240,7 @@ TEST(LcdRendererTest, McqQuestionResultWithCorrectAnswerAHighlightsTheFirstZone)
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(ScreenModel{HighlightedZoneScreen{0, "Bonne réponse : A"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{HighlightedZoneScreen{0, "Bonne réponse : A"}})).Times(1);
 
     lcdRenderer.Apply(HubMessage{"question_result"}.WithCorrectAnswer("A"));
 }
@@ -256,7 +251,7 @@ TEST(LcdRendererTest, SpeedQuestionResultShowsItsTextWithoutHighlightingAZone)
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(ScreenModel{TextScreen{"Validé"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{"Validé"}})).Times(1);
 
     lcdRenderer.Apply(HubMessage{"question_result"}.WithCorrectAnswer("Paris").WithCorrect(true));
 }
@@ -276,7 +271,13 @@ TEST(LcdRendererTest, AnswerReceivedShowsItsTextInABannerKeepingTheZones)
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(ScreenModel{BannerScreen{"Réponse enregistrée"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{BannerScreen{"Réponse enregistrée"}})).Times(1);
 
     lcdRenderer.Apply(HubMessage{"answer_received"});
+}
+
+int main(int argc, char **argv)
+{
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

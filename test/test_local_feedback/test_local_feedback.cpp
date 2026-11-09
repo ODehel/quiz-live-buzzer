@@ -14,7 +14,7 @@ TEST_P(AcknowledgeAnswerTest, AcknowledgeAnswerHighlightsTheChosenZoneWithoutTex
     MockScreen mockScreen;
     ScreenLocalFeedback screenLocalFeedback{mockScreen};
 
-    EXPECT_CALL(mockScreen, Display(ScreenModel{ChosenZoneScreen{GetParam().second}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{ChosenZoneScreen{GetParam().second}})).Times(1);
 
     screenLocalFeedback.AcknowledgeAnswer(GetParam().first);
 }
@@ -29,7 +29,7 @@ TEST(ScreenLocalFeedbackTest, AcknowledgeAnswerWithAnUnknownLetterLeavesTheScree
     MockScreen mockScreen;
     ScreenLocalFeedback screenLocalFeedback{mockScreen};
 
-    EXPECT_CALL(mockScreen, Display(testing::_)).Times(0);
+    EXPECT_CALL(mockScreen, Display(testing::_, testing::_)).Times(0);
 
     screenLocalFeedback.AcknowledgeAnswer('Z');
 }
@@ -39,7 +39,7 @@ TEST(ScreenLocalFeedbackTest, AcknowledgeBuzzShowsBuzzEnvoyeOnScreen)
     MockScreen mockScreen;
     ScreenLocalFeedback screenLocalFeedback{mockScreen};
 
-    EXPECT_CALL(mockScreen, Display(ScreenModel{TextScreen{"Buzz envoyé"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{"Buzz envoyé"}})).Times(1);
 
     screenLocalFeedback.AcknowledgeBuzz();
 }

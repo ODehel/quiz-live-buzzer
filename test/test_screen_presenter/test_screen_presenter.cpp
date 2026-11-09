@@ -141,6 +141,43 @@ TEST(ScreenPresenterLocalFeedbackTest, ABuzzSentPresentsBuzzEnvoye)
     EXPECT_EQ(ScreenModel{TextScreen{"Buzz envoyé"}}, screen);
 }
 
+TEST(ScreenPresenterTopBarTest, AuthSuccessShowsTheUsernameInTheTopBar)
+{
+    ScreenPresenter presenter;
+
+    const TopBar topBar = presenter.TopBarFor(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"));
+
+    EXPECT_EQ(TopBar::ForPlayer("quiz_buzzer_01"), topBar);
+}
+
+class MessageWithoutTopBarTest : public ::testing::TestWithParam<std::string>
+{
+};
+
+TEST_P(MessageWithoutTopBarTest, HidesTheTopBar)
+{
+    ScreenPresenter presenter;
+
+    const TopBar topBar = presenter.TopBarFor(HubMessage{GetParam()});
+
+    EXPECT_EQ(TopBar::Hidden(), topBar);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    MessagesWithoutATopBar,
+    MessageWithoutTopBarTest,
+    ::testing::Values("game_resumed", "question_open", "question_title", "question_choices", "question_result",
+                      "timer_tick", "timer_end", "buzz_locked", "buzz_accepted", "answer_received", "unknown_type"));
+
+TEST(ScreenPresenterTopBarTest, AuthSuccessWithoutUsernameShowsAnEmptyName)
+{
+    ScreenPresenter presenter;
+
+    const TopBar topBar = presenter.TopBarFor(HubMessage{"auth_success"});
+
+    EXPECT_EQ(TopBar::ForPlayer(""), topBar);
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

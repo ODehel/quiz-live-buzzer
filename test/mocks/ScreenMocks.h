@@ -7,7 +7,7 @@
 class MockScreen : public Screen
 {
 public:
-    MOCK_METHOD(void, Display, (const ScreenModel &screenModel), (override));
+    MOCK_METHOD(void, Display, (const TopBar &topBar, const ScreenModel &screenModel), (override));
 };
 
 #endif
