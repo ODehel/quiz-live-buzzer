@@ -376,6 +376,10 @@ body {
 /* Attente : anneau et icône or, titre, précision. */
 .wait-ring { width: calc(var(--u) * 20); height: calc(var(--u) * 20); }
 .wait-title { font-size: calc(var(--u) * 11); font-weight: 800; }
+/* Titre d'attente plus long (deux lignes), présentation de la partie : titre géant et capsules de taille intermédiaire. */
+.wait-title.md { font-size: calc(var(--u) * 8.5); line-height: 1.05; text-wrap: balance; }
+.intro-title { font-size: calc(var(--u) * 17); font-weight: 800; line-height: 1; }
+.cap.mid { font-size: calc(var(--u) * 5); }
 
 /* ---- Coupures : bandeau de reconnexion (à la place de l'en-tête), buzzer hors jeu, connexion refusée ---- */
 
