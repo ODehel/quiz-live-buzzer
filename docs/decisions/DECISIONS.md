@@ -359,3 +359,19 @@ Alternatives écartées :
 - La réaction suppose une temporisation (port `Clock`, comme le clignotement) et un tirage au hasard. Le CDC §8.2 ne la décrit pas : elle s'ajoute à `question_result`.
 - Licence : avataaars est « libre pour usage personnel et commercial », pas CC0. Le dépôt est public et le personnage reprend le visage d'Olivier, ce qu'il a accepté.
 - « Dépité » (yeux au ciel) reste la réaction la moins lisible ; Olivier l'a gardée.
+
+## #21 — docs(mockups): add a female character to the reactions
+
+**Contexte** — Olivier veut aussi un avatar féminin avec les mêmes dix réactions (suite de #20), d'après trois photos qu'il a fournies.
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- Un second personnage avataaars, mêmes dix réactions, mêmes libellés, mêmes fonds de médaillon, mêmes larmes de joie dessinées à la main pour Hilare ; dix SVG `*-f.svg` et **dix pages de plus** `reaction-NN-*-f.html` (vingt pages de réaction au total). Écarté : un paramètre `?avatar=f` en JavaScript sur les dix pages existantes, qui aurait cassé le « HTML statique sans script ».
+- Traits retenus : lunettes `prescription02`, peau brune, haut clair à encolure ronde (choix d'Olivier). **Chevelure dessinée à la main** à sa demande (châtain clair, bouclée, mélange de `curly` et `curvy`, raie sur le côté) : la première version (`fro`, orange) ne lui plaisait pas, et aucune coiffure avataaars n'était à la fois longue, bouclée et avec une raie. Les teintes ont été ajustées après un premier essai où peau, cheveux et lunettes se confondaient. Paramètres dans `avatars/README.md`.
+- Les pages existantes sont régénérées à l'identique (aucun diff).
+
+**Conséquences** (si la proposition est validée) —
+- Le firmware n'a plus « un avatar » mais **un catalogue de personnages** : ce qui est choisi par joueur n'est plus seulement une image mais un modèle de personnage. Cela renforce la piste d'une génération côté hub (voir `DEBTS.md`, « Avatar par joueur sans source ni protocole »). Le coût PSRAM d'environ 1,76 Mo pour dix images concerne **un** joueur : le coût total dépend du nombre de joueurs et de la mise en cache.
+- Limites : pas de collier ni de motif rayé ; la chevelure dessinée à la main sort du catalogue avataaars (licence de la partie générée inchangée, la surcouche est de Claude) et son style, plus rond, est un peu différent de celui du personnage masculin. Le personnage ressemble à l'esprit des photos, pas aux détails.
+- Le dépôt est public et le personnage s'inspire du visage d'une proche d'Olivier. Aucun prénom n'est écrit dans le dépôt ; à confirmer : que la personne représentée est d'accord.
+- Le zoom du médaillon rogne les côtés de la chevelure, plus large que le visage.
+
