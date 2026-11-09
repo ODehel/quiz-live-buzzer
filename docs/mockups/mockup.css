@@ -78,7 +78,20 @@ body {
 .who .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
 .who .points { flex: none; color: var(--gold); font-weight: 800; }
 .who .rank { flex: none; padding: calc(var(--u) * 0.25) calc(var(--u) * 1.25); border-radius: 999px; background: rgba(255, 255, 255, 0.2); font-weight: 700; }
-.brand { font-weight: 800; letter-spacing: 0.02em; }
+/* Logo une ligne du bandeau du haut : « Buzz’ » vibre (écho, lettres en désordre), le O est le bouton rouge, « ’Live » reste fixe. Tailles en em. */
+.brand { display: flex; align-items: center; font-size: calc(var(--u) * 3.6); font-weight: 800; line-height: 1; letter-spacing: 0.01em; }
+.brand .buzz { position: relative; display: inline-flex; }
+.brand .buzz .echo { position: absolute; top: 0; display: flex; opacity: 0.35; }
+.brand .buzz .echo.l { left: -0.09em; }
+.brand .buzz .echo.r { left: 0.09em; }
+.brand .buzz .solid { position: relative; display: flex; }
+.brand .buzz i { display: inline-block; font-style: normal; }
+.brand .buzz i:nth-child(1) { transform: translateY(0.03em) rotate(-5deg); }
+.brand .buzz i:nth-child(2) { transform: translateY(-0.045em) rotate(4deg); }
+.brand .buzz i:nth-child(3) { transform: translateY(0.03em) rotate(-4deg); }
+.brand .buzz i:nth-child(4) { transform: translateY(-0.03em) rotate(5deg); }
+.brand .disc { flex: none; width: 0.7em; height: 0.7em; margin: 0 0.06em 0 0.12em; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff6a6a 0 18%, var(--wrong) 55%); box-shadow: 0 0 0 0.06em #ffffff, 0 0.07em 0 0.06em rgba(0, 0, 0, 0.35); }
+.brand .live { color: var(--gold); }
 .tray { justify-self: end; display: flex; align-items: center; gap: calc(var(--u) * 2.5); }
 .link svg { display: block; width: calc(var(--u) * 4.5); height: calc(var(--u) * 3.4); }
 .link.lost { color: var(--wrong-soft); }
@@ -329,10 +342,22 @@ body {
 /* ---- Démarrage et attente : logo avec bandeau clignotant, « Connecté », « Partie en cours » ---- */
 
 .center.above-band { inset: calc(var(--u) * 5.5) 0 calc(var(--u) * 12) 0; }
-.logo { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 3); }
-.logo .redbtn { width: calc(var(--u) * 17); height: calc(var(--u) * 17); }
-.wordmark { font-size: calc(var(--u) * 12); font-weight: 800; letter-spacing: 0.02em; line-height: 1.05; }
-.wordmark .live { color: var(--gold); }
+/* Logo deux lignes : « Buzz » aussi large qu'« O’Live », écho et lettres en désordre ; « O’Live » fixe, le O est le bouton rouge.
+   Tailles en --u pour une base « O’Live » de 14 u (112 px sur la dalle 800 × 480) ; « Buzz » = base × 1,434, mesuré avec Barlow Semi Condensed 800. */
+.logo { display: flex; flex-direction: column; align-items: center; font-size: calc(var(--u) * 14); font-weight: 800; line-height: 1; letter-spacing: 0.01em; color: #ffffff; }
+.logo .buzz { position: relative; display: inline-flex; font-size: calc(var(--u) * 20.08); }
+.logo .buzz .echo { position: absolute; top: 0; display: flex; opacity: 0.35; }
+.logo .buzz .echo.l { left: calc(var(--u) * -1.9); }
+.logo .buzz .echo.r { left: calc(var(--u) * 1.9); }
+.logo .buzz .solid { position: relative; display: flex; }
+.logo .buzz i { display: inline-block; font-style: normal; }
+.logo .buzz i:nth-child(1) { transform: translateY(calc(var(--u) * 0.58)) rotate(-5deg); }
+.logo .buzz i:nth-child(2) { transform: translateY(calc(var(--u) * -0.88)) rotate(4deg); }
+.logo .buzz i:nth-child(3) { transform: translateY(calc(var(--u) * 0.58)) rotate(-4deg); }
+.logo .buzz i:nth-child(4) { transform: translateY(calc(var(--u) * -0.58)) rotate(5deg); }
+.logo .olive { display: flex; align-items: center; margin-top: calc(var(--u) * -2); }
+.logo .disc { flex: none; width: calc(var(--u) * 9.6); height: calc(var(--u) * 9.6); margin: 0 calc(var(--u) * 0.88) 0 calc(var(--u) * 0.58); border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff6a6a 0 18%, var(--wrong) 55%); box-shadow: 0 0 0 calc(var(--u) * 0.58) #ffffff, 0 calc(var(--u) * 0.73) 0 calc(var(--u) * 0.58) rgba(0, 0, 0, 0.35); }
+.logo .live { color: var(--gold); }
 
 /* Bandeau de démarrage en pied d'écran : état allumé du clignotement (or) ; l'autre état est la teinte --bar. */
 .startband {
