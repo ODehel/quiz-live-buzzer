@@ -505,3 +505,19 @@ Alternatives écartées :
 - **Déduit par Claude, non spécifié au CDC §5** : pendant la coupure les zones et le bouton rouge sont inactifs, et le chrono disparaît (plus de resynchronisation par `timer_tick`).
 - **Le compteur « N/3 » n'existe pas côté rendu** : `ReconnectionPolicy` le porte, aucun message ni port ne l'expose au rendu.
 - Le code ne change pas ; le CDC §8.2 ne décrit pas encore ces écrans (report à la session suivante) : voir `DEBTS.md`.
+
+## #30 — docs(rendering): report the start-up and connection failure mockups in the render table
+
+**Contexte** — Après #28 et #29, les maquettes de démarrage, d'attente et de coupure existaient sans report dans le CDC §8.2 (dernière session du découpage en trois, #28). Les coupures ne naissent d'aucun message du §8.1 : elles viennent de la couche réseau (§5, §9).
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **Trois lignes existantes mises à jour** : init (logo, bandeau « Connexion… », bandeau du haut dès la mise sous tension), `auth_success` (« Connecté » + « En attente d’une question »), `game_resumed` (« Partie en cours » + même précision).
+- **Trois lignes ajoutées**, déclenchées par un événement réseau et notées `(réseau : …)` : connexion perdue (tentative N/3, N = tentative en cours, de 1 à 3), mode Éliminé après le 3ᵉ échec (« Hors jeu »), login refusé (`401`).
+- Les deux maquettes de connexion perdue (F1 QCM, F1b SPEED) tiennent dans **une seule ligne** : l'effet est le même, seule la question atténuée change.
+- Une note sous le tableau nomme les déclencheurs, le sens de N, et ce qui est déduit ou non spécifié.
+
+**Conséquences** —
+- **Déduit des maquettes, non spécifié au §5** : zones, bouton rouge et chrono inactifs pendant la reconnexion.
+- **Non spécifié** : l'écran après une reconnexion réussie (`auth_success` ramène l'attente « Connecté » selon la table ; le retour à la question en cours n'est pas décrit).
+- **Aucun port n'expose le compteur N/3 au rendu** : dette inchangée, voir `DEBTS.md`.
+- Le code ne change pas.
