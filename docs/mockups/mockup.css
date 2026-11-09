@@ -306,3 +306,11 @@ body {
 }
 .cap.gold { background: var(--gold); color: var(--on-gold); }
 .prompt:has(.meta) { flex-direction: column; gap: calc(var(--u) * 3); }
+
+/* « Un autre a buzzé » (bandeau sobre, question atténuée) et « Éliminé pour la question » (réaction + précision). */
+.banner.calm { background: var(--bar); color: var(--text); }
+.banner.calm .gold { color: var(--gold); }
+.prompt.dim { opacity: 0.45; }
+.say-block { display: flex; flex-direction: column; gap: calc(var(--u) * 2.5); min-width: 0; }
+.react.out .say { color: var(--wrong-soft); }
+.react.out .speed-sub { color: var(--text); font-size: calc(var(--u) * 4.5); }

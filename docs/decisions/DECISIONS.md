@@ -390,3 +390,17 @@ Alternatives écartées :
 - Le CDC §8.2 ne change pas dans cette session. Le thème, les points et le temps imparti ne figurent dans aucun message du CDC §8.1 ; non vérifié contre les specs du hub : voir `DEBTS.md`. Écarts à arbitrer au report : le titre persistant sous « À toi ! » et le bouton rouge dessiné ne sont pas dans le CDC ; « En attente de confirmation » et « Réponds à voix haute » sont des libellés proposés.
 - Restent à maquetter, avec ce qu'Olivier a déjà dit : `buzz_locked` et `buzz_invalidated` nettement distincts (le second avec une réaction du personnage), `question_result` SPEED avec la réponse attendue et la réaction. Ce dernier contredit la décision #13 (« Validé » / « Raté » seuls) : à trancher au report dans le CDC.
 - Le titre de la maquette longue fait 239 caractères (pas 250) et tient sur quatre lignes à 3,5 u de corps ; le maximum exact de 250 n'a pas été rendu, et il n'y a pas de défilement prévu.
+
+## #23 — docs(mockups): add the speed question passive screens
+
+**Contexte** — Suite de #22. Olivier a choisi deux sessions pour finir le parcours SPEED : les écrans passifs (celle-ci), puis le résultat (à venir).
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **« Un autre a buzzé »** (`buzz_locked`, `speed-04-locked`) : bandeau violet sobre « Julien a buzzé », nom en or, la question atténuée dessous ; sans chrono ni bouton rouge ; le nom seul, sans avatar (l'avatar par joueur n'a ni source ni protocole, voir `DEBTS.md`). Le bandeau n'est pas or, pour se distinguer de « À toi ! ».
+- **« Éliminé pour la question »** (`buzz_invalidated`, `speed-05-invalidated`) : « Raté… » du CDC §8.2 avec la précision « Éliminé pour cette question » (proposée), et le personnage déçu en plein écran, fond rose. Distinction forte demandée par Olivier le 2026-11-09, avec une réaction.
+- **`timer_end` SPEED** : pas de page, « Trop tard » est identique au QCM (`qcm-05`) ; précisé dans l'index.
+
+**Conséquences** (si la proposition est validée) —
+- Le CDC §8.2 ne change pas : il décrit « Zones masquées » avec le texte « Raté » pour `buzz_invalidated`, sans personnage ni précision.
+- `buzz_invalidated` utilise une réaction fixe (« Déçu », R6), alors que la décision #20 tire la réaction au hasard à la révélation. À trancher : réaction fixe ou tirage parmi les quatre mauvaises réponses.
+- Un nom de joueur très long n'a pas été rendu : le bandeau le tronquerait (comportement du bandeau du haut), non vérifié sur cette page.
