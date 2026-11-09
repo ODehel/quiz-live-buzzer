@@ -472,3 +472,20 @@ Alternatives écartées :
 - **Déduction de Claude à confirmer** : la situation d'une réaction QCM se lit dans `correct` et `player_answer`. Le désérialiseur du firmware et le faux hub portent ces champs pour un QCM ; le contrat du vrai hub n'a pas été relu pour ce cas.
 - **Non tranché** : un message du hub reçu pendant les 2000 ms (interrompt-il la réaction ou attend-il ?) : dette ajoutée.
 - Fin du report des maquettes dans le CDC §8.2 (#25, #26, #27) ; restent sans maquette l'init, le buzz refusé, l'élimination par reconnexion et la connexion perdue.
+
+## #28 — docs(mockups): add the start-up and waiting screens
+
+**Contexte** — Après #27, il restait des écrans du CDC §8.2 sans maquette : l'init (logo et bandeau clignotant, §9), les deux attentes (`auth_success`, `game_resumed`) et les trois écrans de coupure (connexion perdue, mode Éliminé, login refusé). Olivier a validé un découpage en trois sessions : ces trois écrans de démarrage, puis les coupures, puis le report dans le CDC.
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **Trois pages** : `start-01-init` (D1), `start-02-connected` (D2), `start-03-resumed` (D3), même habillage et même police que les autres maquettes ; index mis à jour (section « Démarrage et attente », en tête).
+- **Le bandeau du haut est présent dès l'init**, notamment pour la charge de la batterie (choix d'Olivier) ; au démarrage le nom, les points et le classement sont vides et la liaison au hub est barrée en rouge.
+- **D1** : le bouton rouge dessiné au-dessus du logo « Buzz’O’Live », bandeau « Connexion… » en pied d'écran, montré dans son état or (l'autre état est la teinte du bandeau du haut).
+- **D2 et D3** : un anneau or avec une coche (« Connecté ») ou un triangle de lecture (« Partie en cours »), le titre en grand, « En attente d’une question » en dessous.
+- Lecture de la dette : le « buzz refusé » n'est défini nulle part dans le CDC ; il est lu comme « login refusé (`401`) », avec la dette voisine « Login refusé : arrêt silencieux ».
+
+**Conséquences** (si la proposition est validée) —
+- **Libellés proposés par Claude, absents du CDC** : « Connexion… » et « En attente d’une question » ; le CDC ne dit que « Logo », « Connecté » et « Partie en cours ».
+- Le logo est un dessin provisoire (le bouton rouge et le nom) : aucune charte de logo n'existe.
+- Le nom « Buzz’O’Live » apparaît deux fois à l'init (bandeau du haut et logo), le bandeau étant identique sur tous les écrans.
+- Le code ne change pas ; le CDC §8.2 ne décrit pas encore ces écrans (report à la troisième session) : voir `DEBTS.md`.

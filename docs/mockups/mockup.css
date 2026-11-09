@@ -325,3 +325,29 @@ body {
 .solution-text { font-size: calc(var(--u) * 9); font-weight: 800; line-height: 1.1; text-wrap: balance; }
 .solution-text.xs { font-size: calc(var(--u) * 6.5); }
 .prompt.below.result { inset: calc(var(--u) * 21.5) 0 calc(var(--u) * 1.5) 0; }
+
+/* ---- Démarrage et attente : logo avec bandeau clignotant, « Connecté », « Partie en cours » ---- */
+
+.center.above-band { inset: calc(var(--u) * 5.5) 0 calc(var(--u) * 12) 0; }
+.logo { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 3); }
+.logo .redbtn { width: calc(var(--u) * 17); height: calc(var(--u) * 17); }
+.wordmark { font-size: calc(var(--u) * 12); font-weight: 800; letter-spacing: 0.02em; line-height: 1.05; }
+.wordmark .live { color: var(--gold); }
+
+/* Bandeau de démarrage en pied d'écran : état allumé du clignotement (or) ; l'autre état est la teinte --bar. */
+.startband {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: calc(var(--u) * 12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gold);
+  color: var(--on-gold);
+  font-size: calc(var(--u) * 5);
+  font-weight: 800;
+}
+
+/* Attente : anneau et icône or, titre, précision. */
+.wait-ring { width: calc(var(--u) * 20); height: calc(var(--u) * 20); }
+.wait-title { font-size: calc(var(--u) * 11); font-weight: 800; }
