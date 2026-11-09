@@ -376,3 +376,27 @@ body {
 /* Attente : anneau et icône or, titre, précision. */
 .wait-ring { width: calc(var(--u) * 20); height: calc(var(--u) * 20); }
 .wait-title { font-size: calc(var(--u) * 11); font-weight: 800; }
+
+/* ---- Coupures : bandeau de reconnexion (à la place de l'en-tête), buzzer hors jeu, connexion refusée ---- */
+
+.lostbar {
+  position: absolute;
+  inset: calc(var(--u) * 5.5) 0 auto 0;
+  height: calc(var(--u) * 9);
+  padding: 0 calc(var(--u) * 2.5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--wrong);
+  color: var(--text);
+  font-size: calc(var(--u) * 3.75);
+  font-weight: 800;
+}
+.lostbar .try { display: flex; align-items: center; gap: calc(var(--u) * 1.5); }
+.lostbar .dots { display: flex; gap: calc(var(--u) * 1); }
+.lostbar .dots i { width: calc(var(--u) * 2); height: calc(var(--u) * 2); border-radius: 50%; border: calc(var(--u) * 0.4) solid var(--text); }
+.lostbar .dots i.on { background: var(--text); }
+/* Contenu de la question pendant la coupure : visible mais inactif. */
+.grid.dim, .buzz-foot.dim { opacity: 0.4; }
+.fail-ring { width: calc(var(--u) * 16); height: calc(var(--u) * 16); }
+.speed-sub.fail-hint { color: var(--text); font-weight: 800; }
