@@ -404,3 +404,18 @@ Alternatives écartées :
 - Le CDC §8.2 ne change pas : il décrit « Zones masquées » avec le texte « Raté » pour `buzz_invalidated`, sans personnage ni précision.
 - `buzz_invalidated` utilise une réaction fixe (« Déçu », R6), alors que la décision #20 tire la réaction au hasard à la révélation. À trancher : réaction fixe ou tirage parmi les quatre mauvaises réponses.
 - Un nom de joueur très long n'a pas été rendu : le bandeau le tronquerait (comportement du bandeau du haut), non vérifié sur cette page.
+
+## #24 — docs(mockups): add the speed question result screens
+
+**Contexte** — Fin du parcours SPEED (suite de #22 et #23). La décision #13 prévoit pour un SPEED « Validé » ou « Raté » seuls, sans la bonne réponse.
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **Validé** (`speed-06-result-right`) : bandeau or « Validé » avec une coche, capsule or « +10 pts » (le gain), « Bonne réponse » et la réponse attendue en grand. **Raté** (`speed-07-result-wrong`) : bandeau rose « Raté », « Bonne réponse » et la réponse attendue ; **pas de points perdus**. Variante `speed-07b` : réponse de 40 caractères (maximum choisi par Olivier, comme les propositions du QCM), taille réduite sur deux lignes.
+- Le verdict est précédé de la réaction du personnage (R1 à R5 si validé, R6 à R9 si raté), déjà maquettée ; seul le joueur qui a buzzé reçoit un verdict.
+- Écarté : la réponse seule sans le libellé « Bonne réponse » (Olivier a validé le libellé).
+
+**Conséquences** (si la proposition est validée) —
+- **Contredit la décision #13** (verdict seul) pour le SPEED : à reporter dans le CDC §8.2 et dans le code (`LcdTextFor` : « Validé » / « Raté » aujourd'hui), session `docs(rendering)` à part. #13 n'est pas modifiée ici (le fichier est en ajout seul).
+- Le gain et la réponse attendue du SPEED sont des données que le CDC §8.1 ne cite pas pour `question_result` : non vérifié contre le hub (US-011 CA-25, US-012 CA-31).
+- Le bandeau du haut garde les points d'avant la question (comme `qcm-07`) : sa mise à jour au gain n'est pas spécifiée.
+- Le tronquage des réponses de plus de 40 caractères n'est pas traité.

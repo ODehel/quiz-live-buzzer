@@ -314,3 +314,14 @@ body {
 .say-block { display: flex; flex-direction: column; gap: calc(var(--u) * 2.5); min-width: 0; }
 .react.out .say { color: var(--wrong-soft); }
 .react.out .speed-sub { color: var(--text); font-size: calc(var(--u) * 4.5); }
+
+/* Résultat d'une question de rapidité : verdict en bandeau, gain, bonne réponse en grand. */
+.banner svg { width: calc(var(--u) * 8); height: calc(var(--u) * 8); margin-right: calc(var(--u) * 2); }
+.banner.miss { background: var(--wrong); color: var(--text); }
+.prompt.result { flex-direction: column; gap: calc(var(--u) * 3); }
+.cap.big { font-size: calc(var(--u) * 6); padding: calc(var(--u) * 1) calc(var(--u) * 4); }
+.solution { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 1.5); }
+.solution-label { font-size: calc(var(--u) * 4); color: #d9ccff; }
+.solution-text { font-size: calc(var(--u) * 9); font-weight: 800; line-height: 1.1; text-wrap: balance; }
+.solution-text.xs { font-size: calc(var(--u) * 6.5); }
+.prompt.below.result { inset: calc(var(--u) * 21.5) 0 calc(var(--u) * 1.5) 0; }
