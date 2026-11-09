@@ -419,3 +419,21 @@ Alternatives écartées :
 - Le gain et la réponse attendue du SPEED sont des données que le CDC §8.1 ne cite pas pour `question_result` : non vérifié contre le hub (US-011 CA-25, US-012 CA-31).
 - Le bandeau du haut garde les points d'avant la question (comme `qcm-07`) : sa mise à jour au gain n'est pas spécifiée.
 - Le tronquage des réponses de plus de 40 caractères n'est pas traité.
+
+## #25 — docs(rendering): report the QCM mockups in the render table
+
+**Contexte** — Olivier veut reporter les maquettes validées dans le CDC §8.2, en trois sessions (QCM, SPEED, réactions). Avant d'écrire, les specs du hub (US-009, US-011, US-012) ont été relues pour savoir quelles données existent.
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **Trois sessions** : QCM (celle-ci), SPEED, puis réactions du personnage.
+- **Habillage commun** ajouté au CDC §8.2 : bandeau du haut, en-tête avec chrono, capsules du titre. Le nom du joueur, ses points et son classement sont inscrits « à définir » ; la charge de la batterie est du code interne au firmware. Le thème et les points à gagner des capsules sont « à définir » côté hub ; le temps imparti vient de `time_limit`.
+- **Arbitrages de #19 reportés tels que validés** : appui local sous l'en-tête (plus en plein écran), chrono dans l'en-tête et rouge à 5 s ou moins, « Question N » persistant, propositions sans préfixe « A : ».
+- **Lignes QCM modifiées** : `question_title` (MCQ), `question_choices`, `timer_tick`, `timer_end`, `answer_received`, `question_result` MCQ et l'appui local MCQ.
+
+**Correction de #24** — #24 affirmait que seul le joueur qui a buzzé reçoit un verdict. C'est faux : US-012 CA-31 envoie `question_result` à chaque buzzer, avec `correct: false` pour un joueur invalidé ou qui n'a pas buzzé. Le libellé « Raté » pour un non-buzzeur est à trancher à la session SPEED (choix d'Olivier). #24 n'est pas modifiée (le fichier est en ajout seul).
+
+**Conséquences** (si la proposition est validée) —
+- Le code ne change pas : `LcdTextFor`, `GfxScreen` et le rendu noir et blanc restent tels quels (voir `DEBTS.md`) ; le CDC décrit désormais une cible que le code n'atteint pas.
+- Le décompte local du chrono entre deux `timer_tick` est une déduction de Claude (le hub n'en envoie qu'un toutes les 5 s) : à confirmer à l'implémentation.
+- Le vocabulaire « Mettre en évidence » parle toujours d'une zone qui clignote, alors que les maquettes montrent une mise en évidence statique (dette « Zone en évidence sans clignotement ») : non touché ici.
+- Les lignes SPEED du tableau (`question_open`, `buzz_*`, `question_result` SPEED, appui local SPEED) et la ligne d'init gardent leur ancien libellé jusqu'aux sessions suivantes.
