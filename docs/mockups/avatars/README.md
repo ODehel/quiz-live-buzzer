@@ -20,13 +20,13 @@ Générés avec [DiceBear](https://www.dicebear.com/) (`@dicebear/core` et `@dic
 
 | Paramètre | Valeur |
 |---|---|
-| Cheveux | `fro`, `cf7a2e` |
+| Cheveux | **dessinés à la main** (voir ci-dessous), châtain clair `94643a` |
 | Barbe | aucune |
 | Lunettes | `prescription02`, `2e1b12` |
 | Peau | `6b4226` |
 | Tenue | `shirtScoopNeck`, `f2efe6` |
 
-Non reproduits, faute d'option dans avataaars : le collier, le motif rayé du haut, les mèches cuivrées (une seule teinte de cheveux).
+Le personnage est généré avec `top: noHair`, puis la chevelure est ajoutée à la main en deux groupes SVG : `hair-back` (derrière le visage, jusqu'aux épaules) et `hair-front` (mèche de devant avec raie sur le côté). Aucune coiffure avataaars n'était à la fois longue, bouclée et avec une raie ; la forme est un mélange de `curly` (boucles) et `curvy` (longueur). Les SVG sont la source de cette chevelure : pour la changer, modifier ces deux groupes. Non reproduits : le collier et le motif rayé du haut.
 
 ## Les dix réactions (identiques pour les deux personnages)
 
@@ -45,4 +45,6 @@ Non reproduits, faute d'option dans avataaars : le collier, le motif rayé du ha
 
 ## Régénérer
 
-Les options ci-dessus, avec `backgroundColor: ["transparent"]` et `size: 280`, redonnent les SVG. Le personnage masculin utilise `seed: "olivier"` ; pour le féminin la graine est sans effet (toutes les options sont fixées, `facialHairProbability: 0`). Larmes de joie de `hilare.svg` et `hilare-f.svg` : quatre gouttes bleues ajoutées avant `</svg>`, dans un groupe `tears-of-joy` (mêmes coordonnées pour les deux personnages).
+Les options ci-dessus (hors chevelure, qui est dessinée à la main), avec `backgroundColor: ["transparent"]` et `size: 280`, redonnent les SVG. Le personnage masculin utilise `seed: "olivier"` ; pour le féminin la graine est sans effet (toutes les options sont fixées, `facialHairProbability: 0`).
+
+Larmes de joie de `hilare.svg` et `hilare-f.svg` : quatre gouttes bleues ajoutées avant `</svg>`, dans un groupe `tears-of-joy` (mêmes coordonnées pour les deux personnages).
