@@ -437,3 +437,19 @@ Alternatives écartées :
 - Le décompte local du chrono entre deux `timer_tick` est une déduction de Claude (le hub n'en envoie qu'un toutes les 5 s) : à confirmer à l'implémentation.
 - Le vocabulaire « Mettre en évidence » parle toujours d'une zone qui clignote, alors que les maquettes montrent une mise en évidence statique (dette « Zone en évidence sans clignotement ») : non touché ici.
 - Les lignes SPEED du tableau (`question_open`, `buzz_*`, `question_result` SPEED, appui local SPEED) et la ligne d'init gardent leur ancien libellé jusqu'aux sessions suivantes.
+
+## #26 — docs(rendering): report the speed question mockups in the render table
+
+**Contexte** — Suite de #25. Deuxième des trois sessions de report : les écrans SPEED. Le hub envoie `question_result` à tous les buzzers, avec `correct: false` pour un joueur invalidé, un joueur qui n'a pas buzzé ou un joueur dont un autre a gagné (US-012 CA-31).
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **Le firmware retient « ce buzzer a buzzé pendant cette question »** (option C) : posé à l'appui local sur le bouton rouge, remis à faux à `question_open`. Avec `correct: false` : s'il a buzzé, bandeau rose « Raté » et réaction « mauvaise réponse » ; sinon, bandeau sobre « Question terminée » et réaction « Endormi ». Écartés : « Raté » pour tous (faux pour qui n'a pas buzzé) ; un libellé neutre pour tous (la réaction déçue y serait étrange).
+- **Un écran de plus** : `speed-08-result-no-buzz` (« Question terminée »), ajouté à cette session pour que le CDC et les maquettes restent cohérents.
+- **Lignes SPEED du CDC §8.2 réécrites** : `question_open`, `buzz_accepted`, `buzz_locked`, `buzz_invalidated`, `buzz_unlocked` (même écran que l'ouverture, chrono repris à `remaining_seconds`), `question_result` (validé, raté, sans avoir buzzé) et l'appui local.
+- **La décision #13** (« Validé » / « Raté » seuls) est dépassée pour le SPEED : réponse attendue et gain affichés (choix d'Olivier, #24).
+- La réaction de `buzz_invalidated` est mentionnée sans trancher « fixe » ou « tirée au hasard » : renvoi à la session des réactions.
+
+**Conséquences** (si la proposition est validée) —
+- **Un état mémorisé de plus dans le rendu** : le CDC distinguait MCQ et SPEED par le contenu du message, sans état ; l'exception est écrite dans la note de §8.2. Limites : un buzzer qui a appuyé trop tard voit « Raté » ; une reconnexion en cours de question efface l'état (écran « Question terminée »).
+- Le code ne change pas : voir `DEBTS.md`.
+- Les libellés « Appuie sur le bouton rouge », « En attente de confirmation », « Réponds à voix haute » et « Éliminé pour cette question », proposés dans #22 et #23, sont repris dans le CDC.
