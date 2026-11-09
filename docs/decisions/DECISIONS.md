@@ -343,3 +343,19 @@ Alternatives écartées :
 - Pire cas de texte (`qcm-02e`) : une proposition de 40 caractères (maximum du hub) ne tient pas en trois lignes à 40 px (essai : quatre lignes, qui touchent les bords de la carte). La maquette réduit donc le texte à 30 px, avec **une seule taille pour les quatre cartes**, choisie sur la plus longue ; `GfxScreen` choisit aujourd'hui une taille **par texte** (`TextLayout`), ce qui donnerait des cartes de tailles différentes. Le titre de 250 caractères n'est pas maquetté.
 - `DisplayState` ne peut plus se limiter à un texte : l'en-tête demande un modèle (titre de question retenu, chrono, texte d'en-tête, zones, zone choisie). C'est la sum-type déjà prévue pour les messages à contenu variable.
 - Candidat pour une session ultérieure : un prototype LVGL (empreinte Flash mesurée : le firmware est à 80,2 %, la dalle et la version de LVGL restent à choisir). Il remplacerait `GfxScreen` et probablement la couche tactile, le port `Screen` restant la couture. Ses animations natives pourraient dispenser du port `Clock` prévu pour le clignotement. Non décidé : le changement d'écran peut le rendre caduc.
+
+## #20 — docs(mockups): show a character reacting to the result
+
+**Contexte** — Olivier veut rendre le quiz plus drôle : à la révélation de la réponse, un petit personnage à son image est heureux si la réponse est bonne, déçu ou en colère si elle est fausse. Il veut un avatar par joueur et une dizaine de réactions, au choix de Claude parmi celles d'un jeu télé. Suite de la décision #19 (maquettes).
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **Emplacement** : une réaction plein écran d'environ 1,5 s avant l'écran de résultat, le personnage en grand à gauche dans un médaillon, un libellé à droite. Le bandeau du haut reste. Écartés : un médaillon dans l'en-tête (trop petit pour lire l'émotion à 50 cm), une colonne à gauche de l'écran de résultat (rétrécit les cartes, déjà justes au pire cas de texte).
+- **Dix réactions**, tirées au hasard dans la catégorie de la situation, sans état côté firmware : bonne réponse (Ravi, Hilare, Amoureux, Malin, Taquin), mauvaise réponse (Déçu, En colère, Dépité, Sonné), sans réponse (Endormi). Chacune a son libellé (« Bravo ! », « Raté… », « Pas de réponse »…) ; le fond du médaillon dit la situation (or, rose, lavande).
+- **Style** : avataaars (Pablo Stanley) généré avec DiceBear, d'après les photos d'Olivier (cheveux courts, barbe légère, lunettes). Choisi contre Lorelei (CC0) dont les expressions étaient trop discrètes. Hilare est modifié à la main (larmes de joie) : sa première version, bouche ouverte, était la moins lisible, la barbe cachant la bouche.
+- **Format** : une page par réaction (`reaction-NN-*.html`), dix SVG transparents dans `docs/mockups/avatars/` avec leurs paramètres et la licence (`README.md`).
+
+**Conséquences** (si la proposition est validée) —
+- Un avatar par joueur ne tient pas dans le Flash : le hub les générerait (DiceBear tourne en Node), le buzzer les téléchargerait au démarrage (précédent : `play_sound_url`) pour les garder en PSRAM. À 300 px en RGB565, une image pèse environ 176 Ko, soit environ 1,76 Mo les dix (1,15 Mo à 240 px). La taille de la PSRAM n'est pas vérifiée. Le protocole (message ou champ d'avatar), le choix de l'avatar dans Angular et la génération côté hub restent à définir : voir `DEBTS.md`.
+- La réaction suppose une temporisation (port `Clock`, comme le clignotement) et un tirage au hasard. Le CDC §8.2 ne la décrit pas : elle s'ajoute à `question_result`.
+- Licence : avataaars est « libre pour usage personnel et commercial », pas CC0. Le dépôt est public et le personnage reprend le visage d'Olivier, ce qu'il a accepté.
+- « Dépité » (yeux au ciel) reste la réaction la moins lisible ; Olivier l'a gardée.
