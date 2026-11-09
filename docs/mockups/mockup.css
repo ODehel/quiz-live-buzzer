@@ -400,3 +400,27 @@ body {
 .grid.dim, .buzz-foot.dim { opacity: 0.4; }
 .fail-ring { width: calc(var(--u) * 16); height: calc(var(--u) * 16); }
 .speed-sub.fail-hint { color: var(--text); font-weight: 800; }
+
+/* ---- Classement provisoire (intermediate_ranking) : liste des joueurs, ta ligne en évidence ---- */
+.rows { position: absolute; inset: calc(var(--u) * 16) calc(var(--u) * 1.5) calc(var(--u) * 1.5); display: flex; flex-direction: column; gap: calc(var(--u) * 0.8); }
+.row { height: calc(var(--u) * 6.2); display: flex; align-items: center; gap: calc(var(--u) * 2); padding: 0 calc(var(--u) * 2); border-radius: calc(var(--u) * 2); background: rgba(255, 255, 255, 0.14); font-size: calc(var(--u) * 3.8); font-weight: 700; }
+.row.tight { height: calc(var(--u) * 5.4); }
+.row .pos { flex: none; width: calc(var(--u) * 4.2); height: calc(var(--u) * 4.2); display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, 0.22); font-weight: 800; font-size: 0.9em; }
+.row .pos.g1 { background: var(--gold); color: var(--on-gold); }
+.row .pos.g2 { background: #d9dcec; color: var(--ink); }
+.row .pos.g3 { background: var(--letter-c); color: var(--ink); }
+.row .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .tm { flex: none; font-size: 0.8em; opacity: 0.7; }
+.row .sc { flex: none; min-width: calc(var(--u) * 14); text-align: right; color: var(--gold); font-weight: 800; }
+.row.me { background: var(--card); color: var(--ink); }
+.row.me .sc { color: var(--ink); }
+.row.me .pos { background: var(--ink); color: var(--text); }
+.row.me .pos.g1 { background: var(--gold); color: var(--on-gold); }
+.row.lead { background: var(--gold); color: var(--on-gold); }
+.row.lead .sc { color: var(--on-gold); }
+.row.lead .pos, .row.lead .pos.g1 { background: var(--ink); color: var(--gold); }
+.row.gap { height: calc(var(--u) * 3); justify-content: center; background: none; padding: 0; font-size: calc(var(--u) * 5); line-height: 1; letter-spacing: 0.15em; opacity: 0.8; }
+.row.gap span { transform: translateY(-0.2em); }
+.bar.lead { background: var(--gold); color: var(--on-gold); }
+.bar .lead-t { color: var(--on-gold); }
+.bar .lead-t svg { width: calc(var(--u) * 4.5); height: calc(var(--u) * 4.5); }
