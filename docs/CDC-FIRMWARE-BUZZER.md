@@ -234,13 +234,14 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 > - **Données du bandeau** : la liaison avec le hub existe (§5) ; la charge de la batterie est mesurée par le firmware, sans message du hub ; **le nom du joueur, ses points et son classement sont à définir** (aucun message du §8.1 ne les porte ; `question_result` donne `cumulative_score` après la question).
 > - **Chrono** : resynchronisé à chaque `timer_tick` (toutes les 5 s, US-011 CA-11), le firmware décompte localement entre deux (à confirmer à l'implémentation).
 > - **Capsules du titre** : le temps imparti vient de `time_limit` ; le **thème** et les **points à gagner** sont **à définir** côté hub.
-> - **Reporté** : les écrans QCM et SPEED ci-dessous et les réactions du personnage (maquettes `reaction-*`), décrites dans le sous-tableau qui suit le tableau.
+> - **Reporté** : les écrans de démarrage et d'attente (`start-*`), les écrans QCM et SPEED, les écrans de coupure (`fail-*`) et les réactions du personnage (maquettes `reaction-*`), décrites dans le tableau et le sous-tableau qui le suit.
+> - **Coupures** : les lignes `(réseau : …)` ne naissent d'aucun message du §8.1 mais d'événements de la couche réseau (§5, §9). Le rendu les prend de la même façon que les lignes `(local : …)`. **Tentative N/3** : N est la tentative **en cours** (la perte initiale n'en compte pas ; l'échec de la 3ᵉ mène à « Hors jeu ») ; le compteur vit dans `ReconnectionPolicy` et **aucun port ne l'expose au rendu** (voir `DEBTS.md`). Le fait que zones, bouton rouge et chrono soient inactifs pendant la reconnexion est **déduit** des maquettes : le §5 ne le spécifie pas. À la reconnexion, `auth_success` ramène l'écran d'attente ; le retour à la question en cours n'est **pas spécifié**. Le libellé « Hors jeu » évite « éliminé », déjà pris par `buzz_invalidated`.
 
 | Message | Condition | Effet écran | LCD | Son |
 |---|---|---|---|---|
-| *(init, §9)* | — | Bandeau clignotant | Logo | — |
-| `auth_success` | — | Zones masquées | Attente (« Connecté ») | — |
-| `game_resumed` | — | Zones masquées | Attente (« Partie en cours ») | — |
+| *(init, §9)* | — | Bandeau clignotant | Logo « Buzz’O’Live » sur deux lignes (le « O » est le bouton rouge) ; bandeau « Connexion… » en pied d'écran ; bandeau du haut présent dès la mise sous tension (batterie seule renseignée, liaison barrée) | — |
+| `auth_success` | — | Zones masquées | Anneau or avec une coche, « Connecté », puis « En attente d’une question » | — |
+| `game_resumed` | — | Zones masquées | Même mise en page que `auth_success` : anneau or avec un triangle de lecture, « Partie en cours », puis « En attente d’une question » | — |
 | `question_title` (MCQ) | — | Zones masquées | Pastille « Question N » + capsules (temps imparti ; thème et points à gagner à définir) + titre | — |
 | `question_choices` | — | Zones actives | En-tête « Question N » + chrono ; une carte par proposition, la lettre dans une pastille, sans préfixe « A : » | — |
 | `question_open` (SPEED) | — | Zones masquées | En-tête « Question N » + chrono ; capsules (temps imparti ; thème et points à gagner à définir) ; titre en grand (250 caractères au plus, taille réduite s'il est long) ; en pied, un bouton rouge dessiné et « Appuie sur le bouton rouge » | — |
@@ -260,6 +261,9 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 | `question_result` | sinon (SPEED), `correct: false`, ce buzzer n'a pas buzzé | Zones masquées | Réaction « sans réponse » (Endormi), puis bandeau sobre « Question terminée », « Bonne réponse » et `correct_answer` ; ni gain ni perte | — |
 | *(local : appui sur la zone x, MCQ armé)* | — | Mettre en évidence zone(x), sous l'en-tête | — | — |
 | *(local : appui sur le bouton rouge, SPEED armé)* | — | Zones masquées | En-tête « Buzz envoyé » + chrono ; le titre disparaît, le bouton rouge s'enfonce, « En attente de confirmation » ; retient « ce buzzer a buzzé » | — |
+| *(réseau : connexion coupée après le premier `auth_success`, QCM ou SPEED armé, tentative N de reconnexion en cours, N = 1 à 3)* | — | Zones masquées d'office (propositions ou titre atténués, inactifs ; le bouton physique ne buzze pas) | Bandeau rouge sous le bandeau du haut, à la place de l'en-tête : « Connexion perdue » et « Tentative N/3 » avec trois points (un point plein par tentative commencée) ; la question reste affichée, atténuée ; ni chrono ni bouton rouge actif ; liaison barrée | — |
+| *(réseau : 3ᵉ échec consécutif de reconnexion, mode Éliminé §4.4)* | — | Zones masquées | Anneau rouge avec le symbole marche/arrêt, « Hors jeu », « Connexion perdue après 3 tentatives », « Redémarre le buzzer pour revenir » ; terminal : ni appui ni message ne change l'écran | — |
+| *(réseau : `401` au login `POST /api/v1/token`, init §9)* | — | Zones masquées | Anneau rouge avec un cadenas, « Connexion refusée », « Le hub n’a pas accepté ce buzzer », « Préviens le maître du jeu » ; bandeau du haut sans nom ni points ; l'écran reste jusqu'au redémarrage (pas de réessai) | — |
 | `play_sound_url` | — | inchangé | inchangé | fichier distant (HTTP GET) |
 | `play_system_sound` | — | inchangé | inchangé | son préchargé (selon `sound_id`) |
 
