@@ -645,3 +645,22 @@ Alternatives écartées :
 - **YAGNI sur les composants** : bandeau et un seul écran d'abord, on généralise au deuxième écran qui en a besoin.
 - **`std::variant` non vérifié** : probablement absent (`<variant>` est du C++17, comme `<optional>`). Repli prévu : un enum et une structure. Voir `DEBTS.md`.
 - Le code ne change pas.
+
+## #39 — chore(rendering): check that the esp32 toolchain supports std::variant
+
+**Contexte** — La décision #38 prévoit un modèle d'écran qui est naturellement une somme de types (`std::variant`). Le build `esp32` avait refusé `<optional>` (#15) et `platformio.ini` ne fixait aucun `-std` pour cet environnement. Les tests natifs compilent en C++17 et ne pouvaient pas révéler le problème.
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **L'env `esp32` compile en `-std=gnu++17`** : `build_unflags = -std=gnu++11` et `-std=gnu++17` dans `build_flags` de `[env:esp32]`. Le changement vaut pour toute la cible (code du projet et libs), pas pour les seuls fichiers qui utilisent `<variant>`.
+- **`std::variant` est utilisable sur le firmware.** Le repli enum + structure prévu par #38 n'est plus nécessaire.
+
+**Preuves** (smoke tests lancés par Olivier, 2026-11-09) —
+- Sans le flag, une sonde `#include <variant>` avec `std::variant<int, char>` échoue : « `std::variant` is only available from C++17 onwards ».
+- Avec le flag, la sonde compile et le build `esp32` est en `SUCCESS`, sans `error:` ni `warning:` relevé.
+- Flash : 80,3 % (1 051 905 octets) contre 80,2 % (1 051 433 octets) avant le changement, soit +472 octets.
+- La sonde n'est pas commitée : test né rouge, preuve de contrat et non cycle TDD.
+
+**Conséquences** —
+- **Le refus de `<optional>` (#15) avait vraisemblablement la même cause** (standard C++ trop bas, pas un manque de la toolchain ; `<optional>` n'a pas été resondé) : sa justification est à considérer comme obsolète. La décision #15 n'est pas réécrite (le fichier est en ajout seul) ; le code concerné est en dette dans `DEBTS.md`.
+- **Non prouvé** : le comportement à l'exécution sur la carte (smoke test matériel non lancé) ; le changement n'affecte que la compilation, les 76 tests natifs ne sont pas concernés.
+- **Ordre des sessions inchangé** : `refactor(rendering)` qui place les écrans existants derrière la couture, puis `feat(rendering)` du bandeau du haut.
