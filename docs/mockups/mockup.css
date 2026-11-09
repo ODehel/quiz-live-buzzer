@@ -424,3 +424,18 @@ body {
 .bar.lead { background: var(--gold); color: var(--on-gold); }
 .bar .lead-t { color: var(--on-gold); }
 .bar .lead-t svg { width: calc(var(--u) * 4.5); height: calc(var(--u) * 4.5); }
+
+/* ---- Classement final : podium (le premier au centre) et ta place en dessous ---- */
+.podium { position: absolute; inset: calc(var(--u) * 15.5) calc(var(--u) * 1.5) calc(var(--u) * 12.5); display: grid; grid-template-columns: 1fr 1fr 1fr; gap: calc(var(--u) * 1.5); align-items: end; }
+.pod { display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; }
+.pod .crown { width: calc(var(--u) * 4); height: calc(var(--u) * 3.5); color: var(--gold); }
+.pod .nm { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: calc(var(--u) * 0.3) calc(var(--u) * 1.6); border-radius: 999px; font-size: calc(var(--u) * 4.4); font-weight: 800; }
+.pod .sc { margin-bottom: calc(var(--u) * 0.8); font-size: calc(var(--u) * 3.6); font-weight: 800; color: var(--gold); }
+.pod .blk { width: 100%; display: grid; place-items: center; border-radius: calc(var(--u) * 2) calc(var(--u) * 2) 0 0; font-size: calc(var(--u) * 6); font-weight: 800; color: var(--ink); }
+.pod.p1 .blk { height: calc(var(--u) * 16); background: var(--gold); }
+.pod.p2 .blk { height: calc(var(--u) * 11); background: #d9dcec; }
+.pod.p3 .blk { height: calc(var(--u) * 7.5); background: var(--letter-c); }
+.pod.me .nm { background: var(--card); color: var(--ink); }
+.pod.me .blk { outline: calc(var(--u) * 0.6) solid var(--card); outline-offset: calc(var(--u) * -0.1); }
+.mine { position: absolute; inset: auto calc(var(--u) * 1.5) calc(var(--u) * 1.5); height: calc(var(--u) * 9); font-size: calc(var(--u) * 4.6); }
+.mine .pos { width: calc(var(--u) * 5.6); height: calc(var(--u) * 5.6); }
