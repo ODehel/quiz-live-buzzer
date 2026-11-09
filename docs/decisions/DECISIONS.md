@@ -489,3 +489,19 @@ Alternatives écartées :
 - Le logo est un dessin provisoire (le bouton rouge et le nom) : aucune charte de logo n'existe.
 - Le nom « Buzz’O’Live » apparaît deux fois à l'init (bandeau du haut et logo), le bandeau étant identique sur tous les écrans.
 - Le code ne change pas ; le CDC §8.2 ne décrit pas encore ces écrans (report à la troisième session) : voir `DEBTS.md`.
+
+## #29 — docs(mockups): add the connection failure screens
+
+**Contexte** — Après #28, restaient sans maquette les trois coupures du CDC §8.2 : connexion perdue (reconnexion, §5), mode Éliminé (§4.4) et login refusé (`401`, dette « Login refusé : arrêt silencieux »). La maquette 2d du QCM ne montrait la coupure que par l'icône de liaison barrée.
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **Reconnexion : un bandeau rouge sous la barre du haut, à la place de l'en-tête** (option B), plutôt qu'un écran plein qui remplace la question : la question reste lisible, atténuée et inactive. Texte « Connexion perdue » et « Tentative N/3 » avec trois points. N est la tentative **en cours** (la perte initiale n'en compte pas ; l'échec de la 3ᵉ mène à l'écran hors jeu). Pages `fail-01-lost` (QCM, 2/3) et `fail-01b-lost-speed` (SPEED, 3/3).
+- **Perte définitive : `fail-02-out`**, « Hors jeu », avec la seule sortie (redémarrer le buzzer). Le mot « éliminé » est évité : il désigne déjà l'élimination pour la question (`buzz_invalidated`, R9).
+- **Login refusé : `fail-03-refused`**, « Connexion refusée » et « Préviens le maître du jeu » ; bandeau du haut sans nom ni points, comme à l'init.
+- Index : section « Coupures » ; même police et même habillage que les autres maquettes.
+
+**Conséquences** (si la proposition est validée) —
+- **Libellés proposés par Claude, absents du CDC** : tous (« Connexion perdue », « Tentative N/3 », « Hors jeu », « Redémarre le buzzer pour revenir », « Connexion refusée », « Préviens le maître du jeu »).
+- **Déduit par Claude, non spécifié au CDC §5** : pendant la coupure les zones et le bouton rouge sont inactifs, et le chrono disparaît (plus de resynchronisation par `timer_tick`).
+- **Le compteur « N/3 » n'existe pas côté rendu** : `ReconnectionPolicy` le porte, aucun message ni port ne l'expose au rendu.
+- Le code ne change pas ; le CDC §8.2 ne décrit pas encore ces écrans (report à la session suivante) : voir `DEBTS.md`.

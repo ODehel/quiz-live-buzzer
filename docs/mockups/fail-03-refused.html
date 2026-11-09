@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>F3. Connexion refusée</title>
+<link rel="stylesheet" href="mockup.css">
+</head>
+<body>
+<div class="stage"><div class="screen">
+<div class="status"><span class="who"></span><span class="brand" role="img" aria-label="Buzz’O’Live"><span class="buzz" aria-hidden="true"><span class="echo l"><i>B</i><i>u</i><i>z</i><i>z</i><span>’</span></span><span class="echo r"><i>B</i><i>u</i><i>z</i><i>z</i><span>’</span></span><span class="solid"><i>B</i><i>u</i><i>z</i><i>z</i><span>’</span></span></span><span class="disc" aria-hidden="true"></span><span aria-hidden="true">’<span class="live">Live</span></span></span><span class="tray"><span class="link lost" role="img" aria-label="Hub injoignable"><svg viewBox="0 0 24 18"><path d="M2 6.5Q12 -1.5 22 6.5M5.5 10.5Q12 5 18.5 10.5M9 14Q12 11.5 15 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" opacity="0.55"/><circle cx="12" cy="16.6" r="1.5" fill="currentColor" opacity="0.55"/><path d="M3 1.5L21 17" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></span><span class="battery"><span>78 %</span><svg viewBox="0 0 28 14" aria-hidden="true"><rect class="shell" x="1" y="1" width="22" height="12" rx="3" fill="none" stroke-width="1.6"/><rect class="shell" x="24.5" y="4.5" width="2.5" height="5" rx="1" fill="currentColor" stroke="none"/><rect class="level" x="3" y="3" width="14.04" height="8" rx="1.5"/></svg></span></span></div><div class="center"><svg class="big-ring fail-ring" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--wrong-soft)" stroke-width="2.5"/><path d="M14.2 16.5V14a3.8 3.8 0 0 1 7.6 0v2.5" fill="none" stroke="var(--wrong-soft)" stroke-width="2.3" stroke-linecap="round"/><rect x="11.5" y="16.5" width="13" height="9.5" rx="2.2" fill="var(--wrong-soft)"/></svg><p class="timeout">Connexion refusée</p><p class="speed-sub">Le hub n’a pas accepté ce buzzer</p><p class="speed-sub fail-hint">Préviens le maître du jeu</p></div>
+</div></div>
+<section class="spec"><h1>F3. Connexion refusée</h1><dl><dt>Message</dt><dd>aucun : réponse 401 au login (POST /api/v1/token), au démarrage ; remplace l'arrêt silencieux actuel</dd><dt>Effet écran</dt><dd>Zones masquées ; l'écran reste jusqu'au redémarrage (le firmware ne réessaie pas)</dd><dt>Texte</dt><dd>anneau rouge avec un cadenas, « Connexion refusée », la cause, puis qui prévenir. Les libellés sont proposés : le CDC ne définit pas cet écran (« buzz refusé » lu comme login refusé, décision #28)</dd><dt>Bandeau du haut</dt><dd>présent comme à l'init : nom, points et classement vides (le joueur n'est pas connu), liaison barrée en rouge, batterie</dd></dl></section>
+</body>
+</html>
