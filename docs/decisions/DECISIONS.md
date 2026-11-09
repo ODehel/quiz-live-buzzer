@@ -521,3 +521,19 @@ Alternatives écartées :
 - **Non spécifié** : l'écran après une reconnexion réussie (`auth_success` ramène l'attente « Connecté » selon la table ; le retour à la question en cours n'est pas décrit).
 - **Aucun port n'expose le compteur N/3 au rendu** : dette inchangée, voir `DEBTS.md`.
 - Le code ne change pas.
+
+## #31 — docs(mockups): add the interim ranking screen
+
+**Contexte** — Olivier a constaté qu'aucun écran de classement n'était maquetté ni mentionné dans le CDC. Lecture du réel : le hub diffuse `intermediate_ranking` à tous les buzzers (US-014 CA-10, rang, nom, score cumulé, temps total) sans interrompre la question en cours (CA-13) ; ce message est absent du CDC §8.1 et §8.2. L'ancienne liste des états (`Liste des états.csv`) portait trois états de classement (`DisplayWinningRankingState`, `DisplayStandardRankingState`, `RevealWinnerState`), jamais repris. Aucun message du hub ne porte un classement définitif vers les buzzers (US-013 est une route REST).
+
+**Décision** (cible et découpage validés par Olivier à la porte 1, 2026-11-09) —
+- **Trois sessions** : cette maquette du classement provisoire, puis les écrans du classement définitif, puis le report dans le CDC (§8.1 et §8.2).
+- **Trois pages** : `rank-01-interim` (K1, six joueurs, la ligne du joueur en blanc, cercles or, argent et bronze pour les trois premiers), `rank-01b-interim-leader` (K1b, « Tu es en tête ! », bandeau et ligne or, à la place du clignotement des LED du premier de l'ancienne liste), `rank-01c-interim-long` (K1c, plus de joueurs que de lignes : cinq premiers, « … », ligne du joueur avec son vrai rang) ; section « Classements » dans l'index.
+
+**Conséquences** (si la proposition est validée) —
+- **Confirmé par Olivier (2026-11-09)** : « provisoire » = « intermédiaire » ; dix joueurs au plus (six lignes tiennent à l'écran, K1c couvre de 7 à 10) ; la reconnaissance de sa propre ligne lui convient ; la durée d'affichage est décidée par le maître du jeu dans son animation (le firmware ne minute rien).
+- **Proposé par Claude, non tranché** : l'écran remplace l'écran courant (zones masquées).
+- **Libellés proposés par Claude, absents du CDC** : « Classement provisoire », « Tu es en tête ! », « N pts », temps total en secondes.
+- **Le firmware reconnaît sa ligne** (principe validé) : par `participant_name` comparé au `username` d'`auth_success` ; la spec du hub ne dit pas qu'ils sont identiques, à garantir côté hub.
+- **Non tranché** : ce que devient une question armée pendant que le classement est à l'écran (le hub ne l'interrompt pas, CA-13) ; même famille que la dette « Buzzer armé sans zone tactile à l'écran ».
+- Le code ne change pas ; le CDC ne décrit pas encore ce message ni ces écrans : voir `DEBTS.md`.
