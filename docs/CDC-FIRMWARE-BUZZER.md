@@ -230,26 +230,32 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 > **Vocabulaire LCD** : description abstraite du contenu, exemple de libellé entre parenthèses (texte exact = détail d'implémentation).
 > Seuls `timer_end` et `question_result` ont un rendu **conditionnel** ; tous les autres messages sont inconditionnels.
 
+> **Habillage commun (rendu cible QCM, maquettes `docs/mockups/`, décision #19)** : chaque écran porte un **bandeau du haut** : nom du joueur, points et classement à gauche, « Buzz’O’Live » au centre, à droite l'état de la liaison avec le hub (icône barrée et rouge si coupée) puis la charge de la batterie (rouge à 20 % ou moins). Sous lui, un **en-tête** réunit le texte LCD du tableau et le chrono (anneau + secondes, rouge à 5 s ou moins).
+> - **Données du bandeau** : la liaison avec le hub existe (§5) ; la charge de la batterie est mesurée par le firmware, sans message du hub ; **le nom du joueur, ses points et son classement sont à définir** (aucun message du §8.1 ne les porte ; `question_result` donne `cumulative_score` après la question).
+> - **Chrono** : resynchronisé à chaque `timer_tick` (toutes les 5 s, US-011 CA-11), le firmware décompte localement entre deux (à confirmer à l'implémentation).
+> - **Capsules du titre** : le temps imparti vient de `time_limit` ; le **thème** et les **points à gagner** sont **à définir** côté hub.
+> - **Reporté** : les écrans QCM ci-dessous. Les lignes SPEED et les réactions du personnage (maquettes `speed-*` et `reaction-*`) ne le sont pas encore.
+
 | Message | Condition | Effet écran | LCD | Son |
 |---|---|---|---|---|
 | *(init, §9)* | — | Bandeau clignotant | Logo | — |
 | `auth_success` | — | Zones masquées | Attente (« Connecté ») | — |
 | `game_resumed` | — | Zones masquées | Attente (« Partie en cours ») | — |
-| `question_title` | — | Zones masquées | Libellé question (« Question N : … ») | — |
-| `question_choices` | — | Zones actives | Les 4 propositions A/B/C/D | — |
+| `question_title` (MCQ) | — | Zones masquées | Pastille « Question N » + capsules (temps imparti ; thème et points à gagner à définir) + titre | — |
+| `question_choices` | — | Zones actives | En-tête « Question N » + chrono ; une carte par proposition, la lettre dans une pastille, sans préfixe « A : » | — |
 | `question_open` (SPEED) | — | Zones masquées | Titre + chrono | — |
-| `timer_tick` | — | inchangé | Chrono (« N s ») | — |
-| `timer_end` | mode armé courant | Zones masquées | Temps écoulé (« Trop tard ») | — |
+| `timer_tick` | — | inchangé | Chrono (« N s »), rouge à 5 s ou moins | — |
+| `timer_end` | mode armé courant | Zones masquées | Temps écoulé (« Trop tard », anneau vide) | — |
 | `timer_end` | Inerte | inchangé | inchangé | — |
-| `answer_received` | — | Zones conservées | Réponse prise en compte (« Réponse enregistrée ») | — |
+| `answer_received` | — | Zones conservées | En-tête « Réponse enregistrée » à la place de « Question N » ; le chrono continue | — |
 | `buzz_accepted` | — | Bandeau clignotant | Tu as buzzé (« À toi ! ») | — |
 | `buzz_locked` | — | Zones masquées | Un autre a buzzé (« X a buzzé ») | — |
 | `buzz_invalidated` | — | Zones masquées | Éliminé pour la question (« Raté ») | — |
 | `buzz_unlocked` | — | Zones masquées | À nouveau possible de buzzer | — |
-| `question_result` | `correct_answer` = lettre A–D (MCQ) | Mettre en évidence zone(correct_answer) | Résultat (bonne réponse + réponse joueur) | — |
+| `question_result` | `correct_answer` = lettre A–D (MCQ) | Mettre en évidence zone(correct_answer) | En-tête « Bonne réponse : B » puis « Votre réponse : C » si `player_answer` est présent ; la réponse fausse du joueur est cerclée de rouge | — |
 | `question_result` | sinon (SPEED), `correct: true` | Bandeau clignotant | Résultat (validé) | — |
 | `question_result` | sinon (SPEED), `correct: false` | Zones masquées | Résultat (raté) | — |
-| *(local : appui sur la zone x, MCQ armé)* | — | Mettre en évidence zone(x), en plein écran | — | — |
+| *(local : appui sur la zone x, MCQ armé)* | — | Mettre en évidence zone(x), sous l'en-tête | — | — |
 | *(local : appui sur le bouton rouge, SPEED armé)* | — | Zones masquées | Buzz envoyé (« Buzz envoyé ») | — |
 | `play_sound_url` | — | inchangé | inchangé | fichier distant (HTTP GET) |
 | `play_system_sound` | — | inchangé | inchangé | son préchargé (selon `sound_id`) |
