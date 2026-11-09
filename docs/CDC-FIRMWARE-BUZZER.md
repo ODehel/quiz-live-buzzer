@@ -234,7 +234,7 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 > - **Données du bandeau** : la liaison avec le hub existe (§5) ; la charge de la batterie est mesurée par le firmware, sans message du hub ; **le nom du joueur, ses points et son classement sont à définir** (aucun message du §8.1 ne les porte ; `question_result` donne `cumulative_score` après la question).
 > - **Chrono** : resynchronisé à chaque `timer_tick` (toutes les 5 s, US-011 CA-11), le firmware décompte localement entre deux (à confirmer à l'implémentation).
 > - **Capsules du titre** : le temps imparti vient de `time_limit` ; le **thème** et les **points à gagner** sont **à définir** côté hub.
-> - **Reporté** : les écrans QCM ci-dessous. Les lignes SPEED et les réactions du personnage (maquettes `speed-*` et `reaction-*`) ne le sont pas encore.
+> - **Reporté** : les écrans QCM et SPEED ci-dessous. Les réactions du personnage (maquettes `reaction-*`) ne le sont pas encore ; les lignes qui les mentionnent les renvoient à cette session.
 
 | Message | Condition | Effet écran | LCD | Son |
 |---|---|---|---|---|
@@ -243,24 +243,27 @@ Les quatre points historiquement « À DÉCIDER » du §8 ont été tranchés (v
 | `game_resumed` | — | Zones masquées | Attente (« Partie en cours ») | — |
 | `question_title` (MCQ) | — | Zones masquées | Pastille « Question N » + capsules (temps imparti ; thème et points à gagner à définir) + titre | — |
 | `question_choices` | — | Zones actives | En-tête « Question N » + chrono ; une carte par proposition, la lettre dans une pastille, sans préfixe « A : » | — |
-| `question_open` (SPEED) | — | Zones masquées | Titre + chrono | — |
+| `question_open` (SPEED) | — | Zones masquées | En-tête « Question N » + chrono ; capsules (temps imparti ; thème et points à gagner à définir) ; titre en grand (250 caractères au plus, taille réduite s'il est long) ; en pied, un bouton rouge dessiné et « Appuie sur le bouton rouge » | — |
 | `timer_tick` | — | inchangé | Chrono (« N s »), rouge à 5 s ou moins | — |
 | `timer_end` | mode armé courant | Zones masquées | Temps écoulé (« Trop tard », anneau vide) | — |
 | `timer_end` | Inerte | inchangé | inchangé | — |
 | `answer_received` | — | Zones conservées | En-tête « Réponse enregistrée » à la place de « Question N » ; le chrono continue | — |
-| `buzz_accepted` | — | Bandeau clignotant | Tu as buzzé (« À toi ! ») | — |
-| `buzz_locked` | — | Zones masquées | Un autre a buzzé (« X a buzzé ») | — |
-| `buzz_invalidated` | — | Zones masquées | Éliminé pour la question (« Raté ») | — |
-| `buzz_unlocked` | — | Zones masquées | À nouveau possible de buzzer | — |
+| `buzz_accepted` | — | Bandeau clignotant | Bandeau or « À toi ! » à la place de l'en-tête ; la question reste affichée, « Réponds à voix haute » ; pas de chrono (la réponse se dit à l'oral, le maître du jeu tranche) | — |
+| `buzz_locked` | — | Zones masquées | Bandeau sobre « X a buzzé » (nom en or) ; la question reste affichée, atténuée ; ni chrono ni bouton rouge | — |
+| `buzz_invalidated` | — | Zones masquées | « Raté… » et « Éliminé pour cette question », avec la réaction du personnage (voir la session des réactions) | — |
+| `buzz_unlocked` | — | Zones masquées | Même écran que `question_open` ; le chrono reprend à `remaining_seconds` | — |
 | `question_result` | `correct_answer` = lettre A–D (MCQ) | Mettre en évidence zone(correct_answer) | En-tête « Bonne réponse : B » puis « Votre réponse : C » si `player_answer` est présent ; la réponse fausse du joueur est cerclée de rouge | — |
-| `question_result` | sinon (SPEED), `correct: true` | Bandeau clignotant | Résultat (validé) | — |
-| `question_result` | sinon (SPEED), `correct: false` | Zones masquées | Résultat (raté) | — |
+| `question_result` | sinon (SPEED), `correct: true` | Bandeau clignotant | Réaction du personnage, puis bandeau or « Validé » avec une coche, capsule « +10 pts » (`points_earned`), « Bonne réponse » et `correct_answer` | — |
+| `question_result` | sinon (SPEED), `correct: false`, ce buzzer a buzzé | Zones masquées | Réaction « mauvaise réponse », puis bandeau rose « Raté », « Bonne réponse » et `correct_answer` ; pas de points perdus | — |
+| `question_result` | sinon (SPEED), `correct: false`, ce buzzer n'a pas buzzé | Zones masquées | Réaction « sans réponse » (Endormi), puis bandeau sobre « Question terminée », « Bonne réponse » et `correct_answer` ; ni gain ni perte | — |
 | *(local : appui sur la zone x, MCQ armé)* | — | Mettre en évidence zone(x), sous l'en-tête | — | — |
-| *(local : appui sur le bouton rouge, SPEED armé)* | — | Zones masquées | Buzz envoyé (« Buzz envoyé ») | — |
+| *(local : appui sur le bouton rouge, SPEED armé)* | — | Zones masquées | En-tête « Buzz envoyé » + chrono ; le titre disparaît, le bouton rouge s'enfonce, « En attente de confirmation » ; retient « ce buzzer a buzzé » | — |
 | `play_sound_url` | — | inchangé | inchangé | fichier distant (HTTP GET) |
 | `play_system_sound` | — | inchangé | inchangé | son préchargé (selon `sound_id`) |
 
 > **Distinction MCQ/SPEED pour `question_result`** : déduite du **contenu** du message (pas d'un état mémorisé). Si `correct_answer` est une lettre A–D → MCQ (mettre en évidence la zone correspondante) ; sinon → SPEED (bandeau clignotant si `correct: true`, zones masquées sinon). Le contrat hub garantit cette discrimination : MCQ renvoie une lettre, SPEED renvoie un texte de réponse.
+>
+> **« Ce buzzer a buzzé » (SPEED)** : le hub envoie `question_result` à **tous** les buzzers, avec `correct: false` pour un joueur invalidé, un joueur qui n'a pas buzzé ou un joueur dont un autre a gagné (US-012 CA-31) : le message ne les distingue pas. Le rendu retient donc **un seul état mémorisé**, « ce buzzer a buzzé pendant cette question » : posé à l'appui local sur le bouton rouge, remis à faux à `question_open`. C'est la seule exception à « rendu indépendant de la logique d'état » ci-dessus. Limites : un buzzer qui a appuyé trop tard (un autre avait été accepté d'abord) voit « Raté » ; une reconnexion en cours de question efface l'état (écran « Question terminée »).
 
 > **Rendu local** : le rendu d'un appui armé s'exécute dans la séquence lock-first (§4.2), après la pose du verrou et avant l'émission. Il vaut jusqu'au message suivant du hub (`answer_received`, `buzz_accepted`, `buzz_locked`…), qui le remplace selon le tableau. Le SPEED n'affiche pas `Bandeau clignotant` à l'appui : le hub peut avoir accepté un autre buzzer d'abord, le bandeau n'est donc posé qu'à `buzz_accepted`.
 
