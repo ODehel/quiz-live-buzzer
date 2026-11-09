@@ -375,3 +375,18 @@ Alternatives écartées :
 - Le dépôt est public et le personnage s'inspire du visage d'une proche d'Olivier. Aucun prénom n'est écrit dans le dépôt ; à confirmer : que la personne représentée est d'accord.
 - Le zoom du médaillon rogne les côtés de la chevelure, plus large que le visage.
 
+## #22 — docs(mockups): add the speed question screens
+
+**Contexte** — Olivier veut modéliser les écrans des questions de rapidité (SPEED) sur le design system des maquettes QCM (suite de #19). Découpe choisie à la porte 1 (2026-11-09) : ouverture, appui local et « À toi ! » dans cette session ; le reste du parcours dans une suivante.
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **Ouverture** (`question_open`, aussi `buzz_unlocked` : même écran) : en-tête « Question N » et chrono comme en QCM ; le titre est la question, en grand ; en pied, un bouton rouge dessiné et « Appuie sur le bouton rouge », car le bouton physique n'a pas de LED et l'écran est le seul indicateur « tu peux buzzer ». Variantes : titre de 239 caractères (taille réduite) et chrono à 4 s (rouge, même seuil de 5 s que le QCM).
+- **Appui local** : en-tête « Buzz envoyé » avec le chrono, le titre disparaît, le bouton rouge s'enfonce et « En attente de confirmation » (texte proposé). Pas de « À toi ! » ici : le hub a pu accepter un autre buzzer d'abord (CDC §8.2).
+- **« À toi ! »** (`buzz_accepted`) : bandeau or à la place de l'en-tête (état allumé du clignotement, pas de page pour l'état éteint), la question reste affichée, « Réponds à voix haute ». Pas de chrono : la réponse se dit à l'oral et le maître du jeu tranche.
+- **Capsules** (précision d'Olivier, 2026-11-09, valable MCQ et SPEED) : sur l'écran où l'on voit l'intitulé de la question, trois capsules au-dessus du titre : thème, points à gagner (en or), temps imparti. MCQ : `qcm-01-title`, après la pastille « Question N » ; SPEED : `speed-01*`. La capsule du temps reste fixe, seul le chrono de l'en-tête décroît. Non appliquées à « À toi ! » (`speed-03`), où la question n'est qu'un rappel.
+- **Pages** : `speed-01-open`, `speed-01b-open-long`, `speed-01c-open-urgent`, `speed-02-pressed`, `speed-03-accepted`, section « Questions de rapidité » dans `index.html`, styles ajoutés à `mockup.css`.
+
+**Conséquences** (si la proposition est validée) —
+- Le CDC §8.2 ne change pas dans cette session. Le thème, les points et le temps imparti ne figurent dans aucun message du CDC §8.1 ; non vérifié contre les specs du hub : voir `DEBTS.md`. Écarts à arbitrer au report : le titre persistant sous « À toi ! » et le bouton rouge dessiné ne sont pas dans le CDC ; « En attente de confirmation » et « Réponds à voix haute » sont des libellés proposés.
+- Restent à maquetter, avec ce qu'Olivier a déjà dit : `buzz_locked` et `buzz_invalidated` nettement distincts (le second avec une réaction du personnage), `question_result` SPEED avec la réponse attendue et la réaction. Ce dernier contredit la décision #13 (« Validé » / « Raté » seuls) : à trancher au report dans le CDC.
+- Le titre de la maquette longue fait 239 caractères (pas 250) et tient sur quatre lignes à 3,5 u de corps ; le maximum exact de 250 n'a pas été rendu, et il n'y a pas de défilement prévu.
