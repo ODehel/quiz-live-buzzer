@@ -568,3 +568,18 @@ Alternatives écartées :
 - **Libellés proposés par Claude, absents du CDC** : « En attente du maître du jeu », « La partie va bientôt commencer », « Quiz #08 » ; le bandeau du haut affiche « 0 pt » sans classement avant la première question (le rang n'existe pas encore).
 - **Aucun message du hub ne déclenche D4 ni D5** : à définir côté hub (numéro et thème de la partie, nombre de questions et de joueurs). **Non spécifié** : si D4 remplace « Connecté » (D2) ou lui succède, ce que « #08 » numérote (partie globale ou de la soirée), et si le nombre de joueurs se met à jour pendant l'attente.
 - Le code ne change pas ; le CDC ne décrit pas encore ces écrans : voir `DEBTS.md`.
+
+## #34 — docs(mockups): add the photo and sound screens
+
+**Contexte** — Après #33, Olivier a indiqué que le déroulé d'une partie permet d'afficher une photo avant une question, ou de faire écouter un son. Aucun de ces deux écrans n'était maquetté ni décrit au CDC §8.2 ; `play_sound_url` et `play_system_sound` y laissent l'écran inchangé.
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **Deux pages** : `pre-01-photo` (P1) et `pre-02-sound` (P2), même habillage que le reste ; index mis à jour (section « Avant la question »). Quatre règles nouvelles dans `mockup.css` (`.photo`, `.photo .meta`, `.photo .cap`, `.sound-art`), aucune couleur nouvelle.
+- **P1** : photo en grande carte arrondie sous le bandeau du haut (marges des cartes de réponse, cadre blanc), capsules « Question N » et thème en surimpression en bas à gauche, sur fond opaque. Pas de points ni de temps : la question n'est pas ouverte. L'image d'exemple est dessinée.
+- **P2** : haut-parleur or dans un anneau, barres d'égaliseur symétriques, « Écoute bien ! » (libellé d'Olivier), capsules au-dessus comme à l'écran du titre.
+- **Seule la lecture du son est maquettée** : le chargement du fichier et son échec vont en dette (choix d'Olivier, recommandation de Claude).
+
+**Conséquences** —
+- **Aucun message du hub ne déclenche P1 ni P2** : à définir côté hub. Pour le son, `play_sound_url` laisse l'écran inchangé (§8.2) : il faudra un message ou un champ qui dise « affiche l'écran Écoute avant la question ».
+- **Non spécifié** : ce qui met fin à l'écran (le message suivant, la fin du son, ou les deux) ; si la photo reste visible pendant la question ; la source de l'image (URL à télécharger, comme le son, ou fichier embarqué) et son format.
+- Le code ne change pas ; le CDC ne décrit pas ces écrans : voir `DEBTS.md`.

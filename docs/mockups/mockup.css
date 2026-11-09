@@ -443,3 +443,11 @@ body {
 .pod.me .blk { outline: calc(var(--u) * 0.6) solid var(--card); outline-offset: calc(var(--u) * -0.1); }
 .mine { position: absolute; inset: auto calc(var(--u) * 1.5) calc(var(--u) * 1.5); height: calc(var(--u) * 9); font-size: calc(var(--u) * 4.6); }
 .mine .pos { width: calc(var(--u) * 5.6); height: calc(var(--u) * 5.6); }
+
+/* ---- Avant la question : photo en grande carte arrondie, son en lecture ---- */
+.photo { position: absolute; inset: calc(var(--u) * 7) calc(var(--u) * 1.5) calc(var(--u) * 1.5); border-radius: calc(var(--u) * 2.5); overflow: hidden; border: calc(var(--u) * 0.75) solid #ffffff; background: var(--ink); }
+.photo > svg, .photo > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.photo .meta { position: absolute; left: calc(var(--u) * 2.5); bottom: calc(var(--u) * 2.5); justify-content: flex-start; }
+/* Sur une photo, les capsules prennent un fond opaque : la photo peut être claire. */
+.photo .cap { background: var(--status); }
+.sound-art { width: calc(var(--u) * 66); height: calc(var(--u) * 19.8); }
