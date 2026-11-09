@@ -206,3 +206,32 @@ body {
 .spec dl { display: grid; grid-template-columns: 9em 1fr; gap: 2px 12px; }
 .spec dt { color: #8d8d99; }
 .spec dd { margin: 0; }
+
+/* ---- Écran de réaction : le personnage avant le résultat ---- */
+
+.react {
+  position: absolute;
+  inset: calc(var(--u) * 5.5) 0 0 0;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 5);
+  padding: 0 calc(var(--u) * 6);
+}
+
+.react.good { --m: var(--gold); }
+.react.bad { --m: var(--wrong-soft); }
+.react.none { --m: #b7a5ff; }
+
+.medal {
+  flex: none;
+  width: calc(var(--u) * 37.5);
+  height: calc(var(--u) * 37.5);
+  border-radius: calc(var(--u) * 4);
+  overflow: hidden;
+  background: var(--m);
+  border: calc(var(--u) * 0.75) solid #ffffff;
+}
+
+.medal img { display: block; width: 100%; height: 100%; transform: scale(1.35); transform-origin: 50% 40%; }
+
+.say { font-size: calc(var(--u) * 8.5); font-weight: 800; line-height: 1.05; text-wrap: balance; }
