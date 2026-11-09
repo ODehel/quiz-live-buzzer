@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plaquette des écrans du buzzer</title>
+<style>
+  :root { --bg: #1b1b1f; --fg: #e8e8ee; --muted: #8d8d99; --gold: #ffc83d; --line: #34343c; }
+  * { box-sizing: border-box; }
+  body { display: block; margin: 0; padding: 32px 24px 64px; background: var(--bg); color: var(--fg); font-family: system-ui, sans-serif; }
+  .cover { max-width: 960px; margin: 0 auto 40px; }
+  .cover h1 { font-size: 28px; margin: 0 0 6px; }
+  .cover p { margin: 0; color: var(--muted); line-height: 1.5; }
+  .cover .count { margin-top: 8px; color: var(--gold); }
+  .chapter { max-width: 960px; margin: 0 auto 48px; }
+  .chapter header { border-bottom: 1px solid var(--line); margin-bottom: 16px; padding-bottom: 8px; }
+  .chapter h2 { display: flex; align-items: center; gap: 10px; font-size: 20px; margin: 0 0 4px; }
+  .chapter h2 span { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--gold); color: #1b1b1f; font-size: 15px; }
+  .chapter header p { margin: 0; color: var(--muted); font-size: 14px; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fill, 424px); gap: 24px 20px; }
+  .step { break-inside: avoid; }
+  a { display: block; color: inherit; text-decoration: none; }
+  a:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+  .shot { display: block; overflow: hidden; border-radius: 8px; }
+  .main .shot { width: 424px; height: 252px; }
+  .main iframe { width: 848px; height: 504px; transform: scale(0.5); transform-origin: top left; }
+  .mini .shot { width: 204px; height: 122px; }
+  .mini iframe { width: 848px; height: 504px; transform: scale(0.24); transform-origin: top left; }
+  iframe { display: block; border: 0; pointer-events: none; }
+  .cap { display: block; margin-top: 6px; font-size: 14px; }
+  .mini .cap { font-size: 12px; color: var(--muted); }
+  .has-variants { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 20px; }
+  .variants { display: grid; grid-template-columns: repeat(2, 204px); gap: 12px 10px; }
+  .compact .steps { grid-template-columns: repeat(auto-fill, 418px); gap: 16px 20px; }
+  .pair { display: grid; grid-template-columns: repeat(2, 204px); gap: 10px; }
+  .todo-card { display: flex; flex-direction: column; justify-content: center; gap: 4px; width: 424px; height: 252px; padding: 20px; border: 2px dashed var(--muted); border-radius: 8px; }
+  .todo-card strong { color: var(--gold); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .todo-card h3 { margin: 0; font-size: 18px; }
+  .todo-card p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.4; }
+  @page { size: A4 landscape; margin: 10mm; }
+  @media print {
+    body { background: #fff; color: #111; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cover, .chapter { max-width: none; }
+    .cover { margin-bottom: 8mm; }
+    .chapter { break-before: page; margin: 0; }
+    .cover + .chapter { break-before: auto; }
+    .chapter header { border-color: #ccc; }
+    .chapter header p, .cover p, .mini .cap { color: #555; }
+    .cover .count { color: #b07d00; }
+    .todo-card { border-color: #999; }
+    .todo-card p { color: #555; }
+    .todo-card strong { color: #b07d00; }
+    .steps { grid-template-columns: repeat(2, 424px); justify-content: space-between; }
+    .compact .steps { grid-template-columns: repeat(3, 332px); justify-content: space-between; gap: 12px 16px; }
+    .compact .mini .shot { width: 161px; height: 96px; }
+    .compact .mini iframe { transform: scale(0.19); }
+    .compact .pair { grid-template-columns: repeat(2, 161px); gap: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="cover">
+  <h1>Buzz’O’Live : les écrans du buzzer</h1>
+  <p>Rendu cible, 800×480, dans l'ordre d'une partie. Chaque écran en grand, ses variantes en miniature à sa droite. Cliquer sur un écran l'ouvre seul, avec sa fiche.</p>
+  <p class="count">59 maquettes, plus les écrans encore à maquetter. Pour l'exporter : imprimer en PDF depuis le navigateur (A4 paysage).</p>
+</div>
+<section class="chapter"><header><h2><span>1</span>Démarrage</h2><p>Mise sous tension, connexion au hub, reprise éventuelle d&#x27;une partie en cours.</p></header><div class="steps">
+<div class="step todo"><div class="todo-card"><strong>À maquetter</strong><h3>Configuration initiale (QR code)</h3><p>Transmettre les réglages du buzzer à l&#x27;application mobile. Aucune consigne à l&#x27;écran.</p></div></div>
+<div class="step has-variants">
+<a class="main" href="start-01-init.html"><span class="shot"><iframe src="start-01-init.html" title="D1. Démarrage" tabindex="-1"></iframe></span><span class="cap">D1. Démarrage</span></a>
+<div class="variants"><a class="mini" href="fail-03-refused.html"><span class="shot"><iframe src="fail-03-refused.html" title="F3. Connexion refusée" tabindex="-1"></iframe></span><span class="cap">F3. Connexion refusée</span></a></div>
+</div>
+<div class="step">
+<a class="main" href="start-02-connected.html"><span class="shot"><iframe src="start-02-connected.html" title="D2. Connecté" tabindex="-1"></iframe></span><span class="cap">D2. Connecté</span></a>
+</div>
+<div class="step">
+<a class="main" href="start-03-resumed.html"><span class="shot"><iframe src="start-03-resumed.html" title="D3. Partie en cours" tabindex="-1"></iframe></span><span class="cap">D3. Partie en cours</span></a>
+</div>
+</div></section>
+<section class="chapter"><header><h2><span>2</span>Attente et présentation</h2><p>Le joueur est connecté ; le maître du jeu n&#x27;a pas encore lancé la partie.</p></header><div class="steps">
+<div class="step">
+<a class="main" href="start-04-waiting-master.html"><span class="shot"><iframe src="start-04-waiting-master.html" title="D4. En attente du maître du jeu" tabindex="-1"></iframe></span><span class="cap">D4. En attente du maître du jeu</span></a>
+</div>
+<div class="step">
+<a class="main" href="start-05-game-intro.html"><span class="shot"><iframe src="start-05-game-intro.html" title="D5. Présentation de la partie" tabindex="-1"></iframe></span><span class="cap">D5. Présentation de la partie</span></a>
+</div>
+</div></section>
+<section class="chapter"><header><h2><span>3</span>Avant la question</h2><p>Média optionnel présenté avant l&#x27;ouverture d&#x27;une question.</p></header><div class="steps">
+<div class="step">
+<a class="main" href="pre-01-photo.html"><span class="shot"><iframe src="pre-01-photo.html" title="P1. Photo avant la question" tabindex="-1"></iframe></span><span class="cap">P1. Photo avant la question</span></a>
+</div>
+<div class="step">
+<a class="main" href="pre-02-sound.html"><span class="shot"><iframe src="pre-02-sound.html" title="P2. Son avant la question" tabindex="-1"></iframe></span><span class="cap">P2. Son avant la question</span></a>
+</div>
+</div></section>
+<section class="chapter"><header><h2><span>4</span>Question à choix multiple</h2><p>Quatre zones tactiles A à D. « Temps écoulé » (5) sert aussi aux questions de rapidité.</p></header><div class="steps">
+<div class="step">
+<a class="main" href="qcm-01-title.html"><span class="shot"><iframe src="qcm-01-title.html" title="1. Titre de la question" tabindex="-1"></iframe></span><span class="cap">1. Titre de la question</span></a>
+</div>
+<div class="step has-variants">
+<a class="main" href="qcm-02-choices.html"><span class="shot"><iframe src="qcm-02-choices.html" title="2. Les quatre propositions" tabindex="-1"></iframe></span><span class="cap">2. Les quatre propositions</span></a>
+<div class="variants"><a class="mini" href="qcm-02b-choices-urgent.html"><span class="shot"><iframe src="qcm-02b-choices-urgent.html" title="2b. Les quatre propositions, chrono à 4 s" tabindex="-1"></iframe></span><span class="cap">2b. Les quatre propositions, chrono à 4 s</span></a><a class="mini" href="qcm-02c-choices-low-battery.html"><span class="shot"><iframe src="qcm-02c-choices-low-battery.html" title="2c. Les quatre propositions, batterie à 15 %" tabindex="-1"></iframe></span><span class="cap">2c. Les quatre propositions, batterie à 15 %</span></a><a class="mini" href="qcm-02d-choices-hub-lost.html"><span class="shot"><iframe src="qcm-02d-choices-hub-lost.html" title="2d. Les quatre propositions, hub injoignable" tabindex="-1"></iframe></span><span class="cap">2d. Les quatre propositions, hub injoignable</span></a><a class="mini" href="qcm-02e-choices-long.html"><span class="shot"><iframe src="qcm-02e-choices-long.html" title="2e. Les quatre propositions, textes longs" tabindex="-1"></iframe></span><span class="cap">2e. Les quatre propositions, textes longs</span></a></div>
+</div>
+<div class="step">
+<a class="main" href="qcm-03-pressed.html"><span class="shot"><iframe src="qcm-03-pressed.html" title="3. Appui sur une zone" tabindex="-1"></iframe></span><span class="cap">3. Appui sur une zone</span></a>
+</div>
+<div class="step">
+<a class="main" href="qcm-04-recorded.html"><span class="shot"><iframe src="qcm-04-recorded.html" title="4. Réponse enregistrée" tabindex="-1"></iframe></span><span class="cap">4. Réponse enregistrée</span></a>
+</div>
+<div class="step">
+<a class="main" href="qcm-05-timeout.html"><span class="shot"><iframe src="qcm-05-timeout.html" title="5. Temps écoulé" tabindex="-1"></iframe></span><span class="cap">5. Temps écoulé</span></a>
+</div>
+<div class="step has-variants">
+<a class="main" href="qcm-07-result-right.html"><span class="shot"><iframe src="qcm-07-result-right.html" title="6b. Résultat : bonne réponse" tabindex="-1"></iframe></span><span class="cap">6b. Résultat : bonne réponse</span></a>
+<div class="variants"><a class="mini" href="qcm-06-result-wrong.html"><span class="shot"><iframe src="qcm-06-result-wrong.html" title="6a. Résultat : réponse fausse" tabindex="-1"></iframe></span><span class="cap">6a. Résultat : réponse fausse</span></a><a class="mini" href="qcm-08-result-unanswered.html"><span class="shot"><iframe src="qcm-08-result-unanswered.html" title="6c. Résultat : sans réponse du joueur" tabindex="-1"></iframe></span><span class="cap">6c. Résultat : sans réponse du joueur</span></a></div>
+</div>
+</div></section>
+<section class="chapter"><header><h2><span>5</span>Question de rapidité</h2><p>Un seul bouton rouge physique : l&#x27;écran indique quand on peut buzzer.</p></header><div class="steps">
+<div class="step has-variants">
+<a class="main" href="speed-01-open.html"><span class="shot"><iframe src="speed-01-open.html" title="S1. Ouverture de la question" tabindex="-1"></iframe></span><span class="cap">S1. Ouverture de la question</span></a>
+<div class="variants"><a class="mini" href="speed-01b-open-long.html"><span class="shot"><iframe src="speed-01b-open-long.html" title="S1b. Ouverture, titre de 250 caractères" tabindex="-1"></iframe></span><span class="cap">S1b. Ouverture, titre de 250 caractères</span></a><a class="mini" href="speed-01c-open-urgent.html"><span class="shot"><iframe src="speed-01c-open-urgent.html" title="S1c. Ouverture, chrono à 4 s" tabindex="-1"></iframe></span><span class="cap">S1c. Ouverture, chrono à 4 s</span></a></div>
+</div>
+<div class="step">
+<a class="main" href="speed-02-pressed.html"><span class="shot"><iframe src="speed-02-pressed.html" title="S2. Appui sur le bouton rouge" tabindex="-1"></iframe></span><span class="cap">S2. Appui sur le bouton rouge</span></a>
+</div>
+<div class="step">
+<a class="main" href="speed-03-accepted.html"><span class="shot"><iframe src="speed-03-accepted.html" title="S3. À toi !" tabindex="-1"></iframe></span><span class="cap">S3. À toi !</span></a>
+</div>
+<div class="step">
+<a class="main" href="speed-04-locked.html"><span class="shot"><iframe src="speed-04-locked.html" title="S4. Un autre a buzzé" tabindex="-1"></iframe></span><span class="cap">S4. Un autre a buzzé</span></a>
+</div>
+<div class="step">
+<a class="main" href="speed-05-invalidated.html"><span class="shot"><iframe src="speed-05-invalidated.html" title="S5. Éliminé pour la question" tabindex="-1"></iframe></span><span class="cap">S5. Éliminé pour la question</span></a>
+</div>
+<div class="step has-variants">
+<a class="main" href="speed-06-result-right.html"><span class="shot"><iframe src="speed-06-result-right.html" title="S6. Résultat : validé" tabindex="-1"></iframe></span><span class="cap">S6. Résultat : validé</span></a>
+<div class="variants"><a class="mini" href="speed-07-result-wrong.html"><span class="shot"><iframe src="speed-07-result-wrong.html" title="S7. Résultat : raté" tabindex="-1"></iframe></span><span class="cap">S7. Résultat : raté</span></a><a class="mini" href="speed-07b-result-wrong-long.html"><span class="shot"><iframe src="speed-07b-result-wrong-long.html" title="S7b. Résultat : raté, réponse de 40 caractères" tabindex="-1"></iframe></span><span class="cap">S7b. Résultat : raté, réponse de 40 caractères</span></a><a class="mini" href="speed-08-result-no-buzz.html"><span class="shot"><iframe src="speed-08-result-no-buzz.html" title="S8. Résultat : sans avoir buzzé" tabindex="-1"></iframe></span><span class="cap">S8. Résultat : sans avoir buzzé</span></a></div>
+</div>
+</div></section>
+<section class="chapter compact"><header><h2><span>6</span>Réactions du personnage</h2><p>À la révélation (QCM et rapidité), tirée au hasard selon la situation ; R9 est réservée à l&#x27;élimination. Variante : avatar féminin.</p></header><div class="steps">
+<div class="step pair"><a class="mini" href="reaction-01-ravi.html"><span class="shot"><iframe src="reaction-01-ravi.html" title="R1. Ravi" tabindex="-1"></iframe></span><span class="cap">R1. Ravi</span></a><a class="mini" href="reaction-01-ravi-f.html"><span class="shot"><iframe src="reaction-01-ravi-f.html" title="R1. Ravi (avatar féminin)" tabindex="-1"></iframe></span><span class="cap">R1. Ravi (avatar féminin)</span></a></div>
+<div class="step pair"><a class="mini" href="reaction-02-hilare.html"><span class="shot"><iframe src="reaction-02-hilare.html" title="R2. Hilare" tabindex="-1"></iframe></span><span class="cap">R2. Hilare</span></a><a class="mini" href="reaction-02-hilare-f.html"><span class="shot"><iframe src="reaction-02-hilare-f.html" title="R2. Hilare (avatar féminin)" tabindex="-1"></iframe></span><span class="cap">R2. Hilare (avatar féminin)</span></a></div>
+<div class="step pair"><a class="mini" href="reaction-03-amoureux.html"><span class="shot"><iframe src="reaction-03-amoureux.html" title="R3. Amoureux" tabindex="-1"></iframe></span><span class="cap">R3. Amoureux</span></a><a class="mini" href="reaction-03-amoureux-f.html"><span class="shot"><iframe src="reaction-03-amoureux-f.html" title="R3. Amoureux (avatar féminin)" tabindex="-1"></iframe></span><span class="cap">R3. Amoureux (avatar féminin)</span></a></div>
+<div class="step pair"><a class="mini" href="reaction-04-malin.html"><span class="shot"><iframe src="reaction-04-malin.html" title="R4. Malin" tabindex="-1"></iframe></span><span class="cap">R4. Malin</span></a><a class="mini" href="reaction-04-malin-f.html"><span class="shot"><iframe src="reaction-04-malin-f.html" title="R4. Malin (avatar féminin)" tabindex="-1"></iframe></span><span class="cap">R4. Malin (avatar féminin)</span></a></div>
+<div class="step pair"><a class="mini" href="reaction-05-taquin.html"><span class="shot"><iframe src="reaction-05-taquin.html" title="R5. Taquin" tabindex="-1"></iframe></span><span class="cap">R5. Taquin</span></a><a class="mini" href="reaction-05-taquin-f.html"><span class="shot"><iframe src="reaction-05-taquin-f.html" title="R5. Taquin (avatar féminin)" tabindex="-1"></iframe></span><span class="cap">R5. Taquin (avatar féminin)</span></a></div>
+<div class="step pair"><a class="mini" href="reaction-06-decu.html"><span class="shot"><iframe src="reaction-06-decu.html" title="R6. Déçu" tabindex="-1"></iframe></span><span class="cap">R6. Déçu</span></a><a class="mini" href="reaction-06-decu-f.html"><span class="shot"><iframe src="reaction-06-decu-f.html" title="R6. Déçu (avatar féminin)" tabindex="-1"></iframe></span><span class="cap">R6. Déçu (avatar féminin)</span></a></div>
+<div class="step pair"><a class="mini" href="reaction-07-en-colere.html"><span class="shot"><iframe src="reaction-07-en-colere.html" title="R7. En colère" tabindex="-1"></iframe></span><span class="cap">R7. En colère</span></a><a class="mini" href="reaction-07-en-colere-f.html"><span class="shot"><iframe src="reaction-07-en-colere-f.html" title="R7. En colère (avatar féminin)" tabindex="-1"></iframe></span><span class="cap">R7. En colère (avatar féminin)</span></a></div>
+<div class="step pair"><a class="mini" href="reaction-08-depite.html"><span class="shot"><iframe src="reaction-08-depite.html" title="R8. Dépité" tabindex="-1"></iframe></span><span class="cap">R8. Dépité</span></a><a class="mini" href="reaction-08-depite-f.html"><span class="shot"><iframe src="reaction-08-depite-f.html" title="R8. Dépité (avatar féminin)" tabindex="-1"></iframe></span><span class="cap">R8. Dépité (avatar féminin)</span></a></div>
+<div class="step pair"><a class="mini" href="reaction-09-sonne.html"><span class="shot"><iframe src="reaction-09-sonne.html" title="R9. Sonné" tabindex="-1"></iframe></span><span class="cap">R9. Sonné</span></a><a class="mini" href="reaction-09-sonne-f.html"><span class="shot"><iframe src="reaction-09-sonne-f.html" title="R9. Sonné (avatar féminin)" tabindex="-1"></iframe></span><span class="cap">R9. Sonné (avatar féminin)</span></a></div>
+<div class="step pair"><a class="mini" href="reaction-10-endormi.html"><span class="shot"><iframe src="reaction-10-endormi.html" title="R10. Endormi" tabindex="-1"></iframe></span><span class="cap">R10. Endormi</span></a><a class="mini" href="reaction-10-endormi-f.html"><span class="shot"><iframe src="reaction-10-endormi-f.html" title="R10. Endormi (avatar féminin)" tabindex="-1"></iframe></span><span class="cap">R10. Endormi (avatar féminin)</span></a></div>
+</div></section>
+<section class="chapter"><header><h2><span>7</span>Classements</h2><p>Classement intermédiaire entre deux questions, puis classement final.</p></header><div class="steps">
+<div class="step has-variants">
+<a class="main" href="rank-01-interim.html"><span class="shot"><iframe src="rank-01-interim.html" title="K1. Classement provisoire" tabindex="-1"></iframe></span><span class="cap">K1. Classement provisoire</span></a>
+<div class="variants"><a class="mini" href="rank-01b-interim-leader.html"><span class="shot"><iframe src="rank-01b-interim-leader.html" title="K1b. Classement provisoire : tu es en tête" tabindex="-1"></iframe></span><span class="cap">K1b. Classement provisoire : tu es en tête</span></a><a class="mini" href="rank-01c-interim-long.html"><span class="shot"><iframe src="rank-01c-interim-long.html" title="K1c. Classement provisoire : plus de joueurs que de lignes" tabindex="-1"></iframe></span><span class="cap">K1c. Classement provisoire : plus de joueurs que de lignes</span></a></div>
+</div>
+<div class="step has-variants">
+<a class="main" href="rank-02-final.html"><span class="shot"><iframe src="rank-02-final.html" title="K2. Classement final : tu n’es pas sur le podium" tabindex="-1"></iframe></span><span class="cap">K2. Classement final : tu n’es pas sur le podium</span></a>
+<div class="variants"><a class="mini" href="rank-02b-final-podium.html"><span class="shot"><iframe src="rank-02b-final-podium.html" title="K2b. Classement final : tu es sur le podium" tabindex="-1"></iframe></span><span class="cap">K2b. Classement final : tu es sur le podium</span></a></div>
+</div>
+<div class="step todo"><div class="todo-card"><strong>À maquetter</strong><h3>Fin de partie</h3><p>Ce que voit le joueur après le classement final (retour à l&#x27;attente ou écran dédié).</p></div></div>
+</div></section>
+<section class="chapter"><header><h2><span>8</span>À tout moment</h2><p>Coupures de connexion, possibles pendant n&#x27;importe quelle question.</p></header><div class="steps">
+<div class="step has-variants">
+<a class="main" href="fail-01-lost.html"><span class="shot"><iframe src="fail-01-lost.html" title="F1. Connexion perdue : question à choix multiple" tabindex="-1"></iframe></span><span class="cap">F1. Connexion perdue : question à choix multiple</span></a>
+<div class="variants"><a class="mini" href="fail-01b-lost-speed.html"><span class="shot"><iframe src="fail-01b-lost-speed.html" title="F1b. Connexion perdue : question de rapidité, dernière tentative" tabindex="-1"></iframe></span><span class="cap">F1b. Connexion perdue : question de rapidité, dernière tentative</span></a></div>
+</div>
+<div class="step">
+<a class="main" href="fail-02-out.html"><span class="shot"><iframe src="fail-02-out.html" title="F2. Buzzer hors jeu" tabindex="-1"></iframe></span><span class="cap">F2. Buzzer hors jeu</span></a>
+</div>
+</div></section>
+</body>
+</html>
