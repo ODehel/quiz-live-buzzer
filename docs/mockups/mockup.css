@@ -78,7 +78,20 @@ body {
 .who .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
 .who .points { flex: none; color: var(--gold); font-weight: 800; }
 .who .rank { flex: none; padding: calc(var(--u) * 0.25) calc(var(--u) * 1.25); border-radius: 999px; background: rgba(255, 255, 255, 0.2); font-weight: 700; }
-.brand { font-weight: 800; letter-spacing: 0.02em; }
+/* Logo une ligne du bandeau du haut : « Buzz’ » vibre (écho, lettres en désordre), le O est le bouton rouge, « ’Live » reste fixe. Tailles en em. */
+.brand { display: flex; align-items: center; font-size: calc(var(--u) * 3.6); font-weight: 800; line-height: 1; letter-spacing: 0.01em; }
+.brand .buzz { position: relative; display: inline-flex; }
+.brand .buzz .echo { position: absolute; top: 0; display: flex; opacity: 0.35; }
+.brand .buzz .echo.l { left: -0.09em; }
+.brand .buzz .echo.r { left: 0.09em; }
+.brand .buzz .solid { position: relative; display: flex; }
+.brand .buzz i { display: inline-block; font-style: normal; }
+.brand .buzz i:nth-child(1) { transform: translateY(0.03em) rotate(-5deg); }
+.brand .buzz i:nth-child(2) { transform: translateY(-0.045em) rotate(4deg); }
+.brand .buzz i:nth-child(3) { transform: translateY(0.03em) rotate(-4deg); }
+.brand .buzz i:nth-child(4) { transform: translateY(-0.03em) rotate(5deg); }
+.brand .disc { flex: none; width: 0.7em; height: 0.7em; margin: 0 0.06em 0 0.12em; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff6a6a 0 18%, var(--wrong) 55%); box-shadow: 0 0 0 0.06em #ffffff, 0 0.07em 0 0.06em rgba(0, 0, 0, 0.35); }
+.brand .live { color: var(--gold); }
 .tray { justify-self: end; display: flex; align-items: center; gap: calc(var(--u) * 2.5); }
 .link svg { display: block; width: calc(var(--u) * 4.5); height: calc(var(--u) * 3.4); }
 .link.lost { color: var(--wrong-soft); }
