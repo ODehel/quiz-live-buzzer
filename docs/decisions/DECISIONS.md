@@ -612,3 +612,19 @@ Alternatives écartées :
 - **Le QR est une valeur d'exemple** (`buzzolive://setup?b=7F3A91`, 25 modules, généré avec `segno`) ; son contenu réel dépend du canal d'appairage.
 - **Non décidé** : le canal d'appairage (BLE, point d'accès temporaire, autre), le déclencheur de l'écran (premier démarrage, appui long, absence de configuration), l'application mobile, et la sortie de l'écran une fois configuré. Aucun message du §8.1 ne le concerne : l'écran est local, avant toute connexion au hub.
 - Le code ne change pas ; le CDC ne décrit pas cet écran : voir `DEBTS.md`.
+
+## #37 — docs(mockups): add the end of game screen
+
+**Contexte** — La plaquette (#35) gardait une dernière carte « À maquetter » : ce que voit le joueur après le classement final. Olivier avait choisi, avant la session, que le personnage de son avatar dise au revoir (version B) avec une réaction à trancher selon le rang.
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09) —
+- **Une réaction unique, toujours heureuse** : `ravi`, quel que soit le rang du joueur ; jamais de réaction négative (écartées : une réaction selon le rang, une réaction négative pour les derniers). Libellé « Merci d'avoir joué ! », sans sous-texte (« À bientôt ! » n'est pas retenu).
+- **Deux pages** : `rank-03-end` (K3, avatar masculin) et `rank-03-end-f` (K3b, avatar féminin, demandée par Olivier dans la même session) ; index et plaquette mis à jour (K3b en miniature à droite de K3), la carte « À maquetter » retirée.
+- **K3 vient à la suite de K2** : le maître du jeu décide quand on passe de l'un à l'autre, le firmware ne minute rien (comme pour les classements).
+- **Habillage des réactions** : `.react.good`, médaille et `.say` ; aucune règle ni couleur nouvelle dans `mockup.css`.
+
+**Conséquences** —
+- **Aucun message du hub ne déclenche K3** : la partie passe en `COMPLETED` sans diffusion (#32) ; à définir côté hub, avec le classement final.
+- **Libellé proposé par Claude, validé par Olivier** : « Merci d'avoir joué ! » ; effet écran « Zones masquées » proposé par Claude, non tranché.
+- **Non spécifié** : ce que devient l'écran ensuite (retour à l'attente, extinction, nouvelle partie) et la durée d'affichage.
+- Le code ne change pas ; le CDC ne décrit pas cet écran (report à la session des classements) : voir `DEBTS.md`.
