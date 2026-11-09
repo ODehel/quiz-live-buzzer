@@ -1,12 +1,12 @@
 # Avatars des réactions
 
-Dix réactions d'un même personnage, utilisées par les pages `reaction-*.html`. Les SVG ont un fond transparent : le fond (or, rose ou lavande) vient de la page, selon la situation.
+Deux personnages, dix réactions chacun, utilisés par les pages `reaction-*.html` (masculin) et `reaction-*-f.html` (féminin). Les SVG ont un fond transparent : le fond (or, rose ou lavande) vient de la page, selon la situation.
 
 ## Origine et licence
 
 Générés avec [DiceBear](https://www.dicebear.com/) (`@dicebear/core` et `@dicebear/collection`), style **avataaars** de Pablo Stanley ([avataaars.com](https://avataaars.com/)), licence « libre pour usage personnel et commercial ». À relire avant toute autre utilisation : ce n'est pas du CC0.
 
-## Traits du personnage (d'après les photos d'Olivier)
+## Personnage masculin (d'après les photos d'Olivier)
 
 | Paramètre | Valeur |
 |---|---|
@@ -16,9 +16,21 @@ Générés avec [DiceBear](https://www.dicebear.com/) (`@dicebear/core` et `@dic
 | Peau | `edb98a` |
 | Tenue | `blazerAndShirt`, `25557c` |
 
-## Les dix réactions
+## Personnage féminin (d'après des photos fournies par Olivier)
 
-| Fichier | Yeux | Sourcils | Bouche | Situation |
+| Paramètre | Valeur |
+|---|---|
+| Cheveux | `fro`, `cf7a2e` |
+| Barbe | aucune |
+| Lunettes | `prescription02`, `2e1b12` |
+| Peau | `6b4226` |
+| Tenue | `shirtScoopNeck`, `f2efe6` |
+
+Non reproduits, faute d'option dans avataaars : le collier, le motif rayé du haut, les mèches cuivrées (une seule teinte de cheveux).
+
+## Les dix réactions (identiques pour les deux personnages)
+
+| Fichier (féminin : suffixe `-f`) | Yeux | Sourcils | Bouche | Situation |
 |---|---|---|---|---|
 | `ravi.svg` | `happy` | `raisedExcitedNatural` | `smile` | bonne réponse |
 | `hilare.svg` | `happy` | `raisedExcitedNatural` | `smile` + larmes de joie (surcouche dessinée à la main) | bonne réponse |
@@ -33,4 +45,4 @@ Générés avec [DiceBear](https://www.dicebear.com/) (`@dicebear/core` et `@dic
 
 ## Régénérer
 
-Les options ci-dessus, avec `seed: "olivier"`, `backgroundColor: ["transparent"]` et `size: 280`, redonnent les SVG (hors larmes de joie de `hilare.svg`, quatre gouttes bleues ajoutées avant `</svg>`, dans un groupe `tears-of-joy`).
+Les options ci-dessus, avec `backgroundColor: ["transparent"]` et `size: 280`, redonnent les SVG. Le personnage masculin utilise `seed: "olivier"` ; pour le féminin la graine est sans effet (toutes les options sont fixées, `facialHairProbability: 0`). Larmes de joie de `hilare.svg` et `hilare-f.svg` : quatre gouttes bleues ajoutées avant `</svg>`, dans un groupe `tears-of-joy` (mêmes coordonnées pour les deux personnages).
