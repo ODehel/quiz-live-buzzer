@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include "../mocks/ScreenMocks.h"
 #include "../mocks/StartupMocks.h"
+#include "LoginOutcomeDisplay.h"
 #include "TokenAcquisition.h"
 
 using ::testing::Return;
@@ -101,6 +103,35 @@ TEST(TokenAcquisitionTest, TreatsASuccessWithoutTokenAsAFailure)
 
     EXPECT_EQ("any-token", result.token);
 }
+
+TEST(LoginOutcomeDisplayTest, ShowsTheRefusalScreenWithoutTopBarWhenTheCredentialsAreRefused)
+{
+    MockScreen mockScreen;
+    LoginOutcomeDisplay loginOutcomeDisplay{mockScreen};
+
+    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{ScreenPresenter{}.ScreenForLoginRefused()})).Times(1);
+
+    loginOutcomeDisplay.Show(LoginResult{LoginStatus::InvalidCredentials, ""});
+}
+
+class LoginOutcomeWithoutRefusalTest : public ::testing::TestWithParam<LoginResult>
+{
+};
+
+TEST_P(LoginOutcomeWithoutRefusalTest, LeavesTheScreenUntouched)
+{
+    MockScreen mockScreen;
+    LoginOutcomeDisplay loginOutcomeDisplay{mockScreen};
+
+    EXPECT_CALL(mockScreen, Display(::testing::_, ::testing::_)).Times(0);
+
+    loginOutcomeDisplay.Show(GetParam());
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    OutcomesThatAreNotARefusal,
+    LoginOutcomeWithoutRefusalTest,
+    ::testing::Values(LoginResult{LoginStatus::Success, "any-token"}, LoginResult{LoginStatus::Failed, ""}));
 
 int main(int argc, char **argv)
 {

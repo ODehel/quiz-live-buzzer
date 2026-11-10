@@ -43,6 +43,11 @@ public:
         return TextScreen{displayState.LcdTextForBuzzSent()};
     }
 
+    ScreenModel ScreenForLoginRefused() const
+    {
+        return TextScreen{displayState.LcdTextForLoginRefused()};
+    }
+
     ScreenModel ScreenForTappedAnswer(char letter) const
     {
         const int zone = displayState.ZoneIndexForAnswer(letter);

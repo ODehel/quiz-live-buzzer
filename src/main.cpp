@@ -26,6 +26,7 @@
 #include "HttpTokenFetcher.h"
 #include "ArduinoSleeper.h"
 #include "TokenAcquisition.h"
+#include "LoginOutcomeDisplay.h"
 #include "secrets.h"
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>
@@ -126,6 +127,8 @@ WebSocketEventListener webSocketEventListener{client, buzzerEventTranslator};
 constexpr unsigned long LOGIN_RETRY_DELAY_MS = 5000;
 ArduinoSleeper arduinoSleeper;
 TokenAcquisition tokenAcquisition{httpTokenFetcher, arduinoSleeper, LOGIN_RETRY_DELAY_MS};
+// Passe par `tappableZonesScreen` pour que les zones tactiles restent masquées sur l'écran de refus.
+LoginOutcomeDisplay loginOutcomeDisplay{tappableZonesScreen};
 bool startupHalted = false;
 
 void setup()
@@ -144,6 +147,7 @@ void setup()
     while (WiFi.status() != WL_CONNECTED)
         delay(500);
     LoginResult login = tokenAcquisition.Acquire();
+    loginOutcomeDisplay.Show(login);
     if (login.status == LoginStatus::InvalidCredentials)
     {
         Serial.println("Login refused: invalid credentials, check secrets.h. Startup halted.");

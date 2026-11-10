@@ -703,5 +703,24 @@ Alternatives écartées :
 
 **Conséquences** —
 - Tous les écrans existants sont inchangés (`Hidden()`) ; les attentes de test sont traduites vers la nouvelle signature.
-- **Non prouvé** : le build `esp32`, le rendu sur la dalle (hauteur de 60 px, nom long qui chevauche le titre) ; `GfxScreen` n'est compilé qu'à blanc contre un faux `LovyanGFX`.
+- **Prouvé au smoke test d'Olivier (2026-11-09, faux hub)** : build `esp32` SUCCESS (Flash 80,4 %) et bandeau affiché sur la dalle, emplacement des textes conforme ; le design system n'est « pas du tout respecté » (déjà en dette). **Non prouvé** : un nom long qui chevauche le titre.
 - Ordre suivant : à choisir (bandeau sur un deuxième écran, avec l'état partagé, ou autres données du bandeau).
+
+## #42 — feat(startup): show why the login was refused
+
+**Contexte** — Sur un `401` au login, `setup()` écrivait une ligne sur le port série puis `loop()` ne faisait plus rien : le buzzer paraissait figé sans cause visible. Le CDC §8.2 décrit l'écran (ligne « réseau : `401` au login ») et la maquette F3 le montre ; il n'était pas affiché.
+
+**Décision** (cadrage validé par Olivier à la porte 1, 2026-11-10, première de trois cibles proposées) —
+- **`ScreenPresenter::ScreenForLoginRefused()`** : un `TextScreen` de trois lignes (« Connexion refusée », « Le hub n’a pas accepté ce buzzer », « Préviens le maître du jeu »), libellés de la maquette F3 et du CDC, texte tenu par `DisplayState` comme les autres.
+- **`LoginOutcomeDisplay` (`lib/startup/`)** : reçoit le `LoginResult` et n'affiche l'écran que pour `InvalidCredentials`, avec `TopBar::Hidden()`. `Success` et `Failed` ne changent rien à l'écran.
+- **`main.cpp`** : un appel `loginOutcomeDisplay.Show(login)` avant l'arrêt, par `tappableZonesScreen` pour que les zones tactiles restent masquées. `startupHalted` est inchangé.
+
+**Choix de Claude, à relire en PR** —
+- Un objet dédié plutôt qu'un faux `HubMessage` (`auth_failed`) passé à `LcdRenderer` : ce démarrage n'a pas de message du hub, et en fabriquer un ferait entrer un type inexistant dans le protocole.
+- Texte plein écran, sans bandeau ni anneau ni cadenas : un seul rendu `TextScreen` existe aujourd'hui ; le reste de la maquette F3 est consigné en dette (« Écran de login refusé en texte seul »).
+- Le CDC n'est pas modifié : sa ligne décrit déjà le rendu cible et les libellés.
+
+**Conséquences** —
+- Un `401` n'est plus silencieux. Le comportement « pas de réessai, écran jusqu'au redémarrage » est inchangé.
+- **Non prouvé** : le rendu des trois lignes sur la dalle, le build `esp32` et l'appel dans `setup()` (compilé à blanc seulement) ; à prouver par le smoke test d'Olivier avec un hub qui répond `401`.
+- Olivier veut aussi un écran d'init avec le logo en grand pendant l'attente du Wi-Fi et du login : session à cadrer ensemble (le logo n'est pas encore dans le dépôt).
