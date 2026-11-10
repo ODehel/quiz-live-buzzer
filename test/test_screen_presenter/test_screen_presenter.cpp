@@ -141,6 +141,15 @@ TEST(ScreenPresenterLocalFeedbackTest, ABuzzSentPresentsBuzzEnvoye)
     EXPECT_EQ(ScreenModel{TextScreen{"Buzz envoyé"}}, screen);
 }
 
+TEST(ScreenPresenterStartupTest, ARefusedLoginPresentsTheReasonAndWhoToWarn)
+{
+    ScreenPresenter presenter;
+
+    const ScreenModel screen = presenter.ScreenForLoginRefused();
+
+    EXPECT_EQ(ScreenModel{TextScreen{"Connexion refusée\nLe hub n’a pas accepté ce buzzer\nPréviens le maître du jeu"}}, screen);
+}
+
 TEST(ScreenPresenterTopBarTest, AuthSuccessShowsTheUsernameInTheTopBar)
 {
     ScreenPresenter presenter;

@@ -77,6 +77,11 @@ public:
         return "Buzz envoyé";
     }
 
+    std::string LcdTextForLoginRefused() const
+    {
+        return "Connexion refusée\nLe hub n’a pas accepté ce buzzer\nPréviens le maître du jeu";
+    }
+
 private:
     std::string LcdTextForQuestionTitle(const HubMessage &message) const
     {
