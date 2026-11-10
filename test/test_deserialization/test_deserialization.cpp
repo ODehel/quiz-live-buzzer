@@ -61,6 +61,29 @@ TEST(MessageDeserializerTest, ParsedBuzzLockedWithANumericBuzzerUsernameHasNone)
     EXPECT_FALSE(deserializer.Parse("{\"type\":\"buzz_locked\",\"buzzer_username\":42}").HasBuzzerUsername());
 }
 
+TEST(MessageDeserializerTest, ParsedAuthSuccessHasItsUsername)
+{
+    MessageDeserializer deserializer;
+
+    HubMessage message = deserializer.Parse("{\"type\":\"auth_success\",\"role\":\"buzzer\",\"username\":\"quiz_buzzer_01\",\"expires_in\":3600}");
+
+    EXPECT_EQ(message.Username(), "quiz_buzzer_01");
+}
+
+TEST(MessageDeserializerTest, ParsedAuthSuccessWithoutUsernameHasAnEmptyOne)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_EQ(deserializer.Parse("{\"type\":\"auth_success\"}").Username(), "");
+}
+
+TEST(MessageDeserializerTest, ParsedAuthSuccessWithANumericUsernameHasAnEmptyOne)
+{
+    MessageDeserializer deserializer;
+
+    EXPECT_EQ(deserializer.Parse("{\"type\":\"auth_success\",\"username\":42}").Username(), "");
+}
+
 TEST(MessageDeserializerTest, ParsedQuestionOpenHasItsTitle)
 {
     MessageDeserializer deserializer;

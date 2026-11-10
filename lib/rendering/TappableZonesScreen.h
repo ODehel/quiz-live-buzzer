@@ -28,18 +28,18 @@ public:
 
     // Seul un `ZonesScreen` rend des zones tactiles (« Zones actives », CDC §8.2) : tout autre affichage les désactive.
     // Un `ScreenUnchanged` ne touche ni l'écran ni les zones.
-    void Display(const ScreenModel &screenModel) override
+    void Display(const TopBar &topBar, const ScreenModel &screenModel) override
     {
         std::visit(Overloaded{
                        [](const ScreenUnchanged &) {},
-                       [this, &screenModel](const ZonesScreen &zonesScreen)
+                       [this, &topBar, &screenModel](const ZonesScreen &zonesScreen)
                        {
-                           screen.Display(screenModel);
+                           screen.Display(topBar, screenModel);
                            ActivateZonesFor(zonesScreen.zoneTexts);
                        },
-                       [this, &screenModel](const auto &)
+                       [this, &topBar, &screenModel](const auto &)
                        {
-                           screen.Display(screenModel);
+                           screen.Display(topBar, screenModel);
                            zones.clear();
                        }},
                    screenModel);

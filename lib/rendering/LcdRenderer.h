@@ -23,7 +23,7 @@ public:
     {
         const ScreenModel screenModel = presenter.ScreenFor(message, armedModeReader.IsArmed());
         if (!std::holds_alternative<ScreenUnchanged>(screenModel))
-            screen.Display(screenModel);
+            screen.Display(presenter.TopBarFor(message), screenModel);
     }
 };
 

@@ -684,3 +684,24 @@ Alternatives écartées :
 - **`IsArmed()` est lu à chaque message** (avant : seulement sur `timer_end`). C'est un getter `const` sans effet de bord, lu au même instant (avant le traitement du message par le comportement).
 - **Non prouvé** : le build `esp32` (Flash, `std::visit` sans exceptions) et le rendu à l'écran, laissés au smoke test d'Olivier ; `GfxScreen` n'a été compilé qu'à blanc contre des stubs LovyanGFX.
 - **Ordre des sessions inchangé** : `feat(rendering)` du bandeau du haut sur tous les écrans vient ensuite.
+
+## #41 — feat(rendering): show the player name in a top bar once connected
+
+**Contexte** — La décision #38 place le bandeau du haut après la couture `Screen` (#40). Ses quatre données n'ont pas toutes une source : points et classement sont « à définir côté hub », la charge de la batterie n'est pas mesurée (non vérifié sur la CrowPanel), l'état du lien exige un redessin hors message. Une seule arrive par message : l'`username` d'`auth_success` (US-009 CA-6 du hub).
+
+**Décision** (choix d'Olivier à la porte 1, 2026-11-09, option A ; bandeau à côté du modèle) —
+- **`TopBar` (`lib/rendering/TopBar.h`)** : valeur comparable (`visible`, `playerName`), construite par `Hidden()` ou `ForPlayer(nom)`. Elle dit *quoi* montrer, jamais comment.
+- **`Screen::Display(const TopBar &, const ScreenModel &)`** : le bandeau vit à côté du modèle, pas dans chaque variante, pour valoir sur tous les écrans sans toucher aux six variantes.
+- **`ScreenPresenter::TopBarFor(message)`** : `auth_success` donne `ForPlayer(username)` (champ absent ou non textuel : nom vide, bandeau visible), tout autre message `Hidden()`. Sans état. `ScreenLocalFeedback` passe toujours `Hidden()`.
+- **`HubMessage::Username()`**, lu par `MessageDeserializer` ; chaîne vide si absent ou non textuel, sans `HasUsername` (l'absence ne change aucun comportement).
+- **`GfxScreen`** dessine le bandeau avec un `TextScreen` : nom à gauche, « Buzz’O’Live » au centre, trait dessous, 60 px de haut ; le texte est centré dans le reste de l'écran. Les autres modèles ignorent le bandeau.
+
+**Choix de Claude, à relire en PR** —
+- Le nom affiché est l'`username` du buzzer (« quiz_buzzer_01 »), pas un nom de joueur : le hub n'en fournit pas.
+- Aucun état retenu : le bandeau disparaît à l'affichage suivant. Le retenir demande de partager l'état entre `LcdRenderer` et `ScreenLocalFeedback` (dette « Deux instances de `DisplayState` ») ; cela attend le deuxième écran qui le porte.
+- Un test de bout en bout (`test_connection`) couvre le trajet JSON → désérialiseur → presenter → `Display`, que ni le test du désérialiseur ni celui du renderer ne couvrent seuls (mutation du désérialiseur : le test du renderer reste vert).
+
+**Conséquences** —
+- Tous les écrans existants sont inchangés (`Hidden()`) ; les attentes de test sont traduites vers la nouvelle signature.
+- **Non prouvé** : le build `esp32`, le rendu sur la dalle (hauteur de 60 px, nom long qui chevauche le titre) ; `GfxScreen` n'est compilé qu'à blanc contre un faux `LovyanGFX`.
+- Ordre suivant : à choisir (bandeau sur un deuxième écran, avec l'état partagé, ou autres données du bandeau).

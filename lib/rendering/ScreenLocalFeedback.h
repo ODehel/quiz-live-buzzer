@@ -21,12 +21,12 @@ public:
     {
         const ScreenModel screenModel = presenter.ScreenForTappedAnswer(value);
         if (!std::holds_alternative<ScreenUnchanged>(screenModel))
-            screen.Display(screenModel);
+            screen.Display(TopBar::Hidden(), screenModel);
     }
 
     void AcknowledgeBuzz() override
     {
-        screen.Display(presenter.ScreenForBuzzSent());
+        screen.Display(TopBar::Hidden(), presenter.ScreenForBuzzSent());
     }
 };
 

@@ -13,6 +13,7 @@ private:
     int remainingSeconds = 0;
     bool hasBuzzerUsername = false;
     std::string buzzerUsername;
+    std::string username;
     std::string title;
     bool hasQuestionIndex = false;
     int questionIndex = 0;
@@ -69,6 +70,18 @@ public:
     const std::string &BuzzerUsername() const
     {
         return buzzerUsername;
+    }
+
+    HubMessage WithUsername(std::string name) const
+    {
+        HubMessage copy = *this;
+        copy.username = std::move(name);
+        return copy;
+    }
+
+    const std::string &Username() const
+    {
+        return username;
     }
 
     HubMessage WithTitle(std::string questionTitle) const
