@@ -807,3 +807,23 @@ Alternatives écartées :
 - Le hub n'émet pas encore ces messages ; le comportement repose sur US-012 du hub, lu le 2026-11-22.
 - Deux dettes ajoutées : non-buzzeurs restés armés, preuves manquantes du bouton rouge SPEED.
 - Le CDC §4.1, §4.3, §6 et §8.1 sont migrés pour la part SPEED ; il reste à rédiger US-FW-004 (reste du §8.1), US-FW-005, 006 et 007 avant sa suppression.
+
+## #47 — docs(specs): write US-FW-004, dialogue with the hub
+
+**Contexte** — Le dialogue avec le hub est réparti sur `lib/connection/` (événements, aiguillage session), `lib/dispatch/` (répartiteur), `lib/serialization/` (lecture et écriture JSON) et l'adaptateur `src/WebSocketEventListener`. Le CDC §3 dit qu'un message « non reconnu / invalide / hors contexte » est ignoré, et le §8.1 liste les messages. Une sonde de `MessageDeserializer` (compilée hors dépôt, 2026-11-22) a montré que seul le premier cas est tenu : un `type` absent ou non textuel devient la chaîne « null » ou « 42 » (ignoré par hasard), mais un JSON tronqué ou suivi de texte parasite est accepté et arme le buzzer. Le firmware n'a aucun état « authentifié », alors que le hub n'émet rien avant `auth_success` (US-009 CA-22).
+
+**Décision** (cadrage validé par Olivier, 2026-11-22) —
+- **JSON invalide ignoré en entier** (US-FW-004 CA-7) : tout texte qui n'est pas un objet JSON complet à `type` textuel est ignoré, ni rendu ni aiguillage ni envoi. Le CDC §3 fait foi ; le code ne le tient pas, écart consigné en dette, correctif à venir.
+- **Message de jeu avant `auth_success`** : constat reporté, ni CA ni code. À rouvrir avec la reprise de connexion (US-FW-006, US-021) ; il faudrait alors un état « authentifié » remis à zéro à chaque reconnexion.
+- **Frontière** : US-FW-004 spécifie le **format** des quatre messages émis (`auth`, `auth_refresh`, `answer`, `buzz`) ; quand `auth` part et avec quel token reste à US-FW-005, `auth_refresh` et `token_expired` à US-FW-007.
+- **Messages sans effet** : deux CA, un pour les types connus qui ne changent jamais le mode (CA-5), un pour les types inconnus et les `error` du hub (CA-6). Les `error` du hub ne sont pas remontés (CDC §3, YAGNI).
+
+**Choix de Claude, à relire en PR** —
+- 12 CA, dont CA-12 (événements WebSocket non textuels ignorés) qui fixe le comportement d'un adaptateur de `src/` jamais testé en natif ; gardé à la demande d'Olivier plutôt que laissé en simple constat.
+- CA-2 (rendu avant aiguillage, décision #5) et CA-8 (champ absent ou mal typé = absent, décision #6) sont repris tels quels depuis le code et les tests, sans nouvelle règle.
+- Statut de US-FW-004 passé d'« Implémentée » à « Partielle », à cause de CA-7.
+
+**Conséquences** —
+- Écart de code : `MessageDeserializer` accepte un JSON incomplet ou suivi de texte et rend un type « null » ; consigné en dette (« JSON invalide accepté »), correctif `fix(serialization)` à faire avec ses neuf tests.
+- Deux autres dettes ajoutées : preuves manquantes du dialogue (types sans effet, type inconnu, `error`, `answer` pour `C` et `D`, adaptateur), message de jeu avant `auth_success`.
+- Le CDC §3 (règle « ignoré ») et §8.1 (lecture, aiguillage, messages émis) sont migrés ; il reste à rédiger US-FW-005, 006 et 007 avant sa suppression (§8.1 `token_*`, §5, §9).
