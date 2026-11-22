@@ -209,6 +209,111 @@ TEST_F(BuzzerBehaviorTest, TimerEndDisarmsTheBuzzer)
     EXPECT_FALSE(reader.IsArmed());
 }
 
+TEST_F(BuzzerBehaviorTest, SpeedArmedBuzzerIgnoresQuestionChoices)
+{
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnMcqPressed('A');
+}
+
+TEST_F(BuzzerBehaviorTest, SpeedArmedBuzzerStaysSpeedArmedOnQuestionChoices)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, McqArmedBuzzerIgnoresQuestionOpen)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, McqArmedBuzzerStaysMcqArmedOnQuestionOpen)
+{
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('A')).Times(1);
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnMcqPressed('A');
+}
+
+TEST_F(BuzzerBehaviorTest, McqArmedBuzzerIgnoresBuzzUnlocked)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnBuzzUnlocked();
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, McqArmedBuzzerStaysMcqArmedOnBuzzUnlocked)
+{
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('A')).Times(1);
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnBuzzUnlocked();
+    buzzerBehavior.OnMcqPressed('A');
+}
+
+TEST_F(BuzzerBehaviorTest, QuestionChoicesArmsAgainAfterAnAnswer)
+{
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('A')).Times(1);
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('B')).Times(1);
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnMcqPressed('A');
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnMcqPressed('B');
+}
+
+TEST_F(BuzzerBehaviorTest, BuzzUnlockedArmsAgainAfterABuzz)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(2);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzPressed();
+    buzzerBehavior.OnBuzzUnlocked();
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, QuestionOpenArmsAgainAfterABuzz)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(2);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzPressed();
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, QuestionChoicesArmsAgainAfterTimerEnd)
+{
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('D')).Times(1);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnTimerEnd();
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnMcqPressed('D');
+}
+
+TEST_F(BuzzerBehaviorTest, QuestionOpenArmsAgainAfterTimerEnd)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnTimerEnd();
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzPressed();
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

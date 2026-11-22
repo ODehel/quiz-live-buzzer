@@ -19,9 +19,10 @@ private:
     HubMessageSender &hubMessageSender;
     LocalFeedback &localFeedback;
     bool isEliminated = false;
-    void ArmSpeed()
+    void ArmFromInert(Mode armedMode)
     {
-        mode = Mode::SpeedArmed;
+        if (mode == Mode::Inert)
+            mode = armedMode;
     }
 
 public:
@@ -62,12 +63,12 @@ public:
 
     void OnQuestionChoices()
     {
-        mode = Mode::McqArmed;
+        ArmFromInert(Mode::McqArmed);
     }
 
     void OnQuestionOpen()
     {
-        ArmSpeed();
+        ArmFromInert(Mode::SpeedArmed);
     }
 
     void OnTimerEnd()
@@ -77,7 +78,7 @@ public:
 
     void OnBuzzUnlocked()
     {
-        ArmSpeed();
+        ArmFromInert(Mode::SpeedArmed);
     }
 
     void OnEliminated()
