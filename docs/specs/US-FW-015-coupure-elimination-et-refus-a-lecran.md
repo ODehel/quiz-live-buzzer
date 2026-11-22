@@ -25,7 +25,7 @@ Le dessin des trois est CA-11 à CA-13.
 - le compteur, l'élimination, l'intervalle des tentatives et l'arrêt sur `401` côté logique : US-FW-006 ; ici seul l'écran compte ;
 - le contenu et le dessin du bandeau du haut (nom, liaison barrée, trait) : US-FW-009 (CA-3, CA-4, CA-8) ; ici seul compte ce que ces trois écrans en font ;
 - l'écran « Connecté » qui suit la reconnexion et l'écran d'init : US-FW-010 ;
-- le clignotement, les points animés, la vibration du logo : US-FW-016 ;
+- le clignotement (aucun ici : CA-6 de US-FW-016), les points animés et la vibration du logo (constats reportés de US-FW-016, faute de définition) ;
 - le contrôle de l'envoi d'un message (`sendTXT`) : constat reporté de US-FW-006 ;
 - le son : US-FW-021.
 
@@ -65,7 +65,7 @@ Rien de ce qui suit n'est un CA : ce sont des constats consignés dans `DEBTS.md
 - **Durée d'une panne avant « Hors jeu »** : `connect()` bloque jusqu'à 5000 ms (`WEBSOCKETS_TCP_TIMEOUT`, `WebSockets` 2.7.2) et `loop()` ne tourne pas pendant ce temps ; avec les 5 s de US-FW-006 CA-8, les trois tentatives pourraient durer plus que les 15 s annoncées. Non mesuré.
 - **Wi-Fi coupé et hub injoignable** ne sont pas distingués à l'écran (US-FW-006 CA-7 les compte pareil) : « Connexion perdue » dit la même chose dans les deux cas.
 - **Couleurs et atténuation** : le rouge `#e8174f` et le rose `#ff8fa6` de la maquette et le gris `#666666` (40 % de blanc) sont des valeurs de maquette, jamais vues sur la dalle ; elles dérogent au monochrome de US-FW-011 à US-FW-014 pour ces seuls écrans. Les lignes de « Hors jeu » et de « Connexion refusée » sont en lavande dans la maquette (`#d9ccff`), en blanc ici.
-- **Habillage de la maquette** : titre de 88 px et bandeau de 72 px (code : 48 px et 60 px), bandeau du haut avec points, classement et batterie (constat de US-FW-009), logo animé. Les trois points du bandeau ne s'animent pas (US-FW-016).
+- **Habillage de la maquette** : titre de 88 px et bandeau de 72 px (code : 48 px et 60 px), bandeau du haut avec points, classement et batterie (constat de US-FW-009), logo animé. Les trois points du bandeau ne s'animent pas : constat reporté de US-FW-016.
 - **Dessin jamais constaté** : l'anneau, le symbole marche/arrêt, le cadenas, l'atténuation et le redessin du seul bandeau ne se valident qu'au smoke test ; le redessin du dernier écran atténué dépend des textes retenus par `GfxScreen` (dette « Textes des zones retenus par l'adaptateur »).
 
 ## Sources
