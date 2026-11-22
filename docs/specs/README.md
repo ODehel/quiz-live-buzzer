@@ -1,0 +1,101 @@
+# Spécifications du firmware buzzer : index des user stories
+
+> Ce dossier remplace progressivement `docs/CDC-FIRMWARE-BUZZER.md`. Le CDC reste en lecture seule jusqu'à ce que chaque section soit rédigée dans une US ; il est alors supprimé, avec `docs/Quiz Buzzer Game - Liste des états.csv` (son origine), dans une session `docs(specs)` dédiée.
+
+## Principes directeurs
+
+Le buzzer est un **exécutant piloté par le serveur** : le hub Node.js est le chef d'orchestre. Le buzzer n'initie rien de lui-même, à trois exceptions près, toutes locales :
+
+1. le **feedback immédiat** (écran, éventuellement son) lors d'un appui armé, pour éviter la latence réseau ;
+2. l'**auto-verrouillage** après un appui armé (lock-first) ;
+3. le passage en mode **Éliminé** après 3 échecs consécutifs de reconnexion WiFi.
+
+Frontière d'architecture : la **logique pure** vit dans `lib/` (testable en natif, sans dépendance matérielle) ; les **adaptateurs matériels** vivent dans `src/` (validés au smoke test), derrière des abstractions.
+
+## Matériel par buzzer
+
+| Composant | Rôle |
+|---|---|
+| Écran LCD tactile | Affichage piloté par le serveur ; zones tactiles A–D pour répondre en mode MCQ |
+| Un gros bouton rouge « buzz » (sans LED intégrée) | Réponse en mode SPEED |
+| Haut-parleurs | Restitution sonore |
+| WiFi / WebSocket | Communication avec le hub (réseau local uniquement) |
+| Module NFC | Paramétrage du buzzer via l'application mobile (non cadré, voir US-FW-022) |
+
+Le buzzer ne compte qu'un seul bouton physique, le bouton rouge (`DECISIONS.md` #1). Il n'y a ni boutons A–D ni LED.
+
+## Statuts et couches
+
+| Statut | Sens |
+|---|---|
+| Implémentée | Le comportement existe dans le code ; l'US le spécifie, les CA sont à rédiger depuis le réel |
+| Partielle | Une partie est implémentée ; le reste est en dette (`DEBTS.md`) |
+| À cadrer | Périmètre connu, comportement pas encore décidé |
+| Vide | Titre et périmètre seulement ; aucun CA tant que la décision bloquante n'est pas prise |
+
+- **Logique et connexion** (US-FW-001 à 007) : comportement du buzzer, sans écran.
+- **Rendu** (US-FW-008 à 016) : ce que le joueur voit.
+- **Vides** (US-FW-017 à 022) : numéros réservés, dépendent de décisions ou du hub.
+
+Ordre de travail : ordre numérique, la logique avant le rendu. Une US vide est sautée tant qu'elle n'a pas de CA.
+
+## Index
+
+| US | Titre | Couche | Dépend du hub | Statut |
+|---|---|---|---|---|
+| [US-FW-001](US-FW-001-detecter-un-appui.md) | Détecter un appui | Logique | — | Implémentée |
+| [US-FW-002](US-FW-002-repondre-a-une-question-a-choix-multiples.md) | Répondre à une question à choix multiples | Logique | US-011 | Implémentée |
+| [US-FW-003](US-FW-003-buzzer-sur-une-question-de-rapidite.md) | Buzzer sur une question de rapidité | Logique | US-012 | Implémentée (matériel non testé) |
+| [US-FW-004](US-FW-004-dialoguer-avec-le-hub.md) | Dialoguer avec le hub | Logique | US-009 | Implémentée |
+| [US-FW-005](US-FW-005-demarrer-et-sauthentifier.md) | Démarrer et s'authentifier | Logique | US-003, US-009 | Partielle |
+| [US-FW-006](US-FW-006-se-reconnecter-ou-etre-elimine.md) | Se reconnecter ou être éliminé | Logique | US-009 | Implémentée |
+| [US-FW-007](US-FW-007-garder-la-session-ouverte.md) | Garder la session ouverte | Logique | US-021 | Partielle |
+| [US-FW-008](US-FW-008-afficher-des-textes-lisibles.md) | Afficher des textes lisibles | Rendu | — | Implémentée |
+| [US-FW-009](US-FW-009-bandeau-du-haut.md) | Bandeau du haut | Rendu | À définir | Partielle |
+| [US-FW-010](US-FW-010-ecrans-dinit-et-dattente.md) | Écrans d'init et d'attente | Rendu | US-009 | Partielle |
+| [US-FW-011](US-FW-011-question-a-choix-multiples-a-lecran.md) | Question à choix multiples à l'écran | Rendu | US-011 | Partielle |
+| [US-FW-012](US-FW-012-question-de-rapidite-a-lecran.md) | Question de rapidité à l'écran | Rendu | US-012 | Partielle |
+| [US-FW-013](US-FW-013-resultat-dune-question.md) | Résultat d'une question | Rendu | US-011, US-012 | Partielle |
+| [US-FW-014](US-FW-014-reactions-du-personnage.md) | Réactions du personnage | Rendu | À définir | À cadrer |
+| [US-FW-015](US-FW-015-coupure-elimination-et-refus-a-lecran.md) | Coupure, élimination et refus à l'écran | Rendu | — | Partielle |
+| [US-FW-016](US-FW-016-animer-lecran.md) | Animer l'écran | Rendu | US-011 | À cadrer |
+| [US-FW-017](US-FW-017-classement-intermediaire.md) | Classement intermédiaire | Vide | US-014 | Vide |
+| [US-FW-018](US-FW-018-classement-final-et-fin-de-partie.md) | Classement final et fin de partie | Vide | Aucun message défini | Vide |
+| [US-FW-019](US-FW-019-attente-du-maitre-et-presentation-de-la-partie.md) | Attente du maître du jeu et présentation de la partie | Vide | Aucun message défini | Vide |
+| [US-FW-020](US-FW-020-photo-ou-son-avant-une-question.md) | Photo ou son avant une question | Vide | Aucun message défini | Vide |
+| [US-FW-021](US-FW-021-sons.md) | Sons | Vide | US-018 | Vide |
+| [US-FW-022](US-FW-022-parametrage-par-nfc-ou-qr-code.md) | Paramétrage par NFC ou QR code | Vide | — | Vide, bloquée |
+
+Les numéros d'US du hub viennent du CDC et de `DEBTS.md` ; ils sont à confirmer à la rédaction de chaque US.
+
+## Correspondance CDC → US
+
+Table de migration : le CDC n'est supprimé que lorsque chaque ligne est couverte par une US rédigée.
+
+| Section du CDC | Destination |
+|---|---|
+| §0 Note de passation | Supprimée (périmée, dette « CDC §0 et §11 périmés ») |
+| §1 Principe directeur, §2 Matériel | Ce fichier |
+| §3 Mécanique d'appui | US-FW-001 ; règles « message ignoré » : US-FW-004 |
+| §4.1 Mode Inerte | US-FW-002 et US-FW-003 (appuis ignorés) |
+| §4.2 Modes armés MCQ | US-FW-002 |
+| §4.3 Modes armés SPEED (dont ré-armement) | US-FW-003 |
+| §4.4 Mode Éliminé | US-FW-006 |
+| §5 Reconnexion WiFi | US-FW-006 |
+| §6 Table de transitions | US-FW-002, US-FW-003, US-FW-006 |
+| §7 Recadrage du CSV | Supprimée (historique) ; écart « affichage progressif abandonné » : US-FW-011 |
+| §8.1 Messages reçus et émis | US-FW-004 ; `token_*` : US-FW-007 ; `play_*` : US-FW-021 |
+| §8.2 Habillage commun | US-FW-009 |
+| §8.2 Vocabulaire des effets d'écran | US-FW-016 (et chaque US de rendu pour ses effets) |
+| §8.2 Lignes init, `auth_success`, `game_resumed` | US-FW-010 |
+| §8.2 Lignes `question_title`, `question_choices`, `timer_tick`, `timer_end`, `answer_received`, appui local MCQ | US-FW-011 |
+| §8.2 Lignes `question_open`, `buzz_accepted`, `buzz_locked`, `buzz_invalidated`, `buzz_unlocked`, appui local SPEED | US-FW-012 |
+| §8.2 Lignes `question_result` | US-FW-013 |
+| §8.2 Réactions du personnage | US-FW-014 |
+| §8.2 Lignes réseau (connexion perdue, Hors jeu, refus 401) | US-FW-015 ; logique du refus : US-FW-005 |
+| §8.2 Lignes `play_sound_url`, `play_system_sound` | US-FW-021 |
+| §9 Démarrage et connexion initiale | US-FW-005 ; articulation avec le compteur : US-FW-006 |
+| §10 Points ouverts (NFC, son du feedback local) | US-FW-022, US-FW-021 |
+| §11 Prochaine étape TDD | Supprimée (périmée) |
+
+Hors CDC, issus des maquettes (`docs/mockups/`) et de `DEBTS.md` : classements, attente et présentation de la partie, photo et son, avatar par joueur, configuration. Ils alimentent US-FW-014 et US-FW-017 à 022.
