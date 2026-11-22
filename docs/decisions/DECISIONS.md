@@ -724,3 +724,22 @@ Alternatives écartées :
 - Un `401` n'est plus silencieux. Le comportement « pas de réessai, écran jusqu'au redémarrage » est inchangé.
 - **Non prouvé** : le rendu des trois lignes sur la dalle, le build `esp32` et l'appel dans `setup()` (compilé à blanc seulement) ; à prouver par le smoke test d'Olivier avec un hub qui répond `401`.
 - Olivier veut aussi un écran d'init avec le logo en grand pendant l'attente du Wi-Fi et du login : session à cadrer ensemble (le logo n'est pas encore dans le dépôt).
+
+## #43 — docs(specs): split the firmware specification into user stories
+
+**Contexte** — Le hub et Angular travaillent par user stories numérotées à critères d'acceptance ; le firmware n'a qu'un cahier des charges en sections (`docs/CDC-FIRMWARE-BUZZER.md`). Sans US, l'ordre numérique n'a pas de sens pour ce dépôt, et la matrice CA × couches des handoffs ne peut pas être produite.
+
+**Décision** (cadrage validé par Olivier, 2026-11-22) —
+- Le firmware est spécifié en **user stories `US-FW-001` à `US-FW-022`**, une par fichier dans `docs/specs/`, avec un index et une table de correspondance CDC → US dans `docs/specs/README.md` (principes directeurs et matériel y vivent aussi).
+- Ordre : numérique, la logique et la connexion (001 à 007) avant le rendu (008 à 016) ; les US vides (017 à 022, dépendant du hub ou d'un choix matériel) ont un titre, un périmètre et un blocage, et sont sautées tant qu'elles n'ont pas de CA.
+- Les US sont **complètes même pour ce qui est déjà implémenté** (CA rédigés depuis le réel, constat de couverture) ; une session `docs(specs)` par US, cadrée par interview.
+- Le CDC est **supprimé quand son contenu est dans les US**, avec `docs/Quiz Buzzer Game - Liste des états.csv` (son origine), dans une session dédiée ; il reste en lecture seule d'ici là.
+
+**Choix de Claude, à relire en PR** —
+- 22 US, dont 4 couches de rendu fines (bandeau, init, coupure, animations) gardées séparées plutôt que fondues dans les US de question : une session chacune.
+- Les principes et le matériel (§1, §2) vont dans le `README` de `docs/specs/` plutôt que dans une US.
+
+**Conséquences** —
+- Les numéros d'US du hub cités sont tirés du CDC et de `DEBTS.md` ; à confirmer à la rédaction de chaque US.
+- À la suppression du CDC, la phrase de l'en-tête de ce journal (« consignées dans `docs/CDC-FIRMWARE-BUZZER.md` ») sera à rediriger vers les US, par une nouvelle entrée.
+- Ordre suivant : à choisir ensemble, en commençant par US-FW-001 (ordre numérique).
