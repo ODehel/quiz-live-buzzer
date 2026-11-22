@@ -76,6 +76,12 @@ public:
         mode = Mode::Inert;
     }
 
+    void OnBuzzLocked()
+    {
+        if (mode == Mode::SpeedArmed)
+            mode = Mode::Inert;
+    }
+
     void OnBuzzUnlocked()
     {
         ArmFromInert(Mode::SpeedArmed);

@@ -24,6 +24,8 @@ public:
             buzzerBehavior.OnTimerEnd();
         else if (type == "buzz_unlocked")
             buzzerBehavior.OnBuzzUnlocked();
+        else if (type == "buzz_locked")
+            buzzerBehavior.OnBuzzLocked();
     }
 };
 
