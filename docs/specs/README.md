@@ -34,8 +34,8 @@ Le buzzer ne compte qu'un seul bouton physique, le bouton rouge (`DECISIONS.md` 
 | Vide | Titre et périmètre seulement ; aucun CA tant que la décision bloquante n'est pas prise |
 
 - **Logique et connexion** (US-FW-001 à 007) : comportement du buzzer, sans écran.
-- **Rendu** (US-FW-008 à 016) : ce que le joueur voit.
-- **Vides** (US-FW-017 à 022) : numéros réservés, dépendent de décisions ou du hub.
+- **Rendu** (US-FW-008 à 017) : ce que le joueur voit.
+- **Vides** (US-FW-018 à 022) : numéros réservés, dépendent de décisions ou du hub.
 
 Ordre de travail : ordre numérique, la logique avant le rendu. Une US vide est sautée tant qu'elle n'a pas de CA.
 
@@ -59,7 +59,7 @@ Ordre de travail : ordre numérique, la logique avant le rendu. Une US vide est 
 | [US-FW-014](US-FW-014-reactions-du-personnage.md) | Réactions du personnage | Rendu | US-011, US-012 (`question_result` et `buzz_invalidated` : aucune occurrence dans `src/` du hub au 2026-11-22 ; aucun champ pour le personnage, fixé par buzzer) | Partielle |
 | [US-FW-015](US-FW-015-coupure-elimination-et-refus-a-lecran.md) | Coupure, élimination et refus à l'écran | Rendu | Aucun message : événements réseau ; `401` du login (US-003 CA-8), fermetures (US-009 CA-7 à CA-13) | Partielle |
 | [US-FW-016](US-FW-016-animer-lecran.md) | Animer l'écran | Rendu | — | Partielle |
-| [US-FW-017](US-FW-017-classement-intermediaire.md) | Classement intermédiaire | Vide | US-014 | Vide |
+| [US-FW-017](US-FW-017-classement-intermediaire.md) | Classement intermédiaire | Rendu | US-014 (`intermediate_ranking` : aucune occurrence dans `src/` du hub au 2026-11-22 ; aucun message ne dit au buzzer quel participant il est) | Partielle |
 | [US-FW-018](US-FW-018-classement-final-et-fin-de-partie.md) | Classement final et fin de partie | Vide | Aucun message défini | Vide |
 | [US-FW-019](US-FW-019-attente-du-maitre-et-presentation-de-la-partie.md) | Attente du maître du jeu et présentation de la partie | Vide | Aucun message défini | Vide |
 | [US-FW-020](US-FW-020-photo-ou-son-avant-une-question.md) | Photo ou son avant une question | Vide | Aucun message défini | Vide |
@@ -98,4 +98,4 @@ Table de migration : le CDC n'est supprimé que lorsque chaque ligne est couvert
 | §10 Points ouverts (NFC, son du feedback local) | US-FW-022, US-FW-021 |
 | §11 Prochaine étape TDD | Supprimée (périmée) |
 
-Hors CDC, issus des maquettes (`docs/mockups/`) et de `DEBTS.md` : classements, attente et présentation de la partie, photo et son, avatar par joueur, configuration. Ils alimentent US-FW-014 et US-FW-017 à 022.
+Hors CDC, issus des maquettes (`docs/mockups/`) et de `DEBTS.md` : classements (le classement intermédiaire est rédigé : ✅ US-FW-017, CA-1 à CA-7 : lecture du message, écran de sept lignes au plus, ignoré par un buzzer armé, temps et nom ; reconnaissance de la ligne du joueur, 8e au 10e joueur, couleurs : constats reportés (`DEBTS.md`) ; le classement final : US-FW-018), attente et présentation de la partie, photo et son, avatar par joueur, configuration. Ils alimentent US-FW-014 et US-FW-018 à 022.

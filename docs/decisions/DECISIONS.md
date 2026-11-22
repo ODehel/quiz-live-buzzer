@@ -1126,3 +1126,28 @@ Alternatives écartées :
 - Dettes : deux ajoutées (« Animation : preuves manquantes et tests à écrire », « Animation : coût d'un redessin et tampon unique non mesurés »), onze complétées.
 - Hub : rien à ajouter. `scripts/fake-hub.ps1` n'a rien à changer pour cette US.
 - US-FW-009, 010, 011, 012, 013 et 015 sont corrigées d'une phrase dans la même PR ; le `README` migre les lignes « Vocabulaire des effets d'écran » et « Habillage commun » (chrono) du CDC §8.2. US-FW-016 est la dernière US de rendu à cadrer ; la suppression du CDC attend les lignes `play_*` (US-FW-021) et le paramétrage (US-FW-022), dans des US encore « Vides ».
+
+## #60 — docs(specs): write US-FW-017, show the interim ranking
+
+**Contexte** — US-FW-017 était « Vide » (décisions bloquantes) et le dernier handoff proposait une session de code, non cette US : session menée en **cadrage seul**. Le hub diffuse `intermediate_ranking` à tous les buzzers, identique pour tous (US-014 CA-10, CA-12), même pendant une question (CA-2, CA-13) ; le firmware n'en lit aucun champ (aucune occurrence de `ranking` dans `lib/`, `src/`, `test/`, `scripts/`) et le hub ne l'émet pas encore (aucune occurrence dans `src/` à `ed6bd31`). La décision #31 fondait la reconnaissance de la ligne du joueur sur `participant_name` = `username` d'`auth_success` ; le hub la contredit : noms de participants libres et uniques (US-010 CA-9, CA-9a), assignés par ordre de connexion (CA-65), `username` du compte (`quiz_buzzer_01`, US-009 CA-6), aucun message qui dise au buzzer quel participant il est (même blocage que #52). Mesures (hors dépôt, Oswald 30 px) : 7 lignes de 44 px tiennent dans les 340 px utiles de la bande de 800 × 360 px, 10 en demandent 476 ; colonne du nom de 470 px, 21 `W` ou 36 `e`.
+
+**Décision** (cadrage validé par Olivier, 2026-11-22, une salve de trois questions, les trois recommandations retenues) —
+- **Reconnaissance de la ligne reportée** (constat 1) : le classement s'affiche sans ligne en évidence, sans « Tu es en tête ! », sans variante « plus de joueurs que de lignes », sans points ni rang au bandeau, jusqu'à un message du hub qui donne au buzzer son participant (il servirait aussi US-FW-009 CA-2 et US-FW-018). Remplace #31 pour la cible ; #31 et #32 ne sont pas réécrites. Écartés : garder l'égalité du nom et de l'`username` (aucune ligne reconnue, sans que rien le dise), un champ propre à chaque buzzer (contredit US-014 CA-12).
+- **Sept premières lignes seulement** (CA-6, constat 2) : sans pagination ni « … ». Écartée : deux pages alternées toutes les 5 s (le classement bouge, une horloge est requise) ; écarté : aucune règle au-delà de 7.
+- **Un buzzer armé ignore le classement en entier** (CA-4, constat 3) : « zones affichées = zones actives » reste vrai, comme `question_choices` reçu armé (US-FW-011 CA-6, US-FW-012 CA-13). Écartés : l'afficher en restant armé (MCQ : zones perdues, appuis ignorés jusqu'à `timer_end` ; SPEED : « Buzz envoyé » le remplace), l'afficher en désarmant (contredit le hub et US-FW-002).
+
+**Choix de Claude, à relire en PR** —
+- Message **inexploitable** (`ranking` absent, non tableau ou vide ; une ligne qui n'est pas un objet ou dont un champ n'a pas le bon type) : **écran inchangé en entier**, plutôt qu'un classement amputé de lignes (CA-1).
+- `participant_order` n'est ni lu ni affiché ; ordre et rangs sont ceux du hub, jamais recalculés (CA-1).
+- Temps arrondi au dixième le plus proche (demi vers le haut), virgule décimale, « 83,2 s » ; score « N pts » sans singulier ; classement sans question jouée affiché tel quel, « 0 pts » et « 0,0 s » (CA-3).
+- En-tête de 60 px « Classement provisoire », bandeau du haut avec le nom retenu et sans points ni rang (CA-2) ; le classement **remplace** l'écran, **reste** jusqu'au prochain écran produit, sans minuterie (décision #31), **ne clignote pas** (US-FW-016 CA-5) (CA-2, CA-5).
+- Un classement pendant une réaction de 2000 ms **la remplace** : l'écran de résultat en attente n'est pas posé (US-FW-014 CA-6) ; `timer_tick` sur un classement : inchangé (US-FW-011 CA-8, US-FW-012 CA-4) (CA-5).
+- Dessin monochrome : 7 lignes de 44 px à 5 px d'écart (338 px), tout en 30 px, **temps à 30 px et non 24 px** (aucune police 24 px) ; couleurs reportées (CA-7, constat 4).
+- 7 CA : 0 tenu, 1 en partie (CA-4, tenu par défaut, non testé), 6 non implémentés ; sept constats reportés. Statut de l'US : « Partielle ». Aucun test, aucun code, aucun smoke test dans cette session.
+
+**Conséquences** —
+- Écarts de code : aucun champ `ranking` lu, aucun modèle d'écran de liste, aucun dessin ; `LcdRenderer` lira l'état armé pour un cinquième message.
+- Le hub n'émet ni `intermediate_ranking` ni `trigger_intermediate_ranking` ; `scripts/fake-hub.ps1` n'a aucune touche de classement : à étendre avec le `feat`.
+- Hub : un message qui donne au buzzer son `participant_order` ou son nom de participant (une décision côté hub, à rouvrir avec US-FW-009 CA-2).
+- Dettes : une ajoutée (« Classement intermédiaire : preuves manquantes et tests à écrire »), six complétées (« Classements maquettés sans report ni message pour le définitif », « Nom du participant absent du protocole », « Bandeau : points, rang et batterie sans source », « Buzzer armé sans zone tactile à l'écran », « `buzz_locked`, `question_open`, `question_title` et `question_result` jamais émis par le hub », « Table de rendu §8.2 incomplète »).
+- US-FW-009 (constat « Points et classement ») et US-FW-012 (CA-13 : cinq messages) sont corrigées d'une phrase dans la même PR ; le `README` passe US-FW-017 en « Rendu », « Partielle ». Les US-FW-018 à 022 restent « Vides ».
