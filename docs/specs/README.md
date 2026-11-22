@@ -50,7 +50,7 @@ Ordre de travail : ordre numérique, la logique avant le rendu. Une US vide est 
 | [US-FW-005](US-FW-005-demarrer-et-sauthentifier.md) | Démarrer et s'authentifier | Logique | US-003, US-009 | Partielle |
 | [US-FW-006](US-FW-006-se-reconnecter-ou-etre-elimine.md) | Se reconnecter ou être éliminé | Logique | US-009, US-019 | Partielle |
 | [US-FW-007](US-FW-007-garder-la-session-ouverte.md) | Garder la session ouverte | Logique | US-021 | Partielle |
-| [US-FW-008](US-FW-008-afficher-des-textes-lisibles.md) | Afficher des textes lisibles | Rendu | — | Implémentée |
+| [US-FW-008](US-FW-008-afficher-des-textes-lisibles.md) | Afficher des textes lisibles | Rendu | — | Partielle |
 | [US-FW-009](US-FW-009-bandeau-du-haut.md) | Bandeau du haut | Rendu | À définir | Partielle |
 | [US-FW-010](US-FW-010-ecrans-dinit-et-dattente.md) | Écrans d'init et d'attente | Rendu | US-009 | Partielle |
 | [US-FW-011](US-FW-011-question-a-choix-multiples-a-lecran.md) | Question à choix multiples à l'écran | Rendu | US-011 | Partielle |
@@ -89,7 +89,7 @@ Table de migration : le CDC n'est supprimé que lorsque chaque ligne est couvert
 | §8.2 Vocabulaire des effets d'écran | US-FW-016 (et chaque US de rendu pour ses effets) |
 | §8.2 Lignes init, `auth_success`, `game_resumed` | US-FW-010 |
 | §8.2 Lignes `question_title`, `question_choices`, `timer_tick`, `timer_end`, `answer_received`, appui local MCQ | US-FW-011 |
-| §8.2 Lignes `question_open`, `buzz_accepted`, `buzz_locked`, `buzz_invalidated`, `buzz_unlocked`, appui local SPEED | US-FW-012 |
+| §8.2 Lignes `question_open`, `buzz_accepted`, `buzz_locked`, `buzz_invalidated`, `buzz_unlocked`, appui local SPEED | US-FW-012 ; titre de 250 caractères au plus, taille réduite s'il est long : ✅ US-FW-008 (CA-2, CA-6, CA-7) |
 | §8.2 Lignes `question_result` | US-FW-013 |
 | §8.2 Réactions du personnage | US-FW-014 |
 | §8.2 Lignes réseau (connexion perdue, Hors jeu, refus 401) | US-FW-015 ; logique du refus : ✅ US-FW-005 (CA-5), ✅ US-FW-006 (CA-11, refus en reconnexion) |

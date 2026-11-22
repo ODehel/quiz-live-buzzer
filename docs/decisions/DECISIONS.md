@@ -896,3 +896,27 @@ Alternatives écartées :
 - Écarts de code : `SendAuthRefresh` sans login frais (CA-2, CA-3, CA-4), rendu de l'`auth_success` de réponse (CA-6). Une dette ajoutée (« Renouvellement du token : preuves manquantes »), une réécrite (« `auth_refresh` sur `token_expiring_soon` »), deux complétées (« Un `POST /api/v1/token` synchrone », « `401` au login pendant une reconnexion »).
 - Une panne de login au moment du renouvellement coupe la connexion au plus 300 s plus tard (reconnexion de quelques secondes, message de jeu d'un mode armé perdu : décision #49).
 - Le CDC §8.1 (`token_*`, `auth_refresh`) est migré ; restent à rédiger `play_*` (US-FW-021), §8.2 et les US de rendu avant la suppression du CDC.
+
+## #51 — docs(specs): write US-FW-008, show readable texts
+
+**Contexte** — Le rendu des textes (décisions #7 à #11) est livré et testé, mais deux choses n'étaient décidées nulle part. Les polices Oswald ne couvrent que Latin-1 et `Œ œ ’ … €` : LovyanGFX 1.2.36 dessine tout autre code comme un blanc de 7 px (glyphe espace) et ne dessine pas un code < 0x20, alors que la mesure compte 14 px (`?`, décision #9). Or le hub accepte les émojis dans un titre (US-005 CA-4, 10 à 250 caractères) ; une proposition ou une réponse fait 1 à 40 caractères (CA-9, CA-12). Un titre « Quel drapeau : 🇧🇷 ? » s'afficherait avec un trou invisible. Par ailleurs la règle « un signe de ponctuation ne commence pas une ligne » (`? ! : ; » )`, puis `«`) n'a été consignée dans aucune décision (ajoutée par les `fix(rendering)` des PR #35 et #36).
+
+**Décision** (cadrage validé par Olivier, 2026-11-22) —
+- **Codes sans glyphe** : tout code d'un texte affiché que la police n'a pas est remplacé par un `?` visible, un par code, avant la mise en page ; les codes < 0x20 sont retirés, sauf `\n`. La mesure et le dessin comptent le même `?` (US-FW-008 CA-10).
+- **Signes typographiques** : `–` (U+2013), `—` (U+2014), `“` (U+201C) et `”` (U+201D) rejoignent `EXTRA_CODES` et les trois polices (CA-12). Ils précèdent ou accompagnent CA-10.
+- **Ponctuation** : la liste `? ! : ; » )` (mot fait seulement de ces signes) et le guillemet ouvrant `«` sont consignés tels quels (CA-4). `%`, `€` et `…` isolés par une espace restent hors liste (constat reporté).
+- **Dessin** : seuls le centrage, la marge de 10 px, la plus grande taille qui tient et les trois corps 30, 38 et 48 px sont des CA (CA-11, CA-13). Le blanc sur noir et l'effacement avant chaque texte n'en sont pas : le rendu cible des maquettes les remplace.
+- **Vue passive** (décisions #38, #40) : contrainte de conception notée au périmètre, sans CA.
+- **Taille commune aux quatre zones** : renvoyée à US-FW-011. La maquette (décision #19) la veut, le code choisit une taille par texte.
+
+**Choix de Claude, à relire en PR** —
+- 13 CA : 8 « logique » tenus par des tests (CA-1 à CA-8), 1 « logique » implémenté sans test (CA-9), 1 « logique » non implémenté (CA-10), 2 « adaptateur » implémentés sans test (CA-11, CA-13), 1 « adaptateur » non implémenté (CA-12). Le statut de l'US passe de « Implémentée » à « Partielle ».
+- Un accent décomposé s'affichera « e? » : le remplacement ne normalise pas, par YAGNI (le hub envoie vraisemblablement du NFC, non vérifié). Les marques combinantes ne sont donc pas retirées en silence.
+- CA-7 (débordement sans rognage) et CA-9 (zone sous bandeau, 160 px) décrivent le code tel qu'il est, sonde à l'appui ; ni l'un ni l'autre n'a été vu sur la dalle.
+- Le CA de lisibilité à 50 cm (CA-11) s'appuie sur les smoke tests d'Olivier des 2026-11-03 et 2026-11-04, non rejoués ici.
+- Alternatives écartées au cadrage : tout en `?` sans toucher aux polices ; blanc actuel spécifié tel quel ; demander au hub de refuser les émojis ; étendre la ponctuation à `% € …` ; CA sur le contrat du presenter ; CA sur les couleurs.
+
+**Conséquences** —
+- Écarts de code : aucun code sans glyphe n'est remplacé (CA-10), quatre signes manquent aux polices (CA-12). Dettes : une réécrite et renommée (« Codes sans glyphe : un blanc invisible à l'écran », ex-« Signes typographiques français encore absents »), une corrigée (« Garantie des 250 caractères : texte réaliste, pas pire cas » : le pire cas mesuré est 16 lignes, 640 px, avec des mots de 14 `¼`, et 13 lignes, 520 px, avec des mots de 18 `W`), deux complétées (« Largeurs de test copiées de la police », « Dépendances flottantes »), trois ajoutées (« Texte : preuves manquantes », « Une taille par texte, pas par jeu de zones », « Ponctuation `%` `€` `…` isolés »).
+- Ordre des `fix` : `feat(rendering)` des quatre signes (CA-12, polices et fixture régénérées), puis `fix(rendering)` du remplacement par `?` (CA-10).
+- Le CDC §8.2 (« 250 caractères au plus, taille réduite s'il est long », ligne `question_open`) est migré pour sa part « texte » ; restent à rédiger les US de rendu 009 à 016 avant la suppression du CDC.
