@@ -45,7 +45,7 @@ Ordre de travail : ordre numérique, la logique avant le rendu. Une US vide est 
 |---|---|---|---|---|
 | [US-FW-001](US-FW-001-detecter-un-appui.md) | Détecter un appui | Logique | — | Implémentée |
 | [US-FW-002](US-FW-002-repondre-a-une-question-a-choix-multiples.md) | Répondre à une question à choix multiples | Logique | US-011 | Partielle |
-| [US-FW-003](US-FW-003-buzzer-sur-une-question-de-rapidite.md) | Buzzer sur une question de rapidité | Logique | US-012 | Partielle |
+| [US-FW-003](US-FW-003-buzzer-sur-une-question-de-rapidite.md) | Buzzer sur une question de rapidité | Logique | US-012 | Implémentée |
 | [US-FW-004](US-FW-004-dialoguer-avec-le-hub.md) | Dialoguer avec le hub | Logique | US-009 | Partielle |
 | [US-FW-005](US-FW-005-demarrer-et-sauthentifier.md) | Démarrer et s'authentifier | Logique | US-003, US-009 | Partielle |
 | [US-FW-006](US-FW-006-se-reconnecter-ou-etre-elimine.md) | Se reconnecter ou être éliminé | Logique | US-009, US-019 | Partielle |

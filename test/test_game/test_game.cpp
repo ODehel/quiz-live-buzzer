@@ -502,3 +502,83 @@ TEST_F(BuzzerBehaviorTest, SpeedArmedBuzzerStaysSpeedArmedOnMcqPress)
     EXPECT_TRUE(reader.IsArmed());
     buzzerBehavior.OnBuzzPressed();
 }
+
+TEST_F(BuzzerBehaviorTest, BuzzLockedDisarmsSpeedArmedBuzzer)
+{
+    const ArmedModeReader &reader = buzzerBehavior;
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz()).Times(0);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzLocked();
+    buzzerBehavior.OnBuzzPressed();
+
+    EXPECT_FALSE(reader.IsArmed());
+}
+
+TEST_F(BuzzerBehaviorTest, BuzzUnlockedArmsAgainAfterBuzzLocked)
+{
+    const ArmedModeReader &reader = buzzerBehavior;
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz()).Times(1);
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzLocked();
+    buzzerBehavior.OnBuzzUnlocked();
+
+    EXPECT_TRUE(reader.IsArmed());
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, QuestionOpenArmsAgainAfterBuzzLocked)
+{
+    const ArmedModeReader &reader = buzzerBehavior;
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz()).Times(1);
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzLocked();
+    buzzerBehavior.OnQuestionOpen();
+
+    EXPECT_TRUE(reader.IsArmed());
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, InertBuzzerStaysInertOnBuzzLocked)
+{
+    const ArmedModeReader &reader = buzzerBehavior;
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz()).Times(0);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeAnswer(::testing::_)).Times(0);
+
+    buzzerBehavior.OnBuzzLocked();
+    buzzerBehavior.OnBuzzPressed();
+    for (char letter : {'A', 'B', 'C', 'D'})
+        buzzerBehavior.OnMcqPressed(letter);
+
+    EXPECT_FALSE(reader.IsArmed());
+}
+
+TEST_F(BuzzerBehaviorTest, InertBuzzerArmsOnBuzzUnlockedAfterBuzzLocked)
+{
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz()).Times(1);
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    buzzerBehavior.OnBuzzLocked();
+    buzzerBehavior.OnBuzzUnlocked();
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, McqArmedBuzzerStaysMcqArmedOnBuzzLocked)
+{
+    const ArmedModeReader &reader = buzzerBehavior;
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeAnswer('C')).Times(1);
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('C')).Times(1);
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnBuzzLocked();
+
+    EXPECT_TRUE(reader.IsArmed());
+    buzzerBehavior.OnMcqPressed('C');
+}
