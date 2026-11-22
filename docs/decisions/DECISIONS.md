@@ -743,3 +743,23 @@ Alternatives écartées :
 - Les numéros d'US du hub cités sont tirés du CDC et de `DEBTS.md` ; à confirmer à la rédaction de chaque US.
 - À la suppression du CDC, la phrase de l'en-tête de ce journal (« consignées dans `docs/CDC-FIRMWARE-BUZZER.md` ») sera à rediriger vers les US, par une nouvelle entrée.
 - Ordre suivant : à choisir ensemble, en commençant par US-FW-001 (ordre numérique).
+
+## #44 — docs(specs): write US-FW-001, detect a press
+
+**Contexte** — La détection d'appui est répartie sur `lib/input/` (détecteur, lecteurs, traducteur), `src/` (GPIO, GT911) et `main.cpp` (deux détecteurs). Le CDC §3 la décrit en une page, cite un anti-rebond que le code n'a pas, et laisse ouverts le glissement d'un doigt, le multi-touch et la frontière avec le filtrage par mode (`BuzzerBehavior`).
+
+**Décision** (cadrage validé par Olivier, 2026-11-22) —
+- **Frontière** : US-FW-001 s'arrête à l'appel de `OnMcqPressed` ou `OnBuzzPressed`. L'appui d'une famille non armée ou en mode Inerte, ignoré par `BuzzerBehavior`, relève de US-FW-002 et US-FW-003 ; l'activation des zones tactiles seulement quand elles sont affichées (décision #18), de US-FW-011.
+- **Anti-rebond du bouton rouge** : constat reporté. Ni CA ni code avant branchement du bouton et smoke test ; dette dans `DEBTS.md`.
+- **Glissement A→B sans lever le doigt** : le réel est décrit et assumé. Chaque changement de zone est un appui (CA-6).
+- **Multi-touch** : le réel est décrit, seul le premier point du GT911 compte (CA-7).
+- **Doigt posé à l'apparition des zones** : constat reporté, déjà en dette (décision #18).
+
+**Choix de Claude, à relire en PR** —
+- 8 CA, tous « logique » : le CA-8 (deux détecteurs indépendants dans `loop()`) est ajouté pour fixer le câblage réel, alors qu'aucun test ne le couvre.
+- Les écarts de preuve (bords inclus, milieu de la projection, source tactile du détecteur) sont regroupés dans une dette plutôt que dans autant de CA.
+
+**Conséquences** —
+- Sous le lock-first, le glissement envoie la **première zone effleurée**, pas la zone visée : acceptable tant qu'un appui franc tombe sur la bonne zone ; à rouvrir si le smoke test tactile montre des appuis involontaires.
+- Le CDC §3 est migré pour la détection ; les règles « ignoré » restent à rédiger dans US-FW-002, US-FW-003, US-FW-004 et US-FW-011 avant sa suppression.
+- Deux dettes ajoutées : anti-rebond du bouton rouge, preuves manquantes de la détection.
