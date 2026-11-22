@@ -1,17 +1,58 @@
 # US-FW-003 — Buzzer sur une question de rapidité
 
 - **Couche** : logique
-- **Statut** : Implémentée côté logique ; bouton rouge non branché, appui SPEED jamais testé sur le matériel
+- **Statut** : Partielle, CA-1 à CA-10 rédigés depuis le réel le 2026-11-22 (CA-8 non implémenté ; bouton rouge non branché, appui SPEED jamais vu sur le matériel)
 - **Dépend du hub** : US-012
+
+## User story
+
+> **En tant que** joueur,
+> **quand** une question de rapidité est ouverte et que j'appuie sur le bouton rouge,
+> **alors** le buzzer enregistre mon buzz une seule fois, me le confirme sans attendre le hub et le transmet au hub ; et si un autre joueur a buzzé avant moi, mon buzzer ne me laisse pas croire que mon appui compte.
 
 ## Périmètre
 
-Mode SPEED armé par `question_open` ou `buzz_unlocked` : un appui sur le bouton rouge pose le verrou, déclenche le feedback local puis émet `buzz`. Le mode peut être ré-armé plusieurs fois sur une même question (buzz invalidé par le maître). Appuis hors famille et seconds appuis ignorés ; `timer_end` désarme.
+Mode SPEED armé par `question_open` ou `buzz_unlocked` : un appui sur le bouton rouge pose le verrou immédiatement (lock-first), déclenche le feedback local puis émet `buzz`. Le buzzer revient en Inerte à l'appui. Il peut être réarmé plusieurs fois sur une même question (`buzz_unlocked`, après l'invalidation d'un buzz par le maître). Un buzzer qui n'a pas appuyé est désarmé par `buzz_locked` quand un autre joueur buzze.
 
-## Sources
+Cette US ne répète pas les règles communes aux deux modes armés, qui sont dans US-FW-002 : `timer_end` (CA-7), appui en Inerte (CA-8), Éliminé (CA-9), armement depuis un mode déjà armé (CA-2). Elle les cite quand elles touchent le bouton rouge.
 
-CDC §4.1, §4.3 (dont la note « SPEED réentrant »), §6, §8.1 ; `lib/game/` ; `DEBTS.md` (« Appui SPEED jamais testé »).
+**Hors périmètre** :
+
+- la détection de l'appui (GPIO 38, `INPUT_PULLUP`, appui = niveau bas) et sa traduction en `OnBuzzPressed()` : US-FW-001 ;
+- ce que le joueur voit (« Buzz envoyé », « X a buzzé », zones masquées, bandeau, écran d'élimination, résultat) : US-FW-012 et US-FW-013 ; ici, seul l'appel du feedback local compte ;
+- la lecture du type des messages, leur aiguillage vers `BuzzerBehavior` et la sérialisation de `buzz` (`{"type":"buzz"}`) : US-FW-004 ;
+- l'arbitrage du hub (qui a buzzé en premier, `buzz_accepted`, `buzz_locked`, validation ou invalidation par le maître) : US-012 côté hub ;
+- le passage en Éliminé et le câblage de `OnEliminated()` : US-FW-006.
 
 ## Critères d'acceptance
 
-À rédiger (session `docs(specs)` dédiée).
+Tous les CA sont de la couche **logique** : le rendu est dans US-FW-012. « Preuve » dit ce qui établit le CA ; « Statut » dit où il en est dans le code au 2026-11-22. Les tests ne portent pas de numéro de CA : la correspondance se fait par le nom des tests (fichier `test/test_game/test_game.cpp` sauf indication).
+
+| # | Étiquette | Critère | Résultat attendu | Preuve | Statut |
+|---|---|---|---|---|---|
+| CA-1 | logique | Un buzzer Inerte reçoit `question_open` | Le buzzer passe en SPEED armé (`IsArmed()` vrai) : un appui du bouton rouge devient pertinent. Vaut aussi après un appui ou un `timer_end` (retour en Inerte) : une nouvelle question réarme | tests natifs `QuestionOpenArmsTheBuzzer` et `SpeedArmedBuzzerSendsBuzzOnBuzzPress` ; aiguillage : `test_dispatch` (`QuestionOpenArmsSpeed`), `test_connection` (`SpeedBuzzArmedOnQuestionOpenMessageReceived`) | Implémenté et testé ; le réarmement après un appui ou un `timer_end` n'a pas de test |
+| CA-2 | logique | Un buzzer Inerte reçoit `buzz_unlocked` | Même transition que CA-1 : SPEED armé. C'est le réarmement d'un buzzer qui a appuyé sans que son buzz soit retenu, ou qui a été désarmé par `buzz_locked` (CA-8) ; le hub ne l'envoie qu'aux buzzers non invalidés. Le cycle SPEED armé → Inerte → SPEED armé peut se répéter sur une même question | tests natifs `BuzzUnlockedArmsTheBuzzer` et `BuzzUnlockedSendsBuzzOnBuzzPress` ; aiguillage : `test_dispatch` (`BuzzUnlockedArmsSpeed`) | Implémenté et testé ; le cycle (armé, appui, `buzz_unlocked`, nouvel appui, deuxième `buzz`) n'a pas de test. Reçu par un buzzer déjà armé : ignoré (US-FW-002 CA-2, non implémenté) |
+| CA-3 | logique | Appui du bouton rouge sur un SPEED armé : le verrou est posé en premier | Le mode repasse en Inerte de façon synchrone, **avant** le feedback local et avant l'envoi. Un appui qui arriverait pendant le feedback tomberait sur un buzzer déjà Inerte | test natif à écrire : un `LocalFeedback` qui rappelle `OnBuzzPressed` pendant `AcknowledgeBuzz` ne provoque qu'un seul `SendBuzz` | Implémenté (`mode = Mode::Inert` est la première instruction) ; **non prouvé** : poser le verrou après l'envoi laisserait tous les tests actuels verts |
+| CA-4 | logique | Appui du bouton rouge sur un SPEED armé : feedback local puis envoi | `LocalFeedback::AcknowledgeBuzz()` est appelé, puis `HubMessageSender::SendBuzz()`. Aucune valeur n'est transmise (le buzz n'a pas de variante) ; `AcknowledgeAnswer` n'est pas appelé. Le contenu du feedback est dans US-FW-012, le format de `buzz` dans US-FW-004 | tests natifs `ArmedBuzzerAcknowledgesBuzzOnBuzzPress`, `ArmedBuzzerAcknowledgesBeforeSendingBuzz` (ordre vérifié), `SpeedArmedBuzzerSendsBuzzOnBuzzPress` ; chaîne appui → `buzz` : `test_input` (`BuzzButtonPressSendsBuzz`) | Implémenté et testé |
+| CA-5 | logique | Un seul appui par armement | Après l'appui, le buzzer est Inerte (`IsArmed()` faux) : un second appui du bouton rouge n'envoie rien et ne déclenche aucun feedback. Le hub ne reçoit qu'un `buzz` par armement | tests natifs `SpeedArmedBuzzerSendsBuzzOnceOnDoubleBuzzPress`, `BuzzPressDisarmsTheBuzzer` | Implémenté et testé ; feedback du second appui non asserté |
+| CA-6 | logique | Appui A–D pendant un SPEED armé | Ignoré : aucun envoi, aucun feedback, et le buzzer **reste armé** (un appui du bouton rouge ensuite est pris). Les deux familles se distinguent par la méthode appelée (`OnMcqPressed` ou `OnBuzzPressed`) | test natif `SpeedArmedBuzzerIgnoresMcqPress` | Implémenté ; testé en partie : `SendAnswer` et `SendBuzz` assertés à zéro, ni le feedback, ni le maintien de l'armement |
+| CA-7 | logique | Appui du bouton rouge alors que le buzzer est Inerte | Ignoré : aucun envoi, aucun feedback. Vaut avant tout armement, après un appui (CA-5), après un `timer_end` et après un `buzz_locked` (CA-8). Rappel : Éliminé ignore aussi le bouton rouge, même armé (US-FW-002 CA-9, non câblé) | aucun test du bouton rouge en Inerte (`InertBuzzerDoesNotSendAnswerOnButtonPress` ne porte que sur A–D) | Implémenté (le mode n'est pas `SpeedArmed`) ; **non testé** |
+| CA-8 | logique | Un buzzer SPEED armé qui n'a pas appuyé reçoit `buzz_locked` (un autre joueur a buzzé) | Le buzzer passe en Inerte : un appui du bouton rouge ensuite n'envoie rien et ne déclenche aucun feedback. Un `buzz_unlocked` le réarme (CA-2) ; sans lui, il reste Inerte jusqu'à la question suivante, sans `timer_end` à attendre (le hub n'en envoie pas aux buzzers pendant le buzz, US-012 CA-11). Écart assumé avec le CDC §8.1 (« aucun effet »), décision #46 | test natif à écrire avec le correctif : armé en SPEED, `buzz_locked`, appui rouge : rien n'est envoyé, `IsArmed()` faux ; puis `buzz_unlocked` et appui : un `buzz` | **Non implémenté** : le dispatcher ignore `buzz_locked` (seul le rendu le lit). Écart consigné en dette (`DEBTS.md`) |
+| CA-9 | logique | `buzz_locked` reçu alors que le buzzer est Inerte ou en MCQ armé | Sans effet sur le mode : un buzzer Inerte reste Inerte (il a déjà buzzé et perdu la course, ou n'était pas armé) ; un MCQ armé reste armé (message hors contexte, ignoré comme le veut le CDC §3). Seul un SPEED armé est désarmé (CA-8). L'affichage de `buzz_locked` est rendu **avant** le dispatch (décision #5) | tests natifs à écrire avec le correctif CA-8 : Inerte puis `buzz_locked` puis `buzz_unlocked` : un `buzz` ; MCQ armé puis `buzz_locked` : l'appui A–D envoie `answer` | Vrai aujourd'hui par défaut (aucune branche) ; **non testé**, et à garder vrai en implémentant CA-8 |
+| CA-10 | logique | `buzz_accepted` ou `buzz_invalidated` reçu | Sans effet sur le mode : le buzzer est déjà Inerte (il a appuyé). Seul l'affichage change (US-FW-012). Un buzzer invalidé ne reçoit pas `buzz_unlocked` (US-012 CA-24) : il reste Inerte jusqu'à la question suivante | aucun test : le dispatcher n'a pas de branche pour ces types | Implémenté par absence ; **non testé** |
+
+## Constats reportés
+
+Rien de ce qui suit n'est un CA : ce sont des constats consignés dans `DEBTS.md`, à rouvrir comme indiqué.
+
+- **Bouton rouge non branché** : GPIO 38, `INPUT_PULLUP`, appui = niveau bas (`ArduinoGpioPinReader`, `PhysicalButtonReader`). L'appui SPEED (« Buzz envoyé ») n'a jamais été constaté sur la dalle. Preuve attendue : smoke test d'Olivier, hors session de spécification. Dette existante « Appui SPEED jamais testé ».
+- **Anti-rebond du bouton rouge** : constat reporté en #44 ; le lock-first n'envoie de toute façon qu'un `buzz` par armement (CA-5).
+- **Appui pendant une coupure** : un SPEED armé garde son mode pendant une reconnexion ; l'envoi de `buzz` ignore le retour de `sendTXT`. Déjà consigné par la session US-FW-002 ; à rouvrir avec US-FW-006 et US-021.
+- **Perdant de la course** : un buzzer qui appuie en même temps qu'un autre passe en Inerte et affiche « Buzz envoyé » jusqu'à son `buzz_locked`. Comportement voulu (le lock-first précède l'arbitrage du hub) ; le rendu du `buzz_locked` qui corrige l'écran est dans US-FW-012.
+- **Hub** : `question_open`, `buzz_locked` et `buzz_unlocked` ne sont pas émis vers les buzzers au 2026-11-06 (dette « `buzz_locked`, `question_open`, `question_title` et `question_result` jamais émis par le hub »). Le comportement spécifié ici repose sur US-012 du hub (CA-14 à CA-16, CA-22 à CA-24), lu le 2026-11-22.
+- **Message perdu** : si un `buzz_locked` ou un `timer_end` n'arrive jamais, le buzzer reste armé ; `question_result` ne désarme pas (décision #46, YAGNI). À rouvrir avec la reprise de connexion (US-FW-006, US-021).
+- **Écarts de preuve** : verrou avant feedback (CA-3), cycle de réarmement (CA-1, CA-2), bouton rouge en Inerte (CA-7), `buzz_locked` hors SPEED armé (CA-9), `buzz_accepted` et `buzz_invalidated` (CA-10), assertions de feedback (CA-5, CA-6).
+
+## Sources
+
+CDC §3 (règles « ignoré »), §4.1, §4.3 (dont la note « SPEED réentrant »), §6, §8.1 ; `lib/game/` (`BuzzerBehavior`, `ArmedModeReader`, `LocalFeedback`, `HubMessageSender`), `lib/dispatch/HubMessageDispatcher.h`, `lib/input/` (`PhysicalButtonReader`, `BuzzerButtonPressTranslator`), `src/ArduinoGpioPinReader.cpp`, `src/main.cpp` ; `test/test_game`, `test/test_dispatch`, `test/test_connection`, `test/test_input` ; US-012 du hub (`quiz-live-server`, `docs/specs/US-012-speed-question-workflow.md`) ; décisions #1, #3, #5, #44, #45 et #46 ; `DEBTS.md`.
