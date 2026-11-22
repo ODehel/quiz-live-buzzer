@@ -53,12 +53,12 @@ Ordre de travail : ordre numérique, la logique avant le rendu. Une US vide est 
 | [US-FW-008](US-FW-008-afficher-des-textes-lisibles.md) | Afficher des textes lisibles | Rendu | — | Partielle |
 | [US-FW-009](US-FW-009-bandeau-du-haut.md) | Bandeau du haut | Rendu | US-009, US-010, US-019 (nom du participant à définir) | Partielle |
 | [US-FW-010](US-FW-010-ecrans-dinit-et-dattente.md) | Écrans d'init et d'attente | Rendu | US-009, US-019 (`game_resumed` non émis au 2026-11-22) | Partielle |
-| [US-FW-011](US-FW-011-question-a-choix-multiples-a-lecran.md) | Question à choix multiples à l'écran | Rendu | US-011 | Partielle |
+| [US-FW-011](US-FW-011-question-a-choix-multiples-a-lecran.md) | Question à choix multiples à l'écran | Rendu | US-011 (`question_index` à ajouter à `question_choices` ; aucun de ses messages n'est émis au 2026-11-22) | Partielle |
 | [US-FW-012](US-FW-012-question-de-rapidite-a-lecran.md) | Question de rapidité à l'écran | Rendu | US-012 | Partielle |
 | [US-FW-013](US-FW-013-resultat-dune-question.md) | Résultat d'une question | Rendu | US-011, US-012 | Partielle |
 | [US-FW-014](US-FW-014-reactions-du-personnage.md) | Réactions du personnage | Rendu | À définir | À cadrer |
 | [US-FW-015](US-FW-015-coupure-elimination-et-refus-a-lecran.md) | Coupure, élimination et refus à l'écran | Rendu | — | Partielle |
-| [US-FW-016](US-FW-016-animer-lecran.md) | Animer l'écran | Rendu | US-011 | À cadrer |
+| [US-FW-016](US-FW-016-animer-lecran.md) | Animer l'écran | Rendu | — | À cadrer |
 | [US-FW-017](US-FW-017-classement-intermediaire.md) | Classement intermédiaire | Vide | US-014 | Vide |
 | [US-FW-018](US-FW-018-classement-final-et-fin-de-partie.md) | Classement final et fin de partie | Vide | Aucun message défini | Vide |
 | [US-FW-019](US-FW-019-attente-du-maitre-et-presentation-de-la-partie.md) | Attente du maître du jeu et présentation de la partie | Vide | Aucun message défini | Vide |
@@ -76,19 +76,19 @@ Table de migration : le CDC n'est supprimé que lorsque chaque ligne est couvert
 |---|---|
 | §0 Note de passation | Supprimée (périmée, dette « CDC §0 et §11 périmés ») |
 | §1 Principe directeur, §2 Matériel | Ce fichier |
-| §3 Mécanique d'appui | ✅ US-FW-001 (détection, famille et valeur) ; appui d'une famille non armée ignoré : ✅ US-FW-002 (MCQ, Inerte, Éliminé), ✅ US-FW-003 (SPEED) ; zones tactiles actives seulement si affichées : US-FW-011 ; message non reconnu, invalide ou `error` ignoré : ✅ US-FW-004 (CA-6, CA-7) ; anti-rebond : constat reporté (`DEBTS.md`) |
+| §3 Mécanique d'appui | ✅ US-FW-001 (détection, famille et valeur) ; appui d'une famille non armée ignoré : ✅ US-FW-002 (MCQ, Inerte, Éliminé), ✅ US-FW-003 (SPEED) ; zones tactiles actives seulement sur l'écran des propositions : ✅ US-FW-011 (CA-13) ; message non reconnu, invalide ou `error` ignoré : ✅ US-FW-004 (CA-6, CA-7) ; anti-rebond : constat reporté (`DEBTS.md`) |
 | §4.1 Mode Inerte | ✅ US-FW-002 (CA-8, appuis ignorés, tous modes) ; appui du bouton rouge en Inerte : ✅ US-FW-003 |
 | §4.2 Modes armés MCQ | ✅ US-FW-002 |
 | §4.3 Modes armés SPEED (dont ré-armement) | ✅ US-FW-003 |
 | §4.4 Mode Éliminé | ✅ US-FW-006 (CA-3, CA-4, CA-9, CA-10 : silence total, réseau compris) ; appui ignoré en Éliminé : ✅ US-FW-002 (CA-9, non câblé : câblage à US-FW-006 CA-9) |
 | §5 Reconnexion WiFi | ✅ US-FW-006 (CA-1 à CA-8 : compteur, tentatives sur le WebSocket vers le hub, perte initiale exclue, intervalle de 5 s) |
 | §6 Table de transitions | ✅ lignes MCQ, Inerte, « tout mode armé » et Éliminé-appui : US-FW-002 ; lignes SPEED : ✅ US-FW-003 ; passage en Éliminé : ✅ US-FW-006 (CA-3, CA-9) |
-| §7 Recadrage du CSV | Supprimée (historique) ; écart « affichage progressif abandonné » : US-FW-011 |
+| §7 Recadrage du CSV | Supprimée (historique) ; écart « affichage progressif abandonné » : ✅ US-FW-011 (CA-2) |
 | §8.1 Messages reçus et émis | ✅ US-FW-004 (lecture du type, rendu puis aiguillage, messages sans effet sur le mode, format de `auth`, `auth_refresh`, `answer`, `buzz`) ; armement et désarmement SPEED (`question_open`, `buzz_unlocked`, `buzz_locked`, `buzz_accepted`, `buzz_invalidated`, `buzz` émis) : ✅ US-FW-003 ; `token_expiring_soon`, `token_expired`, `auth_refresh` : ✅ US-FW-007 (CA-1 à CA-7 : login frais, aucun envoi sur échec ou `401`, `auth_success` de réponse sans effet sur l'écran) ; `play_*` : US-FW-021 |
-| §8.2 Habillage commun | ✅ US-FW-009 (bandeau du haut : nom, titre, liaison, présence sur chaque écran) ; bandeau dès la mise sous tension : ✅ US-FW-010 (CA-1) ; points, rang et batterie : constats reportés (`DEBTS.md`) ; en-tête, chrono et capsules : US-FW-011 et US-FW-012 |
-| §8.2 Vocabulaire des effets d'écran | US-FW-016 (et chaque US de rendu pour ses effets) |
+| §8.2 Habillage commun | ✅ US-FW-009 (bandeau du haut : nom, titre, liaison, présence sur chaque écran) ; bandeau dès la mise sous tension : ✅ US-FW-010 (CA-1) ; points, rang et batterie : constats reportés (`DEBTS.md`) ; en-tête et chrono de la question à choix multiples : ✅ US-FW-011 (CA-3, CA-7, CA-8, CA-12), capsules : constat reporté (`DEBTS.md`) ; en-tête et chrono de la question de rapidité : US-FW-012 |
+| §8.2 Vocabulaire des effets d'écran | US-FW-016 (et chaque US de rendu pour ses effets) ; zones masquées, actives et conservées, mise en évidence statique de la zone choisie (MCQ) : ✅ US-FW-011 (CA-10 à CA-13) ; clignotements : US-FW-016 |
 | §8.2 Lignes init, `auth_success`, `game_resumed` | ✅ US-FW-010 (CA-1 à CA-7 : écran d'init statique, « Connecté » et « Partie en cours » sur deux lignes, enchaînement à la reconnexion, dessin) ; anneau, icônes et clignotement : constats reportés, US-FW-016 |
-| §8.2 Lignes `question_title`, `question_choices`, `timer_tick`, `timer_end`, `answer_received`, appui local MCQ | US-FW-011 |
+| §8.2 Lignes `question_title`, `question_choices`, `timer_tick`, `timer_end`, `answer_received`, appui local MCQ | ✅ US-FW-011 (CA-1 à CA-15 : titre, propositions, en-tête, chrono à la seconde recalé au tick, « Trop tard », appui local, « Réponse enregistrée », zones tactiles, dessin) ; mise en évidence de la bonne réponse : US-FW-013 |
 | §8.2 Lignes `question_open`, `buzz_accepted`, `buzz_locked`, `buzz_invalidated`, `buzz_unlocked`, appui local SPEED | US-FW-012 ; titre de 250 caractères au plus, taille réduite s'il est long : ✅ US-FW-008 (CA-2, CA-6, CA-7) |
 | §8.2 Lignes `question_result` | US-FW-013 |
 | §8.2 Réactions du personnage | US-FW-014 |
