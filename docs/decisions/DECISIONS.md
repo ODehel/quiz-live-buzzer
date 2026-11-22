@@ -784,3 +784,26 @@ Alternatives écartées :
 - Un hub qui n'enverrait pas `timer_end` avant la question suivante laisserait le buzzer bloqué sur l'ancien mode (voir la dette).
 - Quatre dettes ajoutées : armement depuis un mode déjà armé, Éliminé jamais propagé, envoi sans contrôle pendant une coupure, preuves manquantes de la réponse MCQ.
 - Le CDC §4.1, §4.2 et §6 sont migrés pour la part MCQ, Inerte et Éliminé-appui ; la part SPEED reste à US-FW-003.
+
+## #46 — docs(specs): write US-FW-003, buzz on a speed question
+
+**Contexte** — Le CDC §8.1 donne à `buzz_locked` « aucun effet sur le mode (un autre a buzzé ; ce buzzer est déjà passif) ». C'est vrai du buzzer qui a appuyé (il est Inerte par le lock-first), faux des autres : le hub envoie `buzz_locked` à tous les autres buzzers (US-012 CA-16), qui sont encore SPEED armés, et n'envoie pas `timer_end` aux buzzers pendant `QUESTION_BUZZED` (CA-11). Le code ignore `buzz_locked` dans `HubMessageDispatcher`.
+
+**Décision** (cadrage validé par Olivier, 2026-11-22) —
+- **`buzz_locked` désarme un SPEED armé** (US-FW-003 CA-8) : le buzzer passe en Inerte, `buzz_unlocked` le réarme ensuite (CA-2), comme le §6 le décrit (Inerte → SPEED armé). Écart assumé avec le CDC §8.1, qui reste inchangé jusqu'à sa suppression.
+- **`buzz_locked` hors SPEED armé est sans effet** (CA-9) : Inerte reste Inerte, un MCQ armé reste armé (message hors contexte, CDC §3).
+- **`question_result` ne désarme pas** : pas de filet de sécurité commun aux deux modes (YAGNI). Un `buzz_locked` ou un `timer_end` perdu relève de la reprise de connexion (US-FW-006, US-021).
+- **`buzz_accepted` et `buzz_invalidated` restent sans effet sur le mode** (CA-10) : le buzzer concerné est déjà Inerte.
+
+**Choix de Claude, à relire en PR** —
+- 10 CA, tous « logique » ; le bouton rouge physique n'a pas de CA (détection dans US-FW-001, matériel non branché), il est en constat reporté avec sa preuve attendue (smoke test d'Olivier).
+- Le perdant d'une course (il appuie en même temps qu'un autre) reste Inerte et affiche « Buzz envoyé » jusqu'à son `buzz_locked` : consigné en constat, sans CA, parce que c'est le lock-first voulu.
+- Statut de US-FW-003 passé d'« Implémentée (matériel non testé) » à « Partielle », à cause de CA-8.
+
+**Conséquences** —
+- Écart de code : `HubMessageDispatcher` n'aiguille pas `buzz_locked` vers `BuzzerBehavior`. Consigné en dette (« Non-buzzeurs restés armés sur `buzz_locked` »), correctif `fix(game)` à grouper avec l'armement hors Inerte (#45).
+- Sans ce correctif, un non-buzzeur reste armé après une question SPEED validée et, avec #45, n'est pas armé par la question MCQ suivante.
+- L'écran et le mode restent cohérents : `buzz_locked` est rendu avant le dispatch (#5), le désarmement suit.
+- Le hub n'émet pas encore ces messages ; le comportement repose sur US-012 du hub, lu le 2026-11-22.
+- Deux dettes ajoutées : non-buzzeurs restés armés, preuves manquantes du bouton rouge SPEED.
+- Le CDC §4.1, §4.3, §6 et §8.1 sont migrés pour la part SPEED ; il reste à rédiger US-FW-004 (reste du §8.1), US-FW-005, 006 et 007 avant sa suppression.
