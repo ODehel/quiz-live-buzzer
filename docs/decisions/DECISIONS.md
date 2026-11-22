@@ -920,3 +920,27 @@ Alternatives écartées :
 - Écarts de code : aucun code sans glyphe n'est remplacé (CA-10), quatre signes manquent aux polices (CA-12). Dettes : une réécrite et renommée (« Codes sans glyphe : un blanc invisible à l'écran », ex-« Signes typographiques français encore absents »), une corrigée (« Garantie des 250 caractères : texte réaliste, pas pire cas » : le pire cas mesuré est 16 lignes, 640 px, avec des mots de 14 `¼`, et 13 lignes, 520 px, avec des mots de 18 `W`), deux complétées (« Largeurs de test copiées de la police », « Dépendances flottantes »), trois ajoutées (« Texte : preuves manquantes », « Une taille par texte, pas par jeu de zones », « Ponctuation `%` `€` `…` isolés »).
 - Ordre des `fix` : `feat(rendering)` des quatre signes (CA-12, polices et fixture régénérées), puis `fix(rendering)` du remplacement par `?` (CA-10).
 - Le CDC §8.2 (« 250 caractères au plus, taille réduite s'il est long », ligne `question_open`) est migré pour sa part « texte » ; restent à rédiger les US de rendu 009 à 016 avant la suppression du CDC.
+
+## #52 — docs(specs): write US-FW-009, show the top bar
+
+**Contexte** — Le bandeau du haut n'existe que sur l'écran « Connecté » : le nom y est l'`username` du compte buzzer (décision #41), sans état. Le CDC §8.2 et la maquette (#19) le veulent sur chaque écran avec nom, points, rang, liaison et batterie. Le hub n'envoie ni nom de participant (assignation au passage `PENDING → OPEN`, US-010 CA-65, sans message), ni rang ; `cumulative_score` arrive dans `question_result` et `game_resumed` (US-019 CA-18) ; la batterie n'est mesurée nulle part.
+
+**Décision** (cadrage validé par Olivier, 2026-11-22) —
+- **Nom** : le bandeau montre le **nom du participant** (US-FW-009 CA-2, non implémentable : aucun message du hub). Tant qu'il n'est pas reçu, **repli sur l'`username` du compte** (CA-1, tenu). Cela remplace la décision #41 (« le nom est l'`username` du buzzer ») pour la cible.
+- **Présence** : le bandeau, une fois `auth_success` reçu, reste sur chaque écran jusqu'au redémarrage, feedback local compris (CA-3, CA-7). Il suppose un état partagé entre `LcdRenderer` et `ScreenLocalFeedback`.
+- **Liaison** : état « liée » ou « coupée », bandeau redessiné sans message (CA-4, CA-8).
+- **Troncature** du nom par « … » dans la colonne de gauche, comme la maquette (CA-5).
+- **Reportés** : points, rang, batterie, hauteur et habillage de la maquette, logo animé, variantes de l'init, du `401` et des coupures (US-FW-010, 015).
+
+**Choix de Claude, à relire en PR** —
+- 8 CA : 1 « logique » tenu par des tests (CA-1), 5 « logique » non implémentés (CA-2 à CA-5, dont CA-2 bloqué par le hub), 1 « adaptateur » implémenté sans test (CA-6), 2 « adaptateur » non implémentés (CA-7, CA-8). Statut de l'US : « Partielle ».
+- La troncature (CA-5) n'a pas été posée en question : la maquette la propose (#19) ; la largeur de la colonne de gauche est un calcul de Claude, pas une mesure.
+- La liaison « coupée » est définie sur la perte de la connexion établie : un hub arrêté après la perte ne produit pas d'événement (dette « Compteur d'élimination »), le CA n'est donc pas complet tant que cette dette tient.
+- Le calcul « zone de 380 × 190 px sous le bandeau » (constat) n'a pas été sondé.
+- Alternatives écartées au cadrage : nom de compte seul, nom absent ; points seuls depuis `cumulative_score`, points et rang avec un message hub à créer ; bandeau limité aux écrans de texte, présence en constat reporté ; liaison et batterie en CA, ou toutes deux reportées ; repli du nom vide ou en tiret.
+
+**Conséquences** —
+- Écarts de code : bandeau non retenu (CA-3), non dessiné hors texte (CA-7), liaison absente (CA-4, CA-8), troncature absente (CA-5), nom du participant sans source (CA-2). Dettes : une réécrite (« Bandeau du haut sur le seul écran « Connecté » »), une complétée (« Rendu cible des maquettes partiellement reporté »), trois ajoutées (« Nom du participant absent du protocole », « Bandeau : points, rang et batterie sans source », « Bandeau : preuves manquantes »).
+- Les tests qui figent `Hidden()` hors `auth_success` (`MessageWithoutTopBarTest`, attentes de `test_lcd_renderer`, `test_local_feedback`, `test_connection`) contredisent CA-3 : à réécrire avec le `feat`, pas avant.
+- Le bandeau de 60 px réduit les zones de US-FW-008 CA-9 (calcul : 380 × 190 px) : à mesurer avec US-FW-011.
+- Le CDC §8.2 (habillage commun) est migré pour sa part « bandeau du haut » ; restent à rédiger les US de rendu 010 à 016 avant la suppression du CDC.
