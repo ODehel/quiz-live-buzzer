@@ -847,3 +847,27 @@ Alternatives écartées :
 **Conséquences** —
 - Écart de code : identifiants non échappés (CA-6). Trois dettes ajoutées : identifiants non échappés, preuves manquantes du démarrage, `401` à la reconnexion.
 - Le CDC §8.2 (logique du refus `401`) et §9 sont migrés ; il reste à rédiger US-FW-006 et US-FW-007 avant sa suppression (§4.4, §5, §6, §8.1 `token_*`).
+
+## #49 — docs(specs): write US-FW-006, reconnect or be eliminated
+
+**Contexte** — Le compteur d'élimination vit dans `lib/reconnection/ReconnectionPolicy.h` et reçoit `OnReconnectFailed` à chaque `WStype_DISCONNECTED` (`ConnectionEventHandler::OnConnectionLost`). Le CDC §5 compte « les tentatives de reconnexion infructueuses », perte initiale exclue, et parle de « reconnexion WiFi ». Lecture de `WebSockets` 2.7.1 : l'événement n'est émis qu'à la fermeture d'une connexion TCP ouverte, jamais sur un connect raté ; `setReconnectInterval` n'est pas appelé (500 ms par défaut), donc trois tentatives durent environ 1,5 s. `BuzzerBehavior::OnEliminated()` n'a aucun appelant en production et le client continue ses tentatives après l'élimination. Le hub ne ré-arme pas un buzzer à la reconnexion (`game_resumed` sans question : US-019 CA-17, CA-18).
+
+**Décision** (cadrage validé par Olivier, 2026-11-22) —
+- **Échec compté** : chaque tentative de reconnexion qui n'aboutit pas à un `auth_success`, perte initiale exclue (CA-5 à CA-7). Le CDC est suivi ; l'écart du code (le compteur compte des fermetures, la première comprise, et ne voit pas un connect raté) est une dette `fix(reconnection)`.
+- **Liaison** : le WebSocket vers le hub, Wi-Fi coupé et hub arrêté comptés pareil (CA-7). Le CDC §5 « reconnexion WiFi » est lu ainsi ; le CDC n'est pas modifié dans cette session.
+- **Intervalle** : 5 s fixes, sans recul (CA-8), soit environ 15 s de panne avant l'élimination et 12 tentatives par minute au plus, sous la limite du hub (15 par minute).
+- **Codes de fermeture** : 4001 à 4006 comptent pareil, aucun recul par code (CA-5).
+- **Éliminé** : silence total, réseau compris (CA-9, CA-10) : plus d'appui, d'armement, de rendu ni de message émis, plus de tentative ni de login ; seul un redémarrage physique reprend.
+- **`401` en reconnexion** : arrêt comme au démarrage, hors compteur, écran « Connexion refusée » (CA-11), distinct de « Hors jeu ».
+- **Mode armé pendant la coupure** : constat reporté, ni CA ni code ; dette conservée.
+
+**Choix de Claude, à relire en PR** —
+- 11 CA, tous « logique » : CA-1 à CA-5 sont tenus par des tests existants, CA-6 à CA-11 ne sont pas implémentés. CA-5 reste « testé » alors que son test compte aussi la perte initiale ; le défaut est porté par CA-6, pas par CA-5.
+- Les CA-7, CA-8 et CA-10 reposent sur une lecture de la bibliothèque 2.7.1 et du code, pas sur le matériel ; la version 2.7.3 de `platformio.ini` n'a pas de tag dans le dépôt de la bibliothèque et n'a pas été lue.
+- L'arrêt sur `401` (CA-11) et le silence de l'Éliminé (CA-9, CA-10) sont deux arrêts terminaux distincts : deux causes, deux écrans (US-FW-015), un seul redémarrage pour en sortir.
+- Le statut de l'US dans l'index passe de « Implémentée » à « Partielle » : l'élimination n'était pas câblée.
+
+**Conséquences** —
+- Écarts de code : compteur de fermetures (CA-6, CA-7), intervalle (CA-8), propagation de l'élimination et réseau actif (CA-9, CA-10), `401` ignoré (CA-11). Deux dettes ajoutées (compteur de fermetures, preuves manquantes), quatre réécrites (Éliminé non propagé, `401` en reconnexion, reconnexion sans recul, envoi pendant la coupure) et une revue (message de jeu avant `auth_success`).
+- Un hub injoignable plus de 15 s élimine les buzzers sans retour avant redémarrage physique : assumé, à rouvrir si le hub redémarre souvent pendant une partie.
+- Le CDC §4.4, §5, §6 (passage en Éliminé) et §9 (articulation avec le compteur) sont migrés ; restent à rédiger US-FW-007 (§8.1 `token_*`) et les US de rendu avant la suppression du CDC.

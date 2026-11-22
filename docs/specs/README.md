@@ -48,7 +48,7 @@ Ordre de travail : ordre numérique, la logique avant le rendu. Une US vide est 
 | [US-FW-003](US-FW-003-buzzer-sur-une-question-de-rapidite.md) | Buzzer sur une question de rapidité | Logique | US-012 | Partielle |
 | [US-FW-004](US-FW-004-dialoguer-avec-le-hub.md) | Dialoguer avec le hub | Logique | US-009 | Partielle |
 | [US-FW-005](US-FW-005-demarrer-et-sauthentifier.md) | Démarrer et s'authentifier | Logique | US-003, US-009 | Partielle |
-| [US-FW-006](US-FW-006-se-reconnecter-ou-etre-elimine.md) | Se reconnecter ou être éliminé | Logique | US-009 | Implémentée |
+| [US-FW-006](US-FW-006-se-reconnecter-ou-etre-elimine.md) | Se reconnecter ou être éliminé | Logique | US-009, US-019 | Partielle |
 | [US-FW-007](US-FW-007-garder-la-session-ouverte.md) | Garder la session ouverte | Logique | US-021 | Partielle |
 | [US-FW-008](US-FW-008-afficher-des-textes-lisibles.md) | Afficher des textes lisibles | Rendu | — | Implémentée |
 | [US-FW-009](US-FW-009-bandeau-du-haut.md) | Bandeau du haut | Rendu | À définir | Partielle |
@@ -80,9 +80,9 @@ Table de migration : le CDC n'est supprimé que lorsque chaque ligne est couvert
 | §4.1 Mode Inerte | ✅ US-FW-002 (CA-8, appuis ignorés, tous modes) ; appui du bouton rouge en Inerte : ✅ US-FW-003 |
 | §4.2 Modes armés MCQ | ✅ US-FW-002 |
 | §4.3 Modes armés SPEED (dont ré-armement) | ✅ US-FW-003 |
-| §4.4 Mode Éliminé | US-FW-006 ; appui ignoré en Éliminé : ✅ US-FW-002 (CA-9, non câblé) |
-| §5 Reconnexion WiFi | US-FW-006 |
-| §6 Table de transitions | ✅ lignes MCQ, Inerte, « tout mode armé » et Éliminé-appui : US-FW-002 ; lignes SPEED : ✅ US-FW-003 ; passage en Éliminé : US-FW-006 |
+| §4.4 Mode Éliminé | ✅ US-FW-006 (CA-3, CA-4, CA-9, CA-10 : silence total, réseau compris) ; appui ignoré en Éliminé : ✅ US-FW-002 (CA-9, non câblé : câblage à US-FW-006 CA-9) |
+| §5 Reconnexion WiFi | ✅ US-FW-006 (CA-1 à CA-8 : compteur, tentatives sur le WebSocket vers le hub, perte initiale exclue, intervalle de 5 s) |
+| §6 Table de transitions | ✅ lignes MCQ, Inerte, « tout mode armé » et Éliminé-appui : US-FW-002 ; lignes SPEED : ✅ US-FW-003 ; passage en Éliminé : ✅ US-FW-006 (CA-3, CA-9) |
 | §7 Recadrage du CSV | Supprimée (historique) ; écart « affichage progressif abandonné » : US-FW-011 |
 | §8.1 Messages reçus et émis | ✅ US-FW-004 (lecture du type, rendu puis aiguillage, messages sans effet sur le mode, format de `auth`, `auth_refresh`, `answer`, `buzz`) ; armement et désarmement SPEED (`question_open`, `buzz_unlocked`, `buzz_locked`, `buzz_accepted`, `buzz_invalidated`, `buzz` émis) : ✅ US-FW-003 ; `token_*` : US-FW-007 ; `play_*` : US-FW-021 |
 | §8.2 Habillage commun | US-FW-009 |
@@ -92,9 +92,9 @@ Table de migration : le CDC n'est supprimé que lorsque chaque ligne est couvert
 | §8.2 Lignes `question_open`, `buzz_accepted`, `buzz_locked`, `buzz_invalidated`, `buzz_unlocked`, appui local SPEED | US-FW-012 |
 | §8.2 Lignes `question_result` | US-FW-013 |
 | §8.2 Réactions du personnage | US-FW-014 |
-| §8.2 Lignes réseau (connexion perdue, Hors jeu, refus 401) | US-FW-015 ; logique du refus : ✅ US-FW-005 (CA-5) |
+| §8.2 Lignes réseau (connexion perdue, Hors jeu, refus 401) | US-FW-015 ; logique du refus : ✅ US-FW-005 (CA-5), ✅ US-FW-006 (CA-11, refus en reconnexion) |
 | §8.2 Lignes `play_sound_url`, `play_system_sound` | US-FW-021 |
-| §9 Démarrage et connexion initiale | ✅ US-FW-005 (séquence, login, refus `401`, `auth` frais, `auth_success`, appui pendant l'init) ; articulation avec le compteur : ✅ US-FW-005 (CA-10, armement) et US-FW-006 (consommation) |
+| §9 Démarrage et connexion initiale | ✅ US-FW-005 (séquence, login, refus `401`, `auth` frais, `auth_success`, appui pendant l'init) ; articulation avec le compteur : ✅ US-FW-005 (CA-10, armement) et ✅ US-FW-006 (CA-1, CA-2 consommation) |
 | §10 Points ouverts (NFC, son du feedback local) | US-FW-022, US-FW-021 |
 | §11 Prochaine étape TDD | Supprimée (périmée) |
 

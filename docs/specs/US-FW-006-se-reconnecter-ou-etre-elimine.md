@@ -1,17 +1,63 @@
 # US-FW-006 — Se reconnecter ou être éliminé
 
 - **Couche** : logique
-- **Statut** : Implémentée
-- **Dépend du hub** : US-009 (codes de fermeture)
+- **Statut** : Partielle, CA-1 à CA-11 rédigés depuis le réel le 2026-11-22 (CA-1 à CA-5 tenus par des tests ; CA-6 à CA-11 non implémentés : le compteur compte des fermetures et non des tentatives, l'élimination n'est pas câblée, le `401` en reconnexion est ignoré)
+- **Dépend du hub** : US-009 (codes de fermeture), US-019 (`game_resumed`)
+
+## User story
+
+> **En tant que** joueur,
+> **quand** mon buzzer perd la connexion au hub en cours de partie,
+> **alors** il tente de se reconnecter seul, et ne se retire du jeu qu'après trois tentatives ratées de suite, définitivement jusqu'à son redémarrage.
 
 ## Périmètre
 
-Le compteur d'échecs de reconnexion consécutifs est armé au premier `auth_success` ; un échec l'incrémente, un succès le remet à 0, et le 3ᵉ échec consécutif fait passer en mode Éliminé, terminal (seul un redémarrage physique en sort). La temporisation et le déclenchement des tentatives sont délégués à la couche réseau.
+Du premier `auth_success` à la fin de vie du buzzer :
 
-## Sources
+1. une **tentative de reconnexion** est une ouverture du WebSocket vers le hub qui doit aboutir à un `auth_success` ; elle échoue si le hub est injoignable (hub arrêté, Wi-Fi coupé) ou si la connexion se ferme avant `auth_success`, quel que soit le code de fermeture du hub (4001 à 4006) ;
+2. le compteur d'échecs consécutifs est armé au premier `auth_success`, remis à 0 à chaque `auth_success` suivant, et la **perte de la connexion établie** n'est pas un échec : seules les tentatives qui suivent comptent ;
+3. le **3ᵉ échec consécutif** fait passer en mode Éliminé, terminal : silence total (appuis, armement, messages, réseau), seul un redémarrage physique en sort ;
+4. un `401` au login pendant une reconnexion **arrête** le buzzer, sans passer par le compteur.
 
-CDC §4.4, §5, §6, §9 (articulation avec le compteur) ; `lib/reconnection/`, `lib/connection/` ; `DEBTS.md` (« Reconnexion WebSocket sans recul sur refus du hub »).
+Tentatives espacées de **5 s**, soit environ 15 s de panne avant l'élimination (décision #49).
+
+**Hors périmètre** :
+
+- les écrans « Connexion perdue / Tentative N/3 », « Hors jeu » et « Connexion refusée » (le compteur n'est exposé au rendu par aucun port) : US-FW-015 ;
+- le token frais demandé à chaque connexion, `auth` et le login du démarrage : US-FW-005 CA-9 ; `auth_refresh`, `token_expiring_soon` et `token_expired` : US-FW-007 ;
+- l'écran affiché par `game_resumed` : US-FW-010 ; le contenu de `game_resumed` : US-019 du hub ;
+- l'appui ignoré en Éliminé (le test existe, le câblage est ici) : US-FW-002 CA-9 ;
+- ce que devient un mode armé pendant la coupure : constat reporté (voir plus bas).
 
 ## Critères d'acceptance
 
-À rédiger (session `docs(specs)` dédiée).
+Tous les CA sont de la couche **logique**. « Preuve » dit ce qui établit le CA (`constat` : lecture du code, sans test natif, car le comportement vit dans `src/main.cpp` ou dans un adaptateur de `src/`) ; « Statut » dit où il en est dans le code au 2026-11-22. Les tests ne portent pas de numéro de CA : la correspondance se fait par le nom des tests. Aucun smoke test n'est écrit dans cette session.
+
+| # | Étiquette | Critère | Résultat attendu | Preuve | Statut |
+|---|---|---|---|---|---|
+| CA-1 | logique | Le buzzer perd la connexion avant son premier `auth_success` | Aucun échec compté : un buzzer qui n'a jamais été authentifié ne peut pas être éliminé, quel que soit le nombre de tentatives (CDC §5, §9 ; US-FW-005 CA-10) | `test_reconnection` (`UnarmedPolicySurvivesAFailure`) | Implémenté, testé |
+| CA-2 | logique | Le buzzer reçoit son premier `auth_success`, puis chaque `auth_success` suivant | Le compteur est armé et mis à 0 au premier ; chaque suivant le remet à 0, y compris avant le 3ᵉ échec : deux échecs puis un `auth_success` puis un échec ne donnent pas l'élimination | `test_reconnection` (`AuthSuccessResetsTheFailureCount`) ; `test_connection` (`AuthSuccessMessageArmsThePolicy`) | Implémenté, testé |
+| CA-3 | logique | Le compteur d'un buzzer armé reçoit son 3ᵉ échec consécutif | Mode Éliminé au 3ᵉ échec **exactement** : ni au 2ᵉ ni au 4ᵉ (CDC §5) | `test_reconnection` (`ArmedPolicyIsEliminatedAfterThreeFailures`, `AuthSuccessResetsTheFailureCount` : deux échecs ne suffisent pas) | Implémenté, testé dans `ReconnectionPolicy` ; le passage en Éliminé n'atteint pas le reste du buzzer (CA-9) |
+| CA-4 | logique | Un `auth_success` arrive alors que le buzzer est déjà Éliminé | Le compteur reste Éliminé : terminal, seul un redémarrage physique en sort (CDC §4.4) | `test_reconnection` (`EliminatedPolicyStaysEliminatedAfterAuthSuccess`) | Implémenté, testé dans `ReconnectionPolicy` ; sans portée tant que CA-9 et CA-10 ne sont pas tenus, car l'éliminé reçoit encore des messages |
+| CA-5 | logique | Une tentative de reconnexion ouvre le WebSocket, puis la connexion se ferme avant `auth_success` | Un échec compté, quel que soit le code de fermeture du hub : 4001 (token invalide), 4002 (token expiré), 4003 (délai d'authentification), 4004 (session remplacée), 4005 (serveur plein), 4006 (limite de tentatives) ou perte réseau. Aucun code n'est traité à part, et aucun n'allonge l'intervalle (CA-8) | `test_connection` (`DisconnectedEventTriggersConnectionLost`, `BuzzerEliminatedAfterAThreeTimesDisconnection`, `BuzzerEventTranslatorTest`) | Implémenté, testé ; **mais** la fermeture de la connexion établie compte aussi (CA-6), et le code de fermeture n'est pas lu (aucun test, aucun code qui le distingue) |
+| CA-6 | logique | Le buzzer perd la connexion **établie** (après un `auth_success`) | Cette perte n'est **pas** un échec : le compteur reste à 0 ; la première tentative de reconnexion ratée vaut 1 (CDC §5 : « la perte initiale ne compte pas »). Trois pertes suffisaient jusqu'ici ; il en faut désormais une de plus | à écrire : `test_connection` ; les trois tests de CA-5 figent aujourd'hui « 3 fermetures = Éliminé » et seront réécrits | **Non implémenté** : `ConnectionEventHandler::OnConnectionLost` appelle `OnReconnectFailed` à chaque fermeture, la première comprise. Aujourd'hui une coupure brève coûte déjà un échec |
+| CA-7 | logique | Une tentative de reconnexion n'arrive pas à ouvrir la connexion (hub arrêté, Wi-Fi coupé) | Un échec compté, comme CA-5 : le buzzer est hors jeu dans les deux cas. Un hub injoignable de façon prolongée mène donc à l'élimination (3 tentatives, CA-8) | à écrire : un signal « tentative échouée » à définir dans `lib/`, testé en natif ; l'émission par l'adaptateur reste un constat (`src/WebSocketEventListener`) | **Non implémenté** : la bibliothèque `WebSockets` (2.7.1 lue ; 2.7.3 visée par `platformio.ini`, non lue) n'émet `WStype_DISCONNECTED` qu'à la fermeture d'une connexion TCP ouverte ; un connect raté (`connectFailedCb`) n'émet rien. Un hub arrêté donne **un** événement, puis le silence : le compteur ne dépasse pas 1 et le buzzer n'est jamais éliminé. Non vérifié sur le matériel |
+| CA-8 | logique | Le buzzer enchaîne des tentatives de reconnexion | **5 s** entre deux tentatives, fixes, sans recul : l'élimination survient environ 15 s après la perte de la connexion établie. 12 tentatives par minute au plus, sous la limite du hub (15 par minute, 4006). Chaque tentative redemande un token (US-FW-005 CA-9) | constat (`src/main.cpp`, réglage du client) ; pas de test natif, le délai vit dans la bibliothèque | **Non implémenté** : `setReconnectInterval` n'est jamais appelé, la bibliothèque rouvre toutes les 500 ms (le relevé du 2026-10-31, avant le correctif du token, donnait environ 1,2 s) : l'élimination surviendrait en quelques secondes |
+| CA-9 | logique | Le buzzer devient Éliminé (CA-3) | Silence total, **sans exception de mode** : plus aucun appui n'envoie ni ne donne de feedback (US-FW-002 CA-9, US-FW-003) ; plus aucun message du hub n'arme un mode (`question_choices`, `question_open`, `buzz_unlocked`) ; un mode armé au moment de l'élimination est désarmé ; plus aucun message reçu n'est rendu ni aiguillé (l'écran « Hors jeu » ne vient pas d'un message : US-FW-015). Un message `question_*` reçu après l'élimination ne réarme rien | à écrire : `test_connection` de bout en bout (armé, 3 échecs, appui sans envoi ; 3 échecs, `question_choices`, appui sans envoi ; 3 échecs, message reçu, aucun rendu) | **Non implémenté** : `BuzzerBehavior::OnEliminated()` n'a aucun appelant hors tests ; rien ne lit `ReconnectionPolicy::IsEliminated()`. Un éliminé répond encore à un appui, se réarme, `IsArmed()` reste vrai pour un éliminé armé (lu par `LcdRenderer` pour `timer_end`) et `ConnectionEventHandler` rend et aiguille encore ses messages |
+| CA-10 | logique | Le buzzer est Éliminé | Plus aucune activité réseau : plus de tentative de reconnexion, plus de `POST /api/v1/token`, plus d'`auth`, aucun message émis. Le hub voit un buzzer déconnecté. Seul un redémarrage physique reprend la séquence de US-FW-005 | constat (`src/main.cpp`, `loop()`) ; test natif de la décision « ne plus rouvrir » si elle passe par un port de `lib/` | **Non implémenté** : `loop()` appelle `client.loop()` sans condition ; après l'élimination le client rouvre le WebSocket, redemande un token et renvoie `auth` à chaque tentative |
+| CA-11 | logique | Le login redemandé pour une reconnexion est refusé (`401`, identifiants changés côté hub : US-003 CA-8) | **Arrêt**, comme au démarrage (US-FW-005 CA-5) : aucun `auth` n'est envoyé, plus d'appui, plus de tentative, jusqu'au redémarrage. Ne passe pas par le compteur : ce n'est ni un échec ni l'élimination, et l'écran est « Connexion refusée » (US-FW-015), pas « Hors jeu ». Un autre échec du login (réseau, `400`, `429`, `5xx`) garde la règle de US-FW-005 CA-9 : `auth` part avec le dernier token | à écrire : `test_session` (`401` : aucun `auth` envoyé, signal d'arrêt) ; arrêt de `loop()` : constat | **Non implémenté** : `TokenSessionMessageSender::SendAuth` ne lit que `Success` avec token ; un `401` laisse partir `auth` avec le dernier token (valide au plus 3600 s), puis le hub ferme (4002) et le buzzer reboucle sans arrêt ni écran |
+
+## Constats reportés
+
+Rien de ce qui suit n'est un CA : ce sont des constats consignés dans `DEBTS.md`, à rouvrir comme indiqué.
+
+- **Mode armé pendant la coupure** (décision #49) : un MCQ ou un SPEED armé garde son mode ; un appui pose le verrou, affiche « envoyé », puis le message est perdu sans que personne le sache (`sendTXT` n'est pas lu). Désarmer à la coupure laisserait le joueur Inerte jusqu'à la question suivante : à la reconnexion, `game_resumed` porte `question_index`, `cumulative_score` et `status`, ni question ni propositions (US-019 CA-17, CA-18), donc rien ne réarme. Les maquettes montrent les zones inactives. À rouvrir avec US-FW-015 et la reprise de connexion du hub (US-021).
+- **Recul sur code de fermeture** : aucun recul, tous les codes comptent pareil (CA-5) ; l'intervalle fixe de 5 s (CA-8) remplace la boucle rapide du relevé du 2026-10-31. Le risque de `429` sur le login à chaque tentative n'est pas vérifié.
+- **Message de jeu avant `auth_success` après une reconnexion** : le firmware n'a pas d'état « authentifié » remis à zéro à chaque connexion ; le hub n'envoie rien à un client non authentifié (US-009 CA-22). Décision #47 inchangée, à rouvrir si un hub envoie un message avant `auth_success`.
+- **Reconnexion du Wi-Fi** : aucune ligne de `main.cpp` ne la traite ; elle est supposée assurée par la pile Wi-Fi de l'ESP32 (reconnexion automatique du framework, non vérifiée). La liaison comptée est le WebSocket vers le hub, Wi-Fi coupé compris (CA-7).
+- **Perte de connexion longue d'un buzzer éliminé à tort** : un hub injoignable plus de ~15 s élimine les buzzers sans retour avant redémarrage physique ; assumé par la décision #49, à rouvrir si le hub redémarre souvent pendant une partie.
+- **Écart de preuve** : le câblage de l'élimination (CA-9, CA-10), la correspondance des fermetures du hub (CA-5), l'intervalle (CA-8) et l'arrêt sur `401` (CA-11) n'ont aucun test natif.
+
+## Sources
+
+CDC §4.4, §5 (dont « Armement du compteur au premier `auth_success` »), §6 (lignes d'élimination), §9 (articulation avec le compteur) ; `lib/reconnection/ReconnectionPolicy.h`, `lib/connection/` (`ConnectionEventHandler`, `BuzzerEventTranslator`, `BuzzerEventType`), `lib/session/TokenSessionMessageSender.h`, `lib/game/BuzzerBehavior.h`, `src/main.cpp`, `src/WebSocketEventListener.*` ; `test/test_reconnection`, `test/test_connection`, `test/test_game` ; bibliothèque `WebSockets` 2.7.1 (`src/WebSocketsClient.cpp` : `loop`, `clientDisconnect`, `connectFailedCb`, `_reconnectInterval`) ; US-009 (CA-7 à CA-13, CA-22, codes de fermeture 4001 à 4006) et US-019 (CA-16 à CA-20) du hub (`quiz-live-server`, `docs/specs/`) ; décisions #30, #45 à #49 ; `DEBTS.md` (« Mode Éliminé jamais propagé à `BuzzerBehavior` », « Compteur d'élimination : des fermetures, pas des tentatives », « `401` au login pendant une reconnexion ignoré », « Reconnexion WebSocket sans recul sur refus du hub », « Envoi d'une réponse ou d'un buzz sans contrôle pendant une coupure », « Reconnexion : preuves manquantes »).
