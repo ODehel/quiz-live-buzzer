@@ -70,13 +70,13 @@ Les numéros d'US du hub viennent du CDC et de `DEBTS.md` ; ils sont à confirme
 
 ## Correspondance CDC → US
 
-Table de migration : le CDC n'est supprimé que lorsque chaque ligne est couverte par une US rédigée.
+Table de migration : le CDC n'est supprimé que lorsque chaque ligne est couverte par une US rédigée. ✅ marque la part déjà rédigée dans une US ; les destinations sans ✅ restent à rédiger.
 
 | Section du CDC | Destination |
 |---|---|
 | §0 Note de passation | Supprimée (périmée, dette « CDC §0 et §11 périmés ») |
 | §1 Principe directeur, §2 Matériel | Ce fichier |
-| §3 Mécanique d'appui | US-FW-001 ; règles « message ignoré » : US-FW-004 |
+| §3 Mécanique d'appui | ✅ US-FW-001 (détection, famille et valeur) ; appui d'une famille non armée ignoré : US-FW-002 et US-FW-003 ; zones tactiles actives seulement si affichées : US-FW-011 ; message non reconnu ignoré : US-FW-004 ; anti-rebond : constat reporté (`DEBTS.md`) |
 | §4.1 Mode Inerte | US-FW-002 et US-FW-003 (appuis ignorés) |
 | §4.2 Modes armés MCQ | US-FW-002 |
 | §4.3 Modes armés SPEED (dont ré-armement) | US-FW-003 |
