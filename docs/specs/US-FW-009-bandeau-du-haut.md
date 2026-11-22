@@ -18,7 +18,7 @@ Un bandeau commun en haut de la dalle (800 × 480 px), sur une ligne, en petite 
 
 - **points** et **classement** (« 120 pts », « 2e/6 ») et **charge de la batterie** : sans source dans le protocole ou sans mesure ;
 - le contenu de l'écran d'init sous le bandeau : US-FW-010 ; les variantes du refus `401` (bandeau sans nom ni points) et des coupures (bandeau rouge sous le bandeau du haut) : US-FW-015 ;
-- l'en-tête sous le bandeau (texte LCD, chrono, capsules) : US-FW-011 et US-FW-012 ;
+- l'en-tête sous le bandeau (texte LCD, chrono, capsules) : US-FW-011 (CA-3, CA-7, CA-8, CA-12 ; capsules reportées) et US-FW-012 ;
 - les couleurs, la hauteur de la maquette, le logo animé de « Buzz’O’Live » : constat reporté ; les effets qui demandent une horloge : US-FW-016 ;
 - le dessin d'un texte dans une zone : US-FW-008 (le nom y est mis en page comme tout texte).
 
@@ -47,7 +47,7 @@ Rien de ce qui suit n'est un CA : ce sont des constats consignés dans `DEBTS.md
 - **Hauteur et habillage de la maquette** : 60 px en blanc sur noir dans le code, 5,5 u soit 44 px à 800 px en violet foncé dans la maquette (décision #19), sans jetons de design. À trancher avec le rendu cible (dette « Rendu cible des maquettes partiellement reporté »).
 - **Logo de la maquette** : « Buzz’ » vibrant en écho, le « O » en disque rouge, « ’Live » en or ; le code écrit « Buzz’O’Live » en texte. Animation : US-FW-016.
 - **Liaison et compteur** : la perte de liaison de CA-4 s'appuie sur l'événement de fermeture de la bibliothèque `WebSockets`, qui ne le produit qu'à la fermeture d'une connexion ouverte (dette « Compteur d'élimination : des fermetures, pas des tentatives ») ; un hub arrêté après la perte ne produit aucun nouvel événement. Non vérifié sur le matériel.
-- **Zones sous le bandeau** (calcul, non sondé) : avec 60 px de moins, une zone de la grille passe de 380 × 220 à 380 × 190 px (CA-7) ; les 5 lignes (200 px) que demandent 40 `¼` (US-FW-008 CA-9) ne tiennent plus, et une zone sous le bandeau de résultat passe de 380 × 160 à 380 × 130 px. À mesurer avec US-FW-011.
+- **Zones sous le bandeau** (mesuré par la sonde du 2026-11-22, largeurs réelles d'Oswald 30 px) : avec 60 px de moins, une zone de la grille passe de 380 × 220 à 380 × 190 px (CA-7) ; les 5 lignes (200 px) que demandent 40 `¼` (US-FW-008 CA-9) débordent de 10 px, 40 `W` (160 px) tiennent. Sous le bandeau **et** l'en-tête de US-FW-011 (CA-4), la zone utile est de 380 × 160 px : 40 `¼` débordent de 40 px, 40 `W` tiennent pile. Une zone sous le bandeau de résultat passe de 380 × 160 à 380 × 130 px (calcul, non sondé : US-FW-013).
 - **Variantes** : le bandeau de l'init est tranché par US-FW-010 CA-1 (titre, nom vide, liaison « coupée », sans batterie) ; celui du refus `401` et des coupures reste à US-FW-015, qui devra dire quels éléments elle retire (nom, points) ou ajoute.
 
 ## Sources
