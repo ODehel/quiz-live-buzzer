@@ -16,6 +16,13 @@ TEST(TouchProjectionTest, SensorFarCornerMapsToScreenFarCorner)
     EXPECT_EQ(touchProjection.Project(TouchPoint{800, 480}), (TouchPoint{799, 479}));
 }
 
+TEST(TouchProjectionTest, SensorCenterMapsToScreenCenterTruncatedToInteger)
+{
+    TouchProjection touchProjection(TouchPoint{0, 0}, TouchPoint{800, 480});
+
+    EXPECT_EQ(touchProjection.Project(TouchPoint{400, 240}), (TouchPoint{399, 239}));
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
