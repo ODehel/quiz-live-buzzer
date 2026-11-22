@@ -763,3 +763,24 @@ Alternatives écartées :
 - Sous le lock-first, le glissement envoie la **première zone effleurée**, pas la zone visée : acceptable tant qu'un appui franc tombe sur la bonne zone ; à rouvrir si le smoke test tactile montre des appuis involontaires.
 - Le CDC §3 est migré pour la détection ; les règles « ignoré » restent à rédiger dans US-FW-002, US-FW-003, US-FW-004 et US-FW-011 avant sa suppression.
 - Deux dettes ajoutées : anti-rebond du bouton rouge, preuves manquantes de la détection.
+
+## #45 — docs(specs): write US-FW-002, answer a multiple-choice question
+
+**Contexte** — Le CDC §8.1 n'arme un mode que depuis Inerte (colonne « Mode(s) pertinents » de `question_choices`, `question_open`, `buzz_unlocked`) et le §6 n'a de transition d'armement que depuis Inerte. Le code, lui, écrase le mode sans condition (`OnQuestionChoices` pose `McqArmed` quelle que soit la source). La lecture du code a aussi montré que `BuzzerBehavior::OnEliminated()` n'a aucun appelant hors tests : le mode Éliminé du §4.4 n'est pas tenu en production.
+
+**Décision** (cadrage validé par Olivier, 2026-11-22) —
+- **Armement hors Inerte** : un message d'armement reçu alors que le buzzer est déjà armé est **ignoré** (US-FW-002 CA-2), comme le dit le CDC. Vaut pour les trois messages, donc pour US-FW-003. Le code ne le fait pas encore : écart consigné en dette, correctif à venir.
+- **Éliminé** : un CA « Éliminé ignore tout appui » (CA-9) est écrit dans US-FW-002, testé dans `BuzzerBehavior` mais non câblé ; le câblage et le passage en Éliminé restent à US-FW-006. Écart consigné en dette.
+- **Appui pendant une coupure** : constat reporté en dette (envoi sans contrôle du retour de `sendTXT`), pas de CA : le hub ne gère pas encore la reprise (US-021) et le CDC est muet.
+- **Périmètre** : les règles communes aux deux modes armés (Inerte, `timer_end`, Éliminé, armement hors Inerte) sont dans US-FW-002, formulées pour « tout mode armé » ; US-FW-003 y renvoie et ne garde que le propre au bouton rouge.
+
+**Choix de Claude, à relire en PR** —
+- 9 CA, tous « logique » : le feedback local n'est ici qu'un appel (`AcknowledgeAnswer`), son contenu relève de US-FW-011.
+- Les écarts de preuve (verrou avant feedback, lettres `B` et `D`, réarmement, `timer_end` en Inerte, assertions manquantes) sont regroupés dans une dette, comme la décision #44, sauf le verrou avant feedback qui garde son propre CA (CA-3) parce que c'est le cœur du lock-first.
+- Statut de US-FW-002 passé de « Implémentée » à « Partielle », à cause de CA-2 et CA-9.
+
+**Conséquences** —
+- Avec CA-2, l'écran et le mode divergent : `LcdRenderer` rend le message avant le dispatch (décision #5), donc un `question_choices` reçu pendant un SPEED armé afficherait des zones sur lesquelles les appuis seraient ignorés. Le rendu conditionnel au mode n'est pas décidé ; à trancher avec US-011 et US-012.
+- Un hub qui n'enverrait pas `timer_end` avant la question suivante laisserait le buzzer bloqué sur l'ancien mode (voir la dette).
+- Quatre dettes ajoutées : armement depuis un mode déjà armé, Éliminé jamais propagé, envoi sans contrôle pendant une coupure, preuves manquantes de la réponse MCQ.
+- Le CDC §4.1, §4.2 et §6 sont migrés pour la part MCQ, Inerte et Éliminé-appui ; la part SPEED reste à US-FW-003.
