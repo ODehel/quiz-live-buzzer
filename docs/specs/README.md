@@ -92,9 +92,9 @@ Table de migration : le CDC n'est supprimé que lorsque chaque ligne est couvert
 | §8.2 Lignes `question_open`, `buzz_accepted`, `buzz_locked`, `buzz_invalidated`, `buzz_unlocked`, appui local SPEED | US-FW-012 |
 | §8.2 Lignes `question_result` | US-FW-013 |
 | §8.2 Réactions du personnage | US-FW-014 |
-| §8.2 Lignes réseau (connexion perdue, Hors jeu, refus 401) | US-FW-015 ; logique du refus : US-FW-005 |
+| §8.2 Lignes réseau (connexion perdue, Hors jeu, refus 401) | US-FW-015 ; logique du refus : ✅ US-FW-005 (CA-5) |
 | §8.2 Lignes `play_sound_url`, `play_system_sound` | US-FW-021 |
-| §9 Démarrage et connexion initiale | US-FW-005 ; articulation avec le compteur : US-FW-006 |
+| §9 Démarrage et connexion initiale | ✅ US-FW-005 (séquence, login, refus `401`, `auth` frais, `auth_success`, appui pendant l'init) ; articulation avec le compteur : ✅ US-FW-005 (CA-10, armement) et US-FW-006 (consommation) |
 | §10 Points ouverts (NFC, son du feedback local) | US-FW-022, US-FW-021 |
 | §11 Prochaine étape TDD | Supprimée (périmée) |
 

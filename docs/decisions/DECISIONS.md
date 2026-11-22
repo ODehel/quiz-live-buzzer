@@ -827,3 +827,23 @@ Alternatives écartées :
 - Écart de code : `MessageDeserializer` accepte un JSON incomplet ou suivi de texte et rend un type « null » ; consigné en dette (« JSON invalide accepté »), correctif `fix(serialization)` à faire avec ses neuf tests.
 - Deux autres dettes ajoutées : preuves manquantes du dialogue (types sans effet, type inconnu, `error`, `answer` pour `C` et `D`, adaptateur), message de jeu avant `auth_success`.
 - Le CDC §3 (règle « ignoré ») et §8.1 (lecture, aiguillage, messages émis) sont migrés ; il reste à rédiger US-FW-005, 006 et 007 avant sa suppression (§8.1 `token_*`, §5, §9).
+
+## #48 — docs(specs): write US-FW-005, start up and authenticate
+
+**Contexte** — Le démarrage vit dans `src/main.cpp` (`setup()` bloquant), `lib/startup/` (`TokenAcquisition`, `LoginOutcomeDisplay`), `lib/session/` (`TokenSessionMessageSender`) et l'adaptateur `src/HttpTokenFetcher`. Le CDC §9 dit « un token frais à chaque connexion, reconnexions comprises », « un seul essai : le dernier JWT connu sinon », et que le compteur est inactif avant `auth_success`. Le code obtient un premier token dans `setup()`, puis `SendAuth()` en redemande un à l'ouverture du WebSocket : deux logins au démarrage. Sonde de `LoginResponseDeserializer` (hors dépôt, 2026-11-22) : tout corps sans `token` texte donne un échec, un corps tronqué après un token complet est lu quand même. `LoginRequestSerializer` n'échappe pas les identifiants.
+
+**Décision** (cadrage validé par Olivier, 2026-11-22) —
+- **Deux logins au démarrage** : décrits tels quels (US-FW-005 CA-9), conformes au CDC « à chaque connexion » ; pas de CA « un seul login ». La dette existante reste.
+- **Échecs hors `401`** : tout échec du login (réseau, `400`, `429`, `5xx`, `200` sans token) est réessayé toutes les 5 s, sans plafond ni recul (CA-4), comme le CDC « tente indéfiniment ». Un `400` n'arrête pas le buzzer ; dette « Seul `401` arrête le login » conservée.
+- **Échappement des identifiants** : CA-6, **non implémenté** ; le corps du login doit rester un JSON valide pour un `"` ou un `\`. Dette `fix(provisioning)` d'une ligne et deux tests.
+- **`401` pendant une reconnexion** : constat reporté, ni CA ni code ; à rouvrir avec US-FW-006.
+- **Mode Inerte** : le buzzer est Inerte dès la mise sous tension et `auth_success` ne change pas le mode (CA-11) ; le CDC §9 (« entrée en Inerte à `auth_success` ») est lu comme ce comportement, sans état d'init.
+
+**Choix de Claude, à relire en PR** —
+- 11 CA, tous « logique » ; trois (CA-1, CA-2, CA-8) n'ont comme preuve qu'un constat, car la séquence et l'adaptateur HTTP sont dans `src/`.
+- Le CA-6 est une exigence que le CDC ne contient pas : elle vient d'un défaut de code observé (corps invalide, réessai à vie), pas d'une décision de produit.
+- La frontière avec US-FW-010 (rendu d'init) et US-FW-015 (écran de refus) est celle de la décision #43 : ici, seul le fait que l'écran de refus est affiché compte.
+
+**Conséquences** —
+- Écart de code : identifiants non échappés (CA-6). Trois dettes ajoutées : identifiants non échappés, preuves manquantes du démarrage, `401` à la reconnexion.
+- Le CDC §8.2 (logique du refus `401`) et §9 sont migrés ; il reste à rédiger US-FW-006 et US-FW-007 avant sa suppression (§4.4, §5, §6, §8.1 `token_*`).
