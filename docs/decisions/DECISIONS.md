@@ -1073,3 +1073,30 @@ Alternatives écartées :
 - Les tests `MessageWithFixedTextTest` de `buzz_invalidated` figent l'ancien rendu : à réécrire avec les `feat`, pas avant.
 - Hub : aucun champ à ajouter pour le personnage ; `question_result` et `buzz_invalidated` restent à émettre (US-011 CA-25, US-012 CA-23 et CA-31). `scripts/fake-hub.ps1` est à étendre (MCQ `correct: true`, SPEED après un appui).
 - US-FW-012 (constat R9) et US-FW-013 (constat des réactions) sont corrigées dans la même PR ; le `README` migre les lignes `question_result`, `buzz_invalidated` et « Réactions du personnage » du CDC §8.2. Il reste US-FW-015 et US-FW-016 à rédiger avant la suppression du CDC.
+
+
+## #58 — docs(specs): write US-FW-015, show the connection loss, elimination and refusal screens
+
+**Contexte** — US-FW-015 était « Partielle » sans CA : le seul écran de coupure du code est le refus `401` en texte plein écran (décision #42). Les maquettes `fail-01` à `fail-03` (décision #29) et le CDC §8.2 (décision #30) décrivent trois écrans réseau. Le réel : aucun écran de coupure ni de « Hors jeu » (`ConnectionEventHandler::OnConnectionLost` ne fait qu'appeler le compteur, rien ne lit `IsEliminated()`), aucun port d'état de liaison, un refus affiché avec `TopBar::Hidden()`. Bibliothèque `WebSockets` lue à 2.7.2 (dernier tag ; `^2.7.3` épinglé, la version résolue peut différer) : `connectFailedCb` est vide et `connect()` bloque jusqu'à 5000 ms. Hub à `ed6bd31` : aucun message vers le buzzer à la perte ; le `401` est US-003 CA-8. Le dernier handoff annonçait US-FW-015 : confirmé par le `README` et `git log`.
+
+**Décision** (cadrage validé par Olivier, 2026-11-22, une salve de trois questions) —
+- **Appuis ignorés pendant la coupure, mode conservé** (CA-4, CA-7) : ni `answer`, ni `buzz`, ni verrou, ni feedback local ; un buzzer armé le reste, les appuis reprennent à l'`auth_success`. Tranche le constat de la décision #49. Écartés : désarmer à la perte (un joueur coupé 1 s perd la question en cours, `game_resumed` ne réarme rien), reporter (le feedback local écraserait le bandeau et le message serait perdu).
+- **Question atténuée en gris sous le bandeau rouge** (CA-1, CA-2, CA-11), comme la décision #29 : un décorateur de `Screen` retient le dernier écran affiché. Écartés : un bandeau superposé sans atténuation (la question reste en blanc vif alors qu'elle est inactive), un écran plein écran sans question (écarte la décision #29).
+- **Anneau et icônes dessinés** (CA-12, CA-13) : anneau de 128 px, symbole marche/arrêt, cadenas. Écartés : du texte seul à tailles distinctes (la perte définitive et le refus se ressemblent), du texte seul à une seule taille (état actuel).
+
+**Choix de Claude, à relire en PR** —
+- **Écran retenu à la couture `Screen`** (CA-2), partagé par `LcdRenderer` et `ScreenLocalFeedback`, plutôt que dans `GfxScreen` (état non testable) ou dans `DisplayState` (deux instances, dette).
+- **Coupure pendant une réaction** (CA-5) : elle remplace la réaction, et l'écran atténué est celui qui l'attendait (résultat ou élimination), pour ne griser aucune image. Confirme la règle d'interruption de la décision #57.
+- **Les appuis reprennent à l'`auth_success`**, pas à l'ouverture de la connexion (CA-4, CA-7) ; **avant le premier `auth_success`, aucun écran de coupure** : l'init reste (CA-6, US-FW-010 CA-2).
+- **Bandeau du refus identique au démarrage et en reconnexion** (CA-9, CA-10 : nom vide, liaison coupée, comme l'init) ; **« Hors jeu » garde le dernier nom**, liaison coupée (CA-8). Remplace le « sans bandeau » de la décision #42.
+- **Géométrie** (mesurée hors dépôt en caractères, pas sur le matériel) : bandeau rouge de 60 px à y 60 (la place de l'en-tête de US-FW-011), texte en 38 px car la boîte de 48 px mesure 62 px ; pile des écrans à anneau de 362 px sur 420 ; gris `#666666` (40 % de blanc, l'opacité de la maquette).
+- **Rouge et gris dérogent au monochrome** de US-FW-011 à US-FW-014, pour ces seuls écrans : le rouge dit « coupure ».
+- 13 CA : 0 tenu, 5 implémentés en partie (CA-3, CA-6, CA-7, CA-9, CA-13), 8 non implémentés ; sept constats reportés. Aucun test, aucun code, aucun smoke test dans cette session.
+
+**Conséquences** —
+- Écarts de code : aucun port d'état de liaison (le même que US-FW-009 CA-4), aucun écran retenu, aucun écran de coupure ni de « Hors jeu », appuis non ignorés pendant la coupure, `401` de reconnexion ni affiché ni arrêté, refus sans bandeau ni icône.
+- N de « Tentative N/3 » et le passage en « Hors jeu » dépendent des `fix(reconnection)` de US-FW-006 (CA-6, CA-7) : un hub arrêté laisserait « Tentative 1/3 » à vie.
+- `LoginOutcomeDisplayTest.ShowsTheRefusalScreenWithoutTopBarWhenTheCredentialsAreRefused` et `ScreenPresenterStartupTest.ARefusedLoginPresentsTheReasonAndWhoToWarn` figent l'ancien rendu : à réécrire avec les `feat`, pas avant.
+- Dettes : deux ajoutées (« Écrans de coupure : preuves manquantes et tests à réécrire », « Écrans de coupure : habillage de la maquette reporté »), douze complétées ou touchées.
+- Hub : rien à ajouter. `scripts/fake-hub.ps1` est à étendre (arrêt du hub en cours de question, réponse `401`).
+- US-FW-005, 006, 009, 010 et 014 sont corrigées d'une phrase dans la même PR ; le `README` migre les lignes « Lignes réseau », « Zones masquées » et §4.4. Il reste US-FW-016 à rédiger avant la suppression du CDC.
