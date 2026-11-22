@@ -6,7 +6,7 @@
 
 ## Périmètre
 
-Réaction plein écran de 2000 ms avant l'écran de résultat : dix réactions (R1 à R10), tirage au hasard selon la situation (bonne réponse, mauvaise réponse, sans réponse), R9 fixe sur `buzz_invalidated`. Un personnage par joueur, sans source ni protocole aujourd'hui ; non tranché : un message reçu pendant la réaction l'interrompt-il ?
+Réaction plein écran de 2000 ms avant l'écran de résultat : dix réactions (R1 à R10), tirage au hasard selon la situation (bonne réponse, mauvaise réponse, sans réponse), R9 fixe sur `buzz_invalidated` : elle précède l'écran « Raté… » et « Éliminé pour cette question » spécifié par US-FW-012 (CA-10), qui s'affiche d'emblée tant que cette US n'est pas livrée. Un personnage par joueur, sans source ni protocole aujourd'hui ; non tranché : un message reçu pendant la réaction l'interrompt-il ?
 
 ## Sources
 
