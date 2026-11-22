@@ -1100,3 +1100,29 @@ Alternatives écartées :
 - Dettes : deux ajoutées (« Écrans de coupure : preuves manquantes et tests à réécrire », « Écrans de coupure : habillage de la maquette reporté »), douze complétées ou touchées.
 - Hub : rien à ajouter. `scripts/fake-hub.ps1` est à étendre (arrêt du hub en cours de question, réponse `401`).
 - US-FW-005, 006, 009, 010 et 014 sont corrigées d'une phrase dans la même PR ; le `README` migre les lignes « Lignes réseau », « Zones masquées » et §4.4. Il reste US-FW-016 à rédiger avant la suppression du CDC.
+
+## #59 — docs(specs): write US-FW-016, animate the screen
+
+**Contexte** — US-FW-016 était « À cadrer » : le CDC §8.2 demande une zone qui clignote et un « bandeau clignotant » (« alterne entre deux teintes »), sans cadence, sans état éteint ni durée ; la maquette ne montre que l'état allumé (« 1 Hz proposé »). Le réel n'a ni horloge (aucune occurrence de `Clock` ni de `millis` dans `lib/` et `src/`), ni rafraîchissement hors message (`loop()` lit le WebSocket et deux appuis), ni écran retenu, et chaque dessin de `GfxScreen` commence par `fillScreen(TFT_BLACK)`. LovyanGFX 1.3.0 (lue hors dépôt, `Panel_RGB` et `Bus_RGB` seulement) donne à la dalle un tampon d'image unique en PSRAM. La décision #54 a retiré le décompte du chrono de cette US, mais les décisions #54, #55 et #57 attendent toutes la même horloge, « à définir une seule fois ». Le dernier handoff proposait cette session comme un cadrage seul.
+
+**Décision** (cadrage validé par Olivier, 2026-11-22, une salve de quatre questions) —
+- **Port d'horloge et animateur à la couture `Screen`** (CA-1 à CA-3, CA-7) : un port `Clock` de `lib/`, lu une fois par tour de `loop()` ; le décorateur de `Screen` de la décision #58 (dernier écran retenu) porte aussi la phase et sert d'animateur. Écartés : une horloge lue par chaque consommateur (la phase vivrait dans `GfxScreen`, non testable en natif), `millis()` appelé directement dans `GfxScreen` (la fin de réaction et le chrono n'auraient plus de test à horloge factice).
+- **Clignotement à 1 Hz, 500 ms allumé et 500 ms éteint** (CA-4, CA-9), valeur du CDC et de la maquette. Écartés : 2 Hz (quatre redessins par seconde), 700 ms allumé et 300 ms éteint (écart au CDC).
+- **Sans fin, jusqu'au message suivant** (CA-4), fidèle au CDC §8.2. Écartés : 5 s puis fixe, ou sans fin pour les bandeaux et 5 s pour les zones.
+- **Init statique** (constat reporté) : le bandeau « Connexion… » clignotant et le démarrage non bloquant sortent de cette US (US-FW-010 CA-2, décision #53 inchangés). Écartés : un `Sleeper` qui rafraîchit l'écran pendant les pauses (l'écran se fige pendant l'appel HTTP), un `setup()` en machine d'états dans cette US.
+
+**Choix de Claude, à relire en PR** —
+- **Quatre écrans clignotent** (CA-5) : la zone de la bonne réponse d'un résultat MCQ, la zone choisie (appui local et `answer_received`), le bandeau « À toi ! », le bandeau « Validé ». « X a buzzé », « Raté », « Trop tard », le double cadre de la réponse fausse, les réactions et les écrans réseau restent fixes.
+- **Monochrome** (CA-9) : allumé, blanc plein et texte noir (la mise en évidence actuelle) ; éteint, cadre blanc et texte blanc, l'aspect d'une zone ordinaire. Le cadre statique du bandeau d'état (US-FW-012 CA-15, US-FW-013 CA-7) devient l'état éteint : le premier affichage d'un bandeau passera du cadre au plein blanc avec le `feat`, les CA statiques restant vrais jusque-là.
+- **Phase repartie de zéro à chaque écran affiché, départ allumé** (CA-3, CA-4), calculée sur l'heure et non comptée par tour ; un `timer_tick` ou un redessin du chrono ne la remet pas à zéro (CA-7).
+- **Pas de clignotement pendant la coupure, « Hors jeu » ou le refus** (CA-6) : l'écran atténué de US-FW-015 CA-11 est figé à l'état allumé.
+- **Redessin d'une région, sans `fillScreen`** (CA-8), à cause du tampon unique ; **aucune attente dans un tour de `loop()`** (CA-10). Durées par différence non signée (CA-1) : le cœur Arduino n'est pas lu.
+- **Points de tentative animés et logo qui vibre : constats reportés**, faute de définition (maquettes statiques).
+- 10 CA : 0 tenu, 2 implémentés en partie (CA-5, CA-9), 8 non implémentés ; sept constats reportés. Statut de l'US : « Partielle ». Aucun test, aucun code, aucun smoke test dans cette session.
+
+**Conséquences** —
+- Écarts de code : aucun `Clock`, aucun animateur ni écran retenu, aucun redessin de région, aucun bandeau d'état ni état éteint ; « À toi ! » et « Validé » sont du texte plein écran.
+- Le temps de dessin d'une région et le noir visible sur un tampon unique ne sont pas mesurés ; LovyanGFX n'est pas épinglée (1.3.0 lue, version résolue possiblement différente).
+- Dettes : deux ajoutées (« Animation : preuves manquantes et tests à écrire », « Animation : coût d'un redessin et tampon unique non mesurés »), onze complétées.
+- Hub : rien à ajouter. `scripts/fake-hub.ps1` n'a rien à changer pour cette US.
+- US-FW-009, 010, 011, 012, 013 et 015 sont corrigées d'une phrase dans la même PR ; le `README` migre les lignes « Vocabulaire des effets d'écran » et « Habillage commun » (chrono) du CDC §8.2. US-FW-016 est la dernière US de rendu à cadrer ; la suppression du CDC attend les lignes `play_*` (US-FW-021) et le paramétrage (US-FW-022), dans des US encore « Vides ».
