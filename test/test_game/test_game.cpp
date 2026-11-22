@@ -40,6 +40,8 @@ TEST_F(BuzzerBehaviorTest, SpeedArmedBuzzerIgnoresMcqPress)
 {
     EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
     EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeAnswer(::testing::_)).Times(0);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz()).Times(0);
 
     buzzerBehavior.OnQuestionOpen();
     buzzerBehavior.OnMcqPressed('A');
@@ -463,4 +465,40 @@ int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
+}
+
+TEST_F(BuzzerBehaviorTest, BuzzLockIsSetBeforeTheLocalFeedback)
+{
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz())
+        .WillOnce([this]()
+                  { buzzerBehavior.OnBuzzPressed(); });
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, SecondBuzzPressIsNeitherSentNorAcknowledged)
+{
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz()).Times(1);
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzPressed();
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, SpeedArmedBuzzerStaysSpeedArmedOnMcqPress)
+{
+    const ArmedModeReader &reader = buzzerBehavior;
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeAnswer(::testing::_)).Times(0);
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz()).Times(1);
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnMcqPressed('A');
+
+    EXPECT_TRUE(reader.IsArmed());
+    buzzerBehavior.OnBuzzPressed();
 }
