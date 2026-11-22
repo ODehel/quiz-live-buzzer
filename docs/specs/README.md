@@ -52,7 +52,7 @@ Ordre de travail : ordre numérique, la logique avant le rendu. Une US vide est 
 | [US-FW-007](US-FW-007-garder-la-session-ouverte.md) | Garder la session ouverte | Logique | US-021 | Partielle |
 | [US-FW-008](US-FW-008-afficher-des-textes-lisibles.md) | Afficher des textes lisibles | Rendu | — | Partielle |
 | [US-FW-009](US-FW-009-bandeau-du-haut.md) | Bandeau du haut | Rendu | US-009, US-010, US-019 (nom du participant à définir) | Partielle |
-| [US-FW-010](US-FW-010-ecrans-dinit-et-dattente.md) | Écrans d'init et d'attente | Rendu | US-009 | Partielle |
+| [US-FW-010](US-FW-010-ecrans-dinit-et-dattente.md) | Écrans d'init et d'attente | Rendu | US-009, US-019 (`game_resumed` non émis au 2026-11-22) | Partielle |
 | [US-FW-011](US-FW-011-question-a-choix-multiples-a-lecran.md) | Question à choix multiples à l'écran | Rendu | US-011 | Partielle |
 | [US-FW-012](US-FW-012-question-de-rapidite-a-lecran.md) | Question de rapidité à l'écran | Rendu | US-012 | Partielle |
 | [US-FW-013](US-FW-013-resultat-dune-question.md) | Résultat d'une question | Rendu | US-011, US-012 | Partielle |
@@ -85,16 +85,16 @@ Table de migration : le CDC n'est supprimé que lorsque chaque ligne est couvert
 | §6 Table de transitions | ✅ lignes MCQ, Inerte, « tout mode armé » et Éliminé-appui : US-FW-002 ; lignes SPEED : ✅ US-FW-003 ; passage en Éliminé : ✅ US-FW-006 (CA-3, CA-9) |
 | §7 Recadrage du CSV | Supprimée (historique) ; écart « affichage progressif abandonné » : US-FW-011 |
 | §8.1 Messages reçus et émis | ✅ US-FW-004 (lecture du type, rendu puis aiguillage, messages sans effet sur le mode, format de `auth`, `auth_refresh`, `answer`, `buzz`) ; armement et désarmement SPEED (`question_open`, `buzz_unlocked`, `buzz_locked`, `buzz_accepted`, `buzz_invalidated`, `buzz` émis) : ✅ US-FW-003 ; `token_expiring_soon`, `token_expired`, `auth_refresh` : ✅ US-FW-007 (CA-1 à CA-7 : login frais, aucun envoi sur échec ou `401`, `auth_success` de réponse sans effet sur l'écran) ; `play_*` : US-FW-021 |
-| §8.2 Habillage commun | ✅ US-FW-009 (bandeau du haut : nom, titre, liaison, présence sur chaque écran) ; points, rang et batterie : constats reportés (`DEBTS.md`) ; en-tête, chrono et capsules : US-FW-011 et US-FW-012 |
+| §8.2 Habillage commun | ✅ US-FW-009 (bandeau du haut : nom, titre, liaison, présence sur chaque écran) ; bandeau dès la mise sous tension : ✅ US-FW-010 (CA-1) ; points, rang et batterie : constats reportés (`DEBTS.md`) ; en-tête, chrono et capsules : US-FW-011 et US-FW-012 |
 | §8.2 Vocabulaire des effets d'écran | US-FW-016 (et chaque US de rendu pour ses effets) |
-| §8.2 Lignes init, `auth_success`, `game_resumed` | US-FW-010 |
+| §8.2 Lignes init, `auth_success`, `game_resumed` | ✅ US-FW-010 (CA-1 à CA-7 : écran d'init statique, « Connecté » et « Partie en cours » sur deux lignes, enchaînement à la reconnexion, dessin) ; anneau, icônes et clignotement : constats reportés, US-FW-016 |
 | §8.2 Lignes `question_title`, `question_choices`, `timer_tick`, `timer_end`, `answer_received`, appui local MCQ | US-FW-011 |
 | §8.2 Lignes `question_open`, `buzz_accepted`, `buzz_locked`, `buzz_invalidated`, `buzz_unlocked`, appui local SPEED | US-FW-012 ; titre de 250 caractères au plus, taille réduite s'il est long : ✅ US-FW-008 (CA-2, CA-6, CA-7) |
 | §8.2 Lignes `question_result` | US-FW-013 |
 | §8.2 Réactions du personnage | US-FW-014 |
 | §8.2 Lignes réseau (connexion perdue, Hors jeu, refus 401) | US-FW-015 ; logique du refus : ✅ US-FW-005 (CA-5), ✅ US-FW-006 (CA-11, refus en reconnexion) |
 | §8.2 Lignes `play_sound_url`, `play_system_sound` | US-FW-021 |
-| §9 Démarrage et connexion initiale | ✅ US-FW-005 (séquence, login, refus `401`, `auth` frais, `auth_success`, appui pendant l'init) ; articulation avec le compteur : ✅ US-FW-005 (CA-10, armement) et ✅ US-FW-006 (CA-1, CA-2 consommation) |
+| §9 Démarrage et connexion initiale | ✅ US-FW-005 (séquence, login, refus `401`, `auth` frais, `auth_success`, appui pendant l'init) ; rendu d'init : ✅ US-FW-010 (CA-1, CA-2) ; articulation avec le compteur : ✅ US-FW-005 (CA-10, armement) et ✅ US-FW-006 (CA-1, CA-2 consommation) |
 | §10 Points ouverts (NFC, son du feedback local) | US-FW-022, US-FW-021 |
 | §11 Prochaine étape TDD | Supprimée (périmée) |
 

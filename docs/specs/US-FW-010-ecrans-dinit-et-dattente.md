@@ -1,17 +1,61 @@
 # US-FW-010 — Écrans d'init et d'attente
 
 - **Couche** : rendu
-- **Statut** : Partielle (« Connecté » et « Partie en cours » en texte ; pas d'écran d'init avec logo)
-- **Dépend du hub** : US-009
+- **Statut** : Partielle, CA-1 à CA-7 rédigés depuis le réel le 2026-11-22 (CA-3 tenu par des tests natifs ; CA-5, CA-6 et CA-7 implémentés sans test de bout en bout ou de dessin ; CA-1, CA-2 et CA-4 non implémentés : aucun écran d'init, aucun sous-titre d'attente)
+- **Dépend du hub** : US-009 (`auth_success`, CA-6), US-019 (`game_resumed`, CA-17 à CA-20). Lus à `ed6bd31` : le hub n'émet pas `game_resumed` (aucune occurrence dans `src/`).
+
+## User story
+
+> **En tant que** joueur,
+> **quand** je mets mon buzzer sous tension, puis chaque fois qu'il se connecte ou se reconnecte au hub,
+> **alors** je vois qu'il démarre, puis qu'il est connecté et qu'il attend la question.
 
 ## Périmètre
 
-Écran d'init avec le logo pendant l'attente du WiFi et du login, puis « Connecté » à `auth_success` et « Partie en cours » à `game_resumed`, avec « En attente d'une question ».
+Trois écrans de texte, tous sous le bandeau du haut (US-FW-009), tous avec les zones tactiles masquées :
 
-## Sources
+1. l'**écran d'init**, de la mise sous tension au premier `auth_success` : le logo en texte et « Connexion… » ;
+2. l'écran « **Connecté** », à chaque `auth_success` qui suit l'ouverture d'une connexion ;
+3. l'écran « **Partie en cours** », à `game_resumed` (reconnexion pendant une partie active).
 
-CDC §8.2 (lignes init, `auth_success`, `game_resumed`), §9 ; maquettes `start-01` à `start-03` ; décisions #28, #30 ; `DEBTS.md` (« `setup()` bloquant pendant l'init » ; le logo n'est pas dans le dépôt).
+Les deux derniers ont la même forme : deux lignes, le titre puis « En attente d’une question ».
+
+**Hors périmètre** (constats reportés ci-dessous, sauf mention) :
+
+- le contenu du bandeau du haut (nom, titre, liaison) : US-FW-009 ; ici seul compte le fait qu'il est présent dès l'init ;
+- l'écran « Connexion refusée » (`401`) : US-FW-015 ; la perte de connexion, la reconnexion et « Hors jeu » : US-FW-015 et US-FW-006 ;
+- l'`auth_success` qui répond à un `auth_refresh` : US-FW-007 CA-6 (ni écran, ni bandeau, ni mode ne changent) ;
+- l'attente du maître du jeu et la présentation de la partie (maquettes `start-04` et `start-05`), la configuration (`start-06`) : US-FW-019 et US-FW-022 ;
+- les effets d'écran (clignotement, anneau animé) : US-FW-016 ; le dessin du texte : US-FW-008 ;
+- la séquence de démarrage elle-même (Wi-Fi, login, WebSocket, un appui sans effet) : US-FW-005.
 
 ## Critères d'acceptance
 
-À rédiger (session `docs(specs)` dédiée).
+« Étiquette » dit où vit le comportement : **logique** (`lib/` ; `setup()` de `src/main.cpp` pour le câblage, comme à US-FW-005) ou **adaptateur** (`src/`, validé au smoke test). « Preuve » dit ce qui établit le CA ; « Statut » dit où il en est dans le code au 2026-11-22. Les tests ne portent pas de numéro de CA : la correspondance se fait par le nom des tests. Aucun test ni smoke test n'est écrit dans cette session.
+
+| # | Étiquette | Critère | Résultat attendu | Preuve | Statut |
+|---|---|---|---|---|---|
+| CA-1 | logique | Le buzzer est mis sous tension | Dès que la dalle est initialisée et **avant** toute attente réseau, l'écran d'init s'affiche : le bandeau du haut (US-FW-009 CA-3 : « Buzz’O’Live » au centre, nom vide, liaison « coupée »), puis un texte centré de trois lignes de même taille, « Buzz’ », « O’Live » et « Connexion… ». Les zones tactiles sont masquées. Pas de batterie (constat reporté de US-FW-009). « Buzz’O’Live » figure donc deux fois à l'écran (bandeau et logo, comme la maquette D1). Le logo en texte et le libellé « Connexion… » sont **proposés** (décision #28) : le CDC dit « Logo » | à écrire : test natif du modèle d'écran d'init (`test_screen_presenter` : bandeau et texte) | **Non implémenté** : `setup()` ne fait que `lcd.fillScreen(TFT_BLACK)` ; la liaison « coupée » dépend de US-FW-009 CA-4 et CA-8 (non implémentés) |
+| CA-2 | logique | L'init dure : Wi-Fi absent, login qui échoue, WebSocket en cours d'ouverture | L'écran d'init, une fois affiché, **ne change plus** jusqu'au premier message rendu, `auth_success` (CA-3) : pas de clignotement, pas de message d'erreur, aucune distinction entre un Wi-Fi absent et un hub injoignable (attente sans fin : US-FW-005 CA-2 et CA-4). Seul un `401` le remplace (« Connexion refusée », US-FW-015). L'affichage passe par `tappableZonesScreen`, comme l'écran de refus, pour que les zones restent masquées. Le délai entre la mise sous tension et l'affichage n'est pas mesuré | à écrire : smoke test (hub arrêté, puis relancé : l'écran d'init reste jusqu'à « Connecté ») ; le câblage vit dans `setup()` de `src/main.cpp` | **Non implémenté** |
+| CA-3 | logique | Le buzzer reçoit `auth_success` après l'ouverture d'une connexion (première, ou reconnexion) | L'écran, quel qu'il soit (init, question, zones, coupure), est **remplacé** par le texte « Connecté » plein écran sous le bandeau du haut, dont le nom est l'`username` du compte (US-FW-009 CA-1) ; les zones tactiles sont désactivées ; rien n'est restitué de la question en cours (le CDC §8.2 ne spécifie pas le retour à la question). Le message ne va pas au répartiteur (US-FW-004 CA-4) : le mode ne change pas. La seconde ligne est CA-4 ; l'`auth_success` de réponse à un `auth_refresh` est US-FW-007 CA-6 | `test_rendering` : `DisplayStateTest.AuthSuccessShouldDisplayConnecteOnScreen` ; `test_screen_presenter` : `ScreenPresenterTest.AuthSuccessPresentsTheTextConnecte` ; `test_lcd_renderer` : `LcdRendererTest.AuthSuccessMessageShowsConnecteOnScreen` ; `test_connection` : `ConnectionEventHandlerRenderingTest.AuthSuccessIsRenderedWithTheUsernameOfTheHubInTheTopBar` ; `test_tappable_zones` : `TappableZonesScreenTest.ATextScreenDeactivatesTheZones` | Implémenté, testé (hors sous-titre) |
+| CA-4 | logique | Le buzzer reçoit `auth_success` (CA-3) ou `game_resumed` (CA-5) | Le texte porte **deux lignes de même taille** : « Connecté » ou « Partie en cours », puis « En attente d’une question » (libellé proposé, décision #28 ; le CDC dit « Attente (« Connecté ») »). L'icône (anneau or avec coche ou triangle de lecture) est un constat reporté | à écrire : `test_rendering`, `test_screen_presenter`, `test_lcd_renderer`, `test_connection` ; **les tests actuels figent le texte court** : les cinq noms cités à CA-3 et `DisplayStateTest.GameResumedShouldDisplayPartieEnCoursOnScreen` | **Non implémenté** : `DisplayState::LcdTextFor` rend « Connecté » ou « Partie en cours » seuls |
+| CA-5 | logique | Le buzzer reçoit `game_resumed` (reconnexion pendant une partie `OPEN`, `QUESTION_TITLE`, `QUESTION_OPEN`, `QUESTION_BUZZED` ou `QUESTION_CLOSED` : US-019 CA-17) | L'écran est remplacé par le texte « Partie en cours » plein écran sous le bandeau du haut (US-FW-009 CA-3), zones désactivées. `question_index`, `cumulative_score` et `status` sont **ignorés**. Le mode ne change pas et rien n'est envoyé (US-FW-004 CA-5) : un buzzer armé avant la coupure le reste, sans zones à l'écran (constat « Mode armé »). La seconde ligne est CA-4 | `test_rendering` : `DisplayStateTest.GameResumedShouldDisplayPartieEnCoursOnScreen` (le texte seul) ; aucun test du présenteur, du `LcdRenderer` ni de `ConnectionEventHandler` pour ce message ; bandeau : `MessageWithoutTopBarTest.HidesTheTopBar` (`game_resumed`) fige `Hidden()`, contraire de US-FW-009 CA-3 | Implémenté, **non testé** de bout en bout ; bandeau **absent** (US-FW-009 CA-3, non implémenté) |
+| CA-6 | logique | Le buzzer se reconnecte pendant une partie active : `auth_success` puis `game_resumed` arrivent à la suite (US-019 CA-17 : « immédiatement après `auth_success` ») | **Deux rendus enchaînés** : « Connecté » (CA-3) puis « Partie en cours » (CA-5). Le firmware rend chaque message à son arrivée, sans retenue ni état : « Connecté » ne reste à l'écran que le temps du message suivant (non mesuré) et peut ne pas être lu. Retenir « Connecté » quand `game_resumed` suit est impossible sans état ni délai (le firmware ne voit pas le message suivant). Hors partie active (`IN_ERROR`, `PENDING`, `COMPLETED` : US-019 CA-20), seul « Connecté » est rendu | à écrire : `test_connection` (deux messages à la suite : deux `Display`, dans l'ordre) | Implémenté, **non testé** : `ConnectionEventHandler::OnMessageReceived` rend chaque message sans condition |
+| CA-7 | adaptateur | Un texte de plusieurs lignes est dessiné sous le bandeau du haut | `GfxScreen::Show` : le bandeau (US-FW-009 CA-6), puis le texte centré dans le reste de la dalle (780 × 400 px), une seule taille de police pour toutes les lignes, les retours à la ligne (`\n`) respectés, sans rognage (US-FW-008 CA-7, CA-13). Concerne l'init (trois lignes), « Connecté » et « Partie en cours » (deux lignes) | `src/GfxScreen.h` (lecture) ; `test_text_layout` pour la mise en page (une ligne, « Connecté », et les retours à la ligne) ; smoke test du 2026-11-09 pour le bandeau avec une ligne. Jamais constaté sur la dalle : trois lignes (écran de refus, dette « Écran de login refusé en texte seul »), deux lignes sous le bandeau | Implémenté, **non testé** (dessin) |
+
+## Constats reportés
+
+Rien de ce qui suit n'est un CA : ce sont des constats consignés dans `DEBTS.md`, à rouvrir comme indiqué.
+
+- **Habillage de D1 à D3** : la maquette montre le « O » du logo en disque rouge, « Buzz’ » vibrant en écho, un anneau or avec une coche (D2) ou un triangle de lecture (D3), le titre et le sous-titre en deux tailles, et le bandeau « Connexion… » en pied d'écran dans sa teinte or. Le code n'a que du texte monochrome à taille unique, et le logo n'est pas dans le dépôt : le logo en texte et les trois lignes d'égale taille de CA-1 sont un choix de cette session. À rouvrir avec le rendu cible et US-FW-016.
+- **Bandeau « Connexion… » clignotant** : le clignotement (CDC §8.2, maquette D1) demande une horloge et un démarrage non bloquant (dette « `setup()` bloquant pendant l'init ») ; CA-1 et CA-2 n'exigent que l'affichage unique dans `setup()`. À rouvrir avec US-FW-016.
+- **Batterie** : le bandeau d'init n'en montre pas (constat de US-FW-009 : aucune mesure, matériel non vérifié).
+- **Libellés proposés** : « Connexion… », « En attente d’une question » et le logo en texte viennent des maquettes (décision #28), pas du CDC ; à relire avec le rendu final.
+- **Bandeau du `401`** : le bandeau d'init (nom vide, liaison « coupée ») est celui que le CDC §8.2 veut aussi au refus `401` ; `LoginOutcomeDisplay` passe `Hidden()`. À confirmer par US-FW-015.
+- **Mode armé pendant la coupure** : « En attente d’une question » après `game_resumed` peut contredire un buzzer resté armé (décision #49, dette « Envoi d'une réponse ou d'un buzz sans contrôle pendant une coupure ») ; à rouvrir avec US-FW-015 et la reprise de connexion du hub (US-021).
+- **`auth_success` de réponse à `auth_refresh`** : il remplacerait aujourd'hui la question par « Connecté » (US-FW-007 CA-6, non implémenté) ; sans effet sur ce document tant que le hub n'implémente pas US-021.
+- **`game_resumed` : champs ignorés, jamais émis** : `question_index`, `cumulative_score` et `status` ne sont pas lus (choix : texte fixe) ; `cumulative_score` alimenterait le bandeau (constat de US-FW-009). Le hub n'émet pas le message au 2026-11-22 (aucune occurrence dans `src/`) : CA-5 et CA-6 ne se vérifient qu'avec `scripts/fake-hub.ps1` (non vérifié qu'il l'émet), l'intégration réelle reste non vérifiée.
+
+## Sources
+
+CDC §8.2 (lignes init, `auth_success`, `game_resumed` et note sous le tableau), §9 (séquence, appui pendant l'init) ; maquettes `docs/mockups/` (`start-01-init.html`, `start-02-connected.html`, `start-03-resumed.html`, `mockup.css`) ; décisions #19, #28, #30, #41, #43, #49, #52, #53 ; `lib/rendering/` (`DisplayState`, `ScreenPresenter`, `LcdRenderer`, `TopBar`, `Screen`, `ScreenModel`, `TappableZonesScreen`, `TextLayout`), `lib/connection/ConnectionEventHandler.h`, `lib/startup/LoginOutcomeDisplay.h`, `src/GfxScreen.h`, `src/main.cpp` ; `test/test_rendering`, `test_screen_presenter`, `test_lcd_renderer`, `test_connection`, `test_tappable_zones`, `test_text_layout` ; hub `quiz-live-server` à `ed6bd31` : US-009 (CA-6), US-019 (CA-17 à CA-20, format de `game_resumed`), US-021 ; `DEBTS.md`.

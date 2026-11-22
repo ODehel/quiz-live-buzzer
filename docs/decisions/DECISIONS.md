@@ -944,3 +944,28 @@ Alternatives écartées :
 - Les tests qui figent `Hidden()` hors `auth_success` (`MessageWithoutTopBarTest`, attentes de `test_lcd_renderer`, `test_local_feedback`, `test_connection`) contredisent CA-3 : à réécrire avec le `feat`, pas avant.
 - Le bandeau de 60 px réduit les zones de US-FW-008 CA-9 (calcul : 380 × 190 px) : à mesurer avec US-FW-011.
 - Le CDC §8.2 (habillage commun) est migré pour sa part « bandeau du haut » ; restent à rédiger les US de rendu 010 à 016 avant la suppression du CDC.
+
+
+## #53 — docs(specs): write US-FW-010, show the start-up and waiting screens
+
+**Contexte** — Le réel n'a ni écran d'init (`setup()` fait `lcd.fillScreen(TFT_BLACK)` puis attend le Wi-Fi et le login : écran noir), ni sous-titre d'attente : « Connecté » et « Partie en cours » sont des textes d'une ligne. Le CDC §8.2 et la maquette D1 (décision #28) veulent un logo, un bandeau « Connexion… » clignotant et le bandeau du haut dès la mise sous tension (batterie seule). US-FW-009 CA-3 et la décision #52 disaient le contraire : aucun bandeau avant le premier `auth_success`. `setup()` est bloquant (dette) : un clignotement exige une horloge et un démarrage non bloquant. Le hub envoie `auth_success` ; il n'envoie pas `game_resumed` (aucune occurrence dans `src/` à `ed6bd31`).
+
+**Décision** (cadrage validé par Olivier, 2026-11-22) —
+- **Écran d'init statique** (CA-1, CA-2) : dessiné une fois dans `setup()` avant l'attente du Wi-Fi, il reste jusqu'au premier `auth_success`, sans clignotement ni message d'erreur. Texte de trois lignes : « Buzz’ », « O’Live », « Connexion… ».
+- **Bandeau dès la mise sous tension** (CA-1) : titre « Buzz’O’Live », nom vide, liaison « coupée », sans batterie. Cela **revoit** le « Présence » de #52 (bandeau à partir d'`auth_success`) : US-FW-009 CA-1, CA-3 et CA-4 sont corrigés dans la même PR.
+- **Deux lignes** (CA-4) : « Connecté » ou « Partie en cours », puis « En attente d’une question », même taille. Anneau et icône en constat reporté.
+- **`game_resumed`** (CA-5, CA-6) : texte fixe, champs du message ignorés ; l'enchaînement `auth_success` puis `game_resumed` donne deux rendus, décrits tels quels.
+- **Reportés** : clignotement et habillage de D1 à D3, batterie, bandeau du `401`, mode armé pendant la coupure, `auth_success` de réponse à `auth_refresh`.
+
+**Choix de Claude, à relire en PR** —
+- 7 CA : 1 tenu (CA-3), 3 implémentés sans test de bout en bout ou de dessin (CA-5 à CA-7), 3 non implémentés (CA-1, CA-2, CA-4) ; 8 constats reportés. Statut de l'US : « Partielle ».
+- « Connexion… » est écrit **sous** le logo, trois lignes de même taille, et non en pied d'écran comme la maquette : c'est la seule forme que permet le modèle `TextScreen` (taille unique, texte centré). Le logo en texte et les libellés viennent de #28, pas du CDC.
+- US-FW-009 est corrigée sans changer la numérotation de ses CA ; `README` et dettes suivent. Les CA de liaison de US-FW-009 (CA-4, CA-8) restent non implémentés : la liaison « coupée » de l'init n'est qu'un texte de spécification tant que le port n'existe pas.
+- Alternatives écartées au cadrage : init clignotant (démarrage non bloquant d'abord), constat reporté sans CA d'init ; pas de bandeau à l'init (US-FW-009 CA-3 inchangé) ; une ligne comme aujourd'hui, ou sous-titre avec anneau et icône ; numéro de question dans « Partie en cours », « Connecté » retenu quand `game_resumed` suit.
+- Aucun test, aucun code, aucun smoke test dans cette session.
+
+**Conséquences** —
+- Écarts de code : aucun écran d'init (CA-1, CA-2), sous-titre absent (CA-4), `game_resumed` sans bandeau (CA-5, par US-FW-009 CA-3). Dettes : quatre complétées (« `setup()` bloquant pendant l'init », « Bandeau du haut sur le seul écran « Connecté » », « Écran de login refusé en texte seul », « Table de rendu §8.2 incomplète »), une complétée pour les messages jamais émis par le hub (`game_resumed`), une pour le rendu cible, deux ajoutées (« Écrans d'init et d'attente : preuves manquantes », « Écrans d'init et d'attente : habillage de la maquette reporté »).
+- Les tests qui figent « Connecté » et « Partie en cours » seuls (`DisplayStateTest`, `ScreenPresenterTest`, `LcdRendererTest`, `ConnectionEventHandlerRenderingTest`) et `Hidden()` pour `game_resumed` (`MessageWithoutTopBarTest`) sont à réécrire avec les `feat`, pas avant.
+- Le bandeau du refus `401` est tenu pour celui de l'init (nom vide, liaison « coupée ») : à confirmer par US-FW-015.
+- Le CDC §8.2 (lignes init, `auth_success`, `game_resumed`) et §9 (rendu d'init) sont migrés ; restent à rédiger les US de rendu 011 à 016 avant la suppression du CDC.
