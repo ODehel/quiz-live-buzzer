@@ -871,3 +871,28 @@ Alternatives écartées :
 - Écarts de code : compteur de fermetures (CA-6, CA-7), intervalle (CA-8), propagation de l'élimination et réseau actif (CA-9, CA-10), `401` ignoré (CA-11). Deux dettes ajoutées (compteur de fermetures, preuves manquantes), quatre réécrites (Éliminé non propagé, `401` en reconnexion, reconnexion sans recul, envoi pendant la coupure) et une revue (message de jeu avant `auth_success`).
 - Un hub injoignable plus de 15 s élimine les buzzers sans retour avant redémarrage physique : assumé, à rouvrir si le hub redémarre souvent pendant une partie.
 - Le CDC §4.4, §5, §6 (passage en Éliminé) et §9 (articulation avec le compteur) sont migrés ; restent à rédiger US-FW-007 (§8.1 `token_*`) et les US de rendu avant la suppression du CDC.
+
+
+## #50 — docs(specs): write US-FW-007, keep the session open
+
+**Contexte** — Le CDC §8.1 dit que `token_expiring_soon` appelle `auth_refresh` « (renouvellement JWT) » et que `token_expired` est suivi de la fermeture par le hub. Le firmware envoie `auth_refresh` avec le dernier token, celui de la connexion en cours : même `exp`. US-021 du hub (CA-1 : délai ≤ 0 = envoi immédiat, CA-11 : reprogrammation des timers sur le nouvel `exp`) renverrait aussitôt `token_expiring_soon`, en boucle. Le rendu affiche « Connecté » et le bandeau à chaque `auth_success`, y compris celui qui répond à un `auth_refresh`. Le hub n'implémente pas US-021 (`quiz-live-server` à `ef57459`).
+
+**Décision** (cadrage validé par Olivier, 2026-11-22) —
+- **Renouvellement** : un login frais avant chaque `auth_refresh`, qui porte ce token et jamais l'ancien (CA-2).
+- **Échec du login** (réseau, `400`, `429`, `5xx`, `200` sans token) : aucun `auth_refresh`, aucune relance ; le token expire, `token_expired`, `4002`, reconnexion (CA-3). Différence voulue avec `auth` (décision #48, repli sur le dernier token).
+- **`401` au login de renouvellement** : aucun `auth_refresh`, aucun arrêt ; la session continue jusqu'à `token_expired`, puis la reconnexion reçoit `401` et s'arrête par US-FW-006 CA-11 (CA-4).
+- **Rafale de `token_expiring_soon`** : un renouvellement par message, sans filtre ni état (CA-5).
+- **`auth_success` de réponse** : sans effet sur l'écran, le bandeau et le mode (CA-6), alors que celui d'une ouverture de connexion s'affiche (US-FW-010).
+- **Token frais à chaque connexion** : hors périmètre, US-FW-005 CA-9 ; décision #48 inchangée.
+
+**Choix de Claude, à relire en PR** —
+- 7 CA, tous « logique » : CA-1 tenu par des tests, CA-5 et CA-7 implémentés sans test, CA-2, CA-3, CA-4 et CA-6 non implémentés.
+- CA-6 n'était pas dans le CDC : il vient de la lecture de `DisplayState` et `ScreenPresenter`. Il impose un état « `auth_refresh` en attente » (ou équivalent) côté firmware ; la forme est laissée au `fix`.
+- CA-4 dépend de US-FW-006 CA-11, non implémenté : sans lui, la reconnexion qui suit `token_expired` renvoie `auth` avec un token expiré et reboucle.
+- Les CA reposent sur la lecture du hub, qui n'émet aucun message `token_*` : rien n'est vérifié de bout en bout.
+- Le statut de l'US dans l'index reste « Partielle ».
+
+**Conséquences** —
+- Écarts de code : `SendAuthRefresh` sans login frais (CA-2, CA-3, CA-4), rendu de l'`auth_success` de réponse (CA-6). Une dette ajoutée (« Renouvellement du token : preuves manquantes »), une réécrite (« `auth_refresh` sur `token_expiring_soon` »), deux complétées (« Un `POST /api/v1/token` synchrone », « `401` au login pendant une reconnexion »).
+- Une panne de login au moment du renouvellement coupe la connexion au plus 300 s plus tard (reconnexion de quelques secondes, message de jeu d'un mode armé perdu : décision #49).
+- Le CDC §8.1 (`token_*`, `auth_refresh`) est migré ; restent à rédiger `play_*` (US-FW-021), §8.2 et les US de rendu avant la suppression du CDC.

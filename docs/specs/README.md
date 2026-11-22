@@ -84,7 +84,7 @@ Table de migration : le CDC n'est supprimé que lorsque chaque ligne est couvert
 | §5 Reconnexion WiFi | ✅ US-FW-006 (CA-1 à CA-8 : compteur, tentatives sur le WebSocket vers le hub, perte initiale exclue, intervalle de 5 s) |
 | §6 Table de transitions | ✅ lignes MCQ, Inerte, « tout mode armé » et Éliminé-appui : US-FW-002 ; lignes SPEED : ✅ US-FW-003 ; passage en Éliminé : ✅ US-FW-006 (CA-3, CA-9) |
 | §7 Recadrage du CSV | Supprimée (historique) ; écart « affichage progressif abandonné » : US-FW-011 |
-| §8.1 Messages reçus et émis | ✅ US-FW-004 (lecture du type, rendu puis aiguillage, messages sans effet sur le mode, format de `auth`, `auth_refresh`, `answer`, `buzz`) ; armement et désarmement SPEED (`question_open`, `buzz_unlocked`, `buzz_locked`, `buzz_accepted`, `buzz_invalidated`, `buzz` émis) : ✅ US-FW-003 ; `token_*` : US-FW-007 ; `play_*` : US-FW-021 |
+| §8.1 Messages reçus et émis | ✅ US-FW-004 (lecture du type, rendu puis aiguillage, messages sans effet sur le mode, format de `auth`, `auth_refresh`, `answer`, `buzz`) ; armement et désarmement SPEED (`question_open`, `buzz_unlocked`, `buzz_locked`, `buzz_accepted`, `buzz_invalidated`, `buzz` émis) : ✅ US-FW-003 ; `token_expiring_soon`, `token_expired`, `auth_refresh` : ✅ US-FW-007 (CA-1 à CA-7 : login frais, aucun envoi sur échec ou `401`, `auth_success` de réponse sans effet sur l'écran) ; `play_*` : US-FW-021 |
 | §8.2 Habillage commun | US-FW-009 |
 | §8.2 Vocabulaire des effets d'écran | US-FW-016 (et chaque US de rendu pour ses effets) |
 | §8.2 Lignes init, `auth_success`, `game_resumed` | US-FW-010 |
