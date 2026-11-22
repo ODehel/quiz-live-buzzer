@@ -46,7 +46,7 @@ Ordre de travail : ordre numérique, la logique avant le rendu. Une US vide est 
 | [US-FW-001](US-FW-001-detecter-un-appui.md) | Détecter un appui | Logique | — | Implémentée |
 | [US-FW-002](US-FW-002-repondre-a-une-question-a-choix-multiples.md) | Répondre à une question à choix multiples | Logique | US-011 | Partielle |
 | [US-FW-003](US-FW-003-buzzer-sur-une-question-de-rapidite.md) | Buzzer sur une question de rapidité | Logique | US-012 | Partielle |
-| [US-FW-004](US-FW-004-dialoguer-avec-le-hub.md) | Dialoguer avec le hub | Logique | US-009 | Implémentée |
+| [US-FW-004](US-FW-004-dialoguer-avec-le-hub.md) | Dialoguer avec le hub | Logique | US-009 | Partielle |
 | [US-FW-005](US-FW-005-demarrer-et-sauthentifier.md) | Démarrer et s'authentifier | Logique | US-003, US-009 | Partielle |
 | [US-FW-006](US-FW-006-se-reconnecter-ou-etre-elimine.md) | Se reconnecter ou être éliminé | Logique | US-009 | Implémentée |
 | [US-FW-007](US-FW-007-garder-la-session-ouverte.md) | Garder la session ouverte | Logique | US-021 | Partielle |
@@ -76,7 +76,7 @@ Table de migration : le CDC n'est supprimé que lorsque chaque ligne est couvert
 |---|---|
 | §0 Note de passation | Supprimée (périmée, dette « CDC §0 et §11 périmés ») |
 | §1 Principe directeur, §2 Matériel | Ce fichier |
-| §3 Mécanique d'appui | ✅ US-FW-001 (détection, famille et valeur) ; appui d'une famille non armée ignoré : ✅ US-FW-002 (MCQ, Inerte, Éliminé), ✅ US-FW-003 (SPEED) ; zones tactiles actives seulement si affichées : US-FW-011 ; message non reconnu ignoré : US-FW-004 ; anti-rebond : constat reporté (`DEBTS.md`) |
+| §3 Mécanique d'appui | ✅ US-FW-001 (détection, famille et valeur) ; appui d'une famille non armée ignoré : ✅ US-FW-002 (MCQ, Inerte, Éliminé), ✅ US-FW-003 (SPEED) ; zones tactiles actives seulement si affichées : US-FW-011 ; message non reconnu, invalide ou `error` ignoré : ✅ US-FW-004 (CA-6, CA-7) ; anti-rebond : constat reporté (`DEBTS.md`) |
 | §4.1 Mode Inerte | ✅ US-FW-002 (CA-8, appuis ignorés, tous modes) ; appui du bouton rouge en Inerte : ✅ US-FW-003 |
 | §4.2 Modes armés MCQ | ✅ US-FW-002 |
 | §4.3 Modes armés SPEED (dont ré-armement) | ✅ US-FW-003 |
@@ -84,7 +84,7 @@ Table de migration : le CDC n'est supprimé que lorsque chaque ligne est couvert
 | §5 Reconnexion WiFi | US-FW-006 |
 | §6 Table de transitions | ✅ lignes MCQ, Inerte, « tout mode armé » et Éliminé-appui : US-FW-002 ; lignes SPEED : ✅ US-FW-003 ; passage en Éliminé : US-FW-006 |
 | §7 Recadrage du CSV | Supprimée (historique) ; écart « affichage progressif abandonné » : US-FW-011 |
-| §8.1 Messages reçus et émis | US-FW-004 ; armement et désarmement SPEED (`question_open`, `buzz_unlocked`, `buzz_locked`, `buzz_accepted`, `buzz_invalidated`, `buzz` émis) : ✅ US-FW-003 ; `token_*` : US-FW-007 ; `play_*` : US-FW-021 |
+| §8.1 Messages reçus et émis | ✅ US-FW-004 (lecture du type, rendu puis aiguillage, messages sans effet sur le mode, format de `auth`, `auth_refresh`, `answer`, `buzz`) ; armement et désarmement SPEED (`question_open`, `buzz_unlocked`, `buzz_locked`, `buzz_accepted`, `buzz_invalidated`, `buzz` émis) : ✅ US-FW-003 ; `token_*` : US-FW-007 ; `play_*` : US-FW-021 |
 | §8.2 Habillage commun | US-FW-009 |
 | §8.2 Vocabulaire des effets d'écran | US-FW-016 (et chaque US de rendu pour ses effets) |
 | §8.2 Lignes init, `auth_success`, `game_resumed` | US-FW-010 |
