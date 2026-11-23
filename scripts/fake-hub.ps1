@@ -14,6 +14,9 @@
     frame and the fragments carry a valid {"type":"timer_end"}: if the buzzer ever read them as a text
     message, an armed buzzer would show "Trop tard". The buzzer answers a ping with a pong at the library
     level: nothing is logged for it.
+    Ping and pong are written on the network stream of the WebSocket object, read by reflection (private
+    field '_innerStream' observed on .NET 11.0.0, fallback '_stream'). If neither is found the log says
+    "Flux reseau du WebSocket introuvable" and lists the Stream-like fields it saw: nothing was sent.
     The script stays ASCII-only (Windows PowerShell 5.1 reads a file without BOM as ANSI); accents in the
     messages are sent as JSON \u escapes.
     Run it in a real console (not the ISE: the menu reads single key presses).
@@ -158,25 +161,56 @@ function Send-WsFragmented([string[]]$parts) {
 }
 
 # A control frame (ping, pong) written straight on the network stream: System.Net.WebSockets has no public
-# way to send a ping on demand. Server frames are never masked. The stream is read from a private field of
-# the WebSocket object ('_stream'): if a .NET version renames it, the script says so and sends nothing.
-function Send-WsRawFrame([byte[]]$frame, [string]$label) {
-    if (-not (Test-WsOpen)) { return }
-    $flags = [System.Reflection.BindingFlags]'Instance,NonPublic'
-    $stream = $null
+# way to send a ping on demand. Server frames are never masked. The stream is read by reflection from a
+# private field of the WebSocket object, searched along the type chain (ServerWebSocket, then WebSocketBase).
+# Observed on .NET 11.0.0 (probe of 2026-11-23): the field is '_innerStream' (there is no '_stream'); the
+# old name '_stream' stays as a fallback. NOT yet run against a buzzer: if no field is found, the script
+# lists the Stream-like fields it saw and sends nothing.
+function Get-WsNetworkStream {
+    $flags = [System.Reflection.BindingFlags]'Instance,NonPublic,Public'
+    $names = @('_innerStream', '_stream')
+    $seen = New-Object System.Collections.Generic.List[string]
+    foreach ($name in $names) {
+        $type = $script:socket.GetType()
+        while ($type) {
+            $field = $type.GetField($name, $flags)
+            if ($field) {
+                $value = $field.GetValue($script:socket)
+                if ($value -is [System.IO.Stream]) {
+                    return [pscustomobject]@{ Stream = $value; Field = ('{0}.{1}' -f $type.Name, $name); Seen = '' }
+                }
+            }
+            $type = $type.BaseType
+        }
+    }
     $type = $script:socket.GetType()
-    while ($type -and -not $stream) {
-        $field = $type.GetField('_stream', $flags)
-        if ($field) { $stream = $field.GetValue($script:socket) }
+    while ($type) {
+        foreach ($field in $type.GetFields([System.Reflection.BindingFlags]'Instance,NonPublic,Public,DeclaredOnly')) {
+            if ([System.IO.Stream].IsAssignableFrom($field.FieldType) -or $field.Name -match 'tream') {
+                $seen.Add(('{0}.{1} ({2})' -f $type.Name, $field.Name, $field.FieldType.Name))
+            }
+        }
         $type = $type.BaseType
     }
-    if (-not $stream) {
-        Write-Log "Flux reseau du WebSocket introuvable (champ '_stream') : $label non envoye."
+    return [pscustomobject]@{ Stream = $null; Field = ''; Seen = ($seen -join ', ') }
+}
+
+function Send-WsRawFrame([byte[]]$frame, [string]$label) {
+    if (-not (Test-WsOpen)) { return }
+    $found = Get-WsNetworkStream
+    if (-not $found.Stream) {
+        $seen = if ($found.Seen) { $found.Seen } else { '(aucun)' }
+        Write-Log ("Flux reseau du WebSocket introuvable (champs '_innerStream' et '_stream' absents ou sans Stream) : $label non envoye. Champs de type Stream vus : $seen")
         return
     }
-    $stream.Write($frame, 0, $frame.Length)
-    $stream.Flush()
-    Write-Log "-> ($label)"
+    try {
+        $found.Stream.Write($frame, 0, $frame.Length)
+        $found.Stream.Flush()
+        Write-Log "-> ($label, ecrit sur $($found.Field))"
+    }
+    catch {
+        Write-Log "Ecriture de la trame impossible sur $($found.Field) : $label non envoye ($($_.Exception.Message))"
+    }
 }
 
 function Close-Socket {
