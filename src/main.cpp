@@ -12,6 +12,7 @@
 #include "BuzzerBehavior.h"
 #include "ScreenLocalFeedback.h"
 #include "TokenSessionMessageSender.h"
+#include "LoginRefusalHalt.h"
 #include "BuzzerButtonPressTranslator.h"
 #include "HubMessageDispatcher.h"
 #include "ButtonPressDetector.h"
@@ -117,7 +118,11 @@ BuzzerBehavior buzzerBehavior{messageSender, localFeedback};
 LcdRenderer lcdRenderer{tappableZonesScreen, buzzerBehavior};
 ArduinoHttpPoster arduinoHttpPoster;
 HttpTokenFetcher httpTokenFetcher{arduinoHttpPoster, "http://192.168.1.183:3000", ServerCredentials{HUB_USERNAME, HUB_PASSWORD}};
-TokenSessionMessageSender tokenSessionMessageSender{payloadSocketWriter, MessageSerializer{}, httpTokenFetcher};
+// Passe par `tappableZonesScreen` pour que les zones tactiles restent masquées sur l'écran de refus.
+LoginOutcomeDisplay loginOutcomeDisplay{tappableZonesScreen};
+// Un `401` au login d'une reconnexion arrête le buzzer comme au démarrage : `loop()` ne fait plus rien.
+LoginRefusalHalt loginRefusalHalt{loginOutcomeDisplay};
+TokenSessionMessageSender tokenSessionMessageSender{payloadSocketWriter, MessageSerializer{}, httpTokenFetcher, loginRefusalHalt};
 BuzzerButtonPressTranslator buzzerButtonPressTranslator{buzzerBehavior};
 HubMessageDispatcher hubMessageDispatcher{buzzerBehavior};
 ButtonPressDetector buttonPressDetector{physicalButtonReader, buzzerButtonPressTranslator};
@@ -129,8 +134,6 @@ WebSocketEventListener webSocketEventListener{client, buzzerEventTranslator};
 constexpr unsigned long LOGIN_RETRY_DELAY_MS = 5000;
 ArduinoSleeper arduinoSleeper;
 TokenAcquisition tokenAcquisition{httpTokenFetcher, arduinoSleeper, LOGIN_RETRY_DELAY_MS};
-// Passe par `tappableZonesScreen` pour que les zones tactiles restent masquées sur l'écran de refus.
-LoginOutcomeDisplay loginOutcomeDisplay{tappableZonesScreen};
 bool startupHalted = false;
 
 void setup()
@@ -163,7 +166,7 @@ void setup()
 
 void loop()
 {
-    if (startupHalted)
+    if (startupHalted || loginRefusalHalt.IsHalted())
         return;
     webSocketEventListener.Loop();
     buttonPressDetector.Poll();
