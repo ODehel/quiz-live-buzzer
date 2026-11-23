@@ -1,7 +1,7 @@
 # US-FW-002 — Répondre à une question à choix multiples
 
 - **Couche** : logique
-- **Statut** : Partielle, CA-1 à CA-9 rédigés depuis le réel le 2026-11-22 (CA-1 à CA-8 implémentés et testés ; CA-9 testé mais non câblé)
+- **Statut** : Partielle, CA-1 à CA-9 rédigés depuis le réel le 2026-11-22 (CA-1 à CA-9 implémentés et testés ; CA-9 câblé le 2026-11-23)
 - **Dépend du hub** : US-011
 
 ## User story
@@ -39,7 +39,7 @@ Tous les CA sont de la couche **logique** : le rendu du feedback est dans US-FW-
 | CA-6 | logique | Appui du bouton rouge pendant un MCQ armé | Ignoré : aucun envoi, aucun feedback, et le buzzer **reste armé** (un appui A–D ensuite est pris). Les deux familles se distinguent par la méthode appelée (`OnMcqPressed` ou `OnBuzzPressed`) | tests natifs `McqArmedBuzzerIgnoresBuzzPress` (ni `answer`, ni `buzz`, ni feedback) et `McqArmedBuzzerStaysMcqArmedOnBuzzPress` (`IsArmed()` vrai, puis un appui A–D est pris) | Implémenté et testé |
 | CA-7 | logique | `timer_end` reçu | Le mode armé courant (MCQ ou SPEED) repasse en Inerte : un appui ensuite est sans effet. Reçu en Inerte, il ne change rien au mode. L'affichage de `timer_end` (« Trop tard » seulement s'il y avait un mode armé) est rendu **avant** le dispatch (décision #5) | tests natifs `TimerEndDisarmsMcqArmedBuzzer`, `TimerEndDisarmsBuzzArmedBuzzer`, `TimerEndDisarmsTheBuzzer`, `TimerEndWhileInertChangesNothing` ; aiguillage : `test_dispatch` (`TimerEndDisarmsArmedBuzzer`) ; ordre rendu-puis-dispatch : `test_connection` (`TimerEndIsRenderedWithTheModeOfBeforeTheMessage`) | Implémenté et testé, `timer_end` reçu en Inerte compris |
 | CA-8 | logique | Appui alors que le buzzer est Inerte | Ignoré : aucun envoi, aucun feedback, quelle que soit la famille. Vaut avant tout armement, après un appui et après un `timer_end` | tests natifs `InertBuzzerDoesNotSendAnswerOnButtonPress`, `FreshInertBuzzerIgnoresEveryPress` (avant tout armement), `InertBuzzerAfterAnAnswerIgnoresEveryPress`, `InertBuzzerAfterABuzzIgnoresEveryPress` et `InertBuzzerAfterTimerEndIgnoresEveryPress` : lettres A–D et bouton rouge, ni envoi, ni feedback, `IsArmed()` faux | Implémenté et testé, bouton rouge compris (aussi US-FW-003 CA-7, sauf après `buzz_locked`) |
-| CA-9 | logique | Appui alors que le buzzer est Éliminé | Ignoré dans tous les modes, même armé : aucun envoi, aucun feedback. Terminal : seul un redémarrage physique en sort (CDC §4.4 et §6) | tests natifs `EliminatedBuzzerIgnoresButtonPress` et `EliminatedBuzzerIgnoresBuzzPress` (armé puis éliminé) | Testé dans `BuzzerBehavior`, **non câblé** : `OnEliminated()` n'a aucun appelant hors tests, et rien ne lit `ReconnectionPolicy::IsEliminated()`. Un buzzer éliminé répond donc encore à un appui. Écart consigné en dette ; câblage dans US-FW-006 |
+| CA-9 | logique | Appui alors que le buzzer est Éliminé | Ignoré dans tous les modes, même armé : aucun envoi, aucun feedback. Terminal : seul un redémarrage physique en sort (CDC §4.4 et §6) | tests natifs `EliminatedBuzzerIgnoresButtonPress` et `EliminatedBuzzerIgnoresBuzzPress` (armé puis éliminé) ; de bout en bout : `test_connection` (`McqArmedBuzzerIgnoresAPressOnceEliminated`, `SpeedArmedBuzzerIgnoresAPressOnceEliminated`) | Implémenté et testé : `ConnectionEventHandler::OnConnectionLost` appelle `OnEliminated()` (via `HubMessageDispatcher`) au passage en Éliminé de `ReconnectionPolicy` ; `OnEliminated()` désarme le mode, `IsArmed()` devient faux |
 
 ## Constats reportés
 
@@ -47,7 +47,6 @@ Rien de ce qui suit n'est un CA : ce sont des constats consignés dans `DEBTS.md
 
 - **Zones affichées mais mortes si le mode n'est pas Inerte** : `LcdRenderer` rend le message avant son dispatch (décision #5). Avec CA-2, un `question_choices` reçu pendant un SPEED armé montrerait les quatre zones alors que les appuis A–D resteraient ignorés. Si le hub n'envoie pas `timer_end` avant la question suivante, le buzzer reste bloqué sur l'ancien mode (le mode, lui, ne change plus : CA-2 est livré). À rouvrir quand le hub émet ces messages (US-011, US-012) ; le rendu conditionnel est porté par la dette « Écran de question : preuves manquantes et tests à réécrire » (US-FW-011 CA-6).
 - **Appui pendant une coupure** : un MCQ armé garde son mode pendant une reconnexion. Un appui pose le verrou, déclenche le feedback, puis l'envoi échoue sans que rien ne le sache (le retour de `sendTXT` est ignoré) : la réponse est perdue, le joueur voit « Réponse envoyée ». Le CDC §5 et §6 ne disent rien d'un mode armé pendant la coupure. À rouvrir avec la reprise de connexion côté hub (US-021) et US-FW-006.
-- **Éliminé armé** : `IsArmed()` reste vrai pour un buzzer éliminé auquel un message d'armement arrive ; `LcdRenderer` s'en sert pour `timer_end`. Sans effet tant qu'Éliminé n'est pas câblé.
 - **Armé sans zone affichée** : déjà en dette (« Buzzer armé sans zone tactile à l'écran »), qui vise `timer_tick` et les `question_choices` aux propositions inexploitables.
 
 ## Sources

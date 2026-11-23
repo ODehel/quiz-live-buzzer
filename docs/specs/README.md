@@ -80,7 +80,7 @@ Table de migration : le CDC n'est supprimé que lorsque chaque ligne est couvert
 | §4.1 Mode Inerte | ✅ US-FW-002 (CA-8, appuis ignorés, tous modes) ; appui du bouton rouge en Inerte : ✅ US-FW-003 |
 | §4.2 Modes armés MCQ | ✅ US-FW-002 |
 | §4.3 Modes armés SPEED (dont ré-armement) | ✅ US-FW-003 |
-| §4.4 Mode Éliminé | ✅ US-FW-006 (CA-3, CA-4, CA-9, CA-10 : silence total, réseau compris) ; appui ignoré en Éliminé : ✅ US-FW-002 (CA-9, non câblé : câblage à US-FW-006 CA-9) ; écran « Hors jeu » : ✅ US-FW-015 (CA-8, CA-12) |
+| §4.4 Mode Éliminé | ✅ US-FW-006 (CA-3, CA-4, CA-9 : silence total hors réseau) ; CA-10 (réseau actif après l'élimination) reste en dette ; appui ignoré en Éliminé : ✅ US-FW-002 (CA-9, câblé par US-FW-006 CA-9) ; écran « Hors jeu » : ✅ US-FW-015 (CA-8, CA-12) |
 | §5 Reconnexion WiFi | ✅ US-FW-006 (CA-1 à CA-8 : compteur, tentatives sur le WebSocket vers le hub, perte initiale exclue, intervalle de 5 s) |
 | §6 Table de transitions | ✅ lignes MCQ, Inerte, « tout mode armé » et Éliminé-appui : US-FW-002 ; lignes SPEED : ✅ US-FW-003 ; passage en Éliminé : ✅ US-FW-006 (CA-3, CA-9) |
 | §7 Recadrage du CSV | Supprimée (historique) ; écart « affichage progressif abandonné » : ✅ US-FW-011 (CA-2) |

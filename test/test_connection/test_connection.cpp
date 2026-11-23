@@ -43,6 +43,14 @@ protected:
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
     ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, mockMessageRenderer};
+
+    void EliminateTheBuzzer()
+    {
+        handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+        handler.OnConnectionLost();
+        handler.OnConnectionLost();
+        handler.OnConnectionLost();
+    }
 };
 
 TEST_F(ConnectionEventHandlerTest, BuzzerEliminatedAfterAThreeTimesDisconnection)
@@ -54,6 +62,93 @@ TEST_F(ConnectionEventHandlerTest, BuzzerEliminatedAfterAThreeTimesDisconnection
     handler.OnConnectionLost();
 
     EXPECT_TRUE(policy.IsEliminated());
+}
+
+TEST_F(ConnectionEventHandlerTest, McqArmedBuzzerIgnoresAPressOnceEliminated)
+{
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeAnswer(::testing::_)).Times(0);
+
+    handler.OnMessageReceived("{\"type\":\"question_choices\"}");
+    EliminateTheBuzzer();
+    buzzerBehavior.OnMcqPressed('A');
+
+    EXPECT_FALSE(buzzerBehavior.IsArmed());
+}
+
+TEST_F(ConnectionEventHandlerTest, SpeedArmedBuzzerIgnoresAPressOnceEliminated)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz()).Times(0);
+
+    handler.OnMessageReceived("{\"type\":\"question_open\"}");
+    EliminateTheBuzzer();
+    buzzerBehavior.OnBuzzPressed();
+
+    EXPECT_FALSE(buzzerBehavior.IsArmed());
+}
+
+TEST_F(ConnectionEventHandlerTest, ArmedBuzzerStillAnswersAfterTwoDisconnections)
+{
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('B')).Times(1);
+
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+    handler.OnMessageReceived("{\"type\":\"question_choices\"}");
+    handler.OnConnectionLost();
+    handler.OnConnectionLost();
+    buzzerBehavior.OnMcqPressed('B');
+}
+
+TEST_F(ConnectionEventHandlerTest, QuestionChoicesReceivedOnceEliminatedArmsNothing)
+{
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
+
+    EliminateTheBuzzer();
+    handler.OnMessageReceived("{\"type\":\"question_choices\"}");
+    buzzerBehavior.OnMcqPressed('A');
+
+    EXPECT_FALSE(buzzerBehavior.IsArmed());
+}
+
+TEST_F(ConnectionEventHandlerTest, QuestionOpenReceivedOnceEliminatedArmsNothing)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+
+    EliminateTheBuzzer();
+    handler.OnMessageReceived("{\"type\":\"question_open\"}");
+    buzzerBehavior.OnBuzzPressed();
+
+    EXPECT_FALSE(buzzerBehavior.IsArmed());
+}
+
+TEST_F(ConnectionEventHandlerTest, BuzzUnlockedReceivedOnceEliminatedArmsNothing)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+
+    EliminateTheBuzzer();
+    handler.OnMessageReceived("{\"type\":\"buzz_unlocked\"}");
+    buzzerBehavior.OnBuzzPressed();
+
+    EXPECT_FALSE(buzzerBehavior.IsArmed());
+}
+
+TEST_F(ConnectionEventHandlerTest, MessageReceivedOnceEliminatedIsNotRendered)
+{
+    EliminateTheBuzzer();
+
+    EXPECT_CALL(mockMessageRenderer, Apply(::testing::_)).Times(0);
+
+    handler.OnMessageReceived("{\"type\":\"question_choices\"}");
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+}
+
+TEST_F(ConnectionEventHandlerTest, TokenExpiringSoonReceivedOnceEliminatedSendsNothing)
+{
+    EliminateTheBuzzer();
+
+    EXPECT_CALL(mockSessionMessageSender, SendAuthRefresh()).Times(0);
+
+    handler.OnMessageReceived("{\"type\":\"token_expiring_soon\"}");
 }
 
 TEST_F(ConnectionEventHandlerTest, SpeedBuzzArmedOnQuestionOpenMessageReceived)
@@ -162,6 +257,28 @@ TEST(ConnectionEventHandlerRenderingTest, TimerEndIsRenderedWithTheModeOfBeforeT
     buzzerBehavior.OnQuestionOpen();
 
     EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{"Trop tard"}})).Times(1);
+
+    handler.OnMessageReceived("{\"type\":\"timer_end\"}");
+}
+
+TEST(ConnectionEventHandlerRenderingTest, TimerEndReceivedByAnArmedBuzzerOnceEliminatedIsNotRendered)
+{
+    ::testing::NiceMock<MockHubMessageSender> mockHubMessageSender;
+    ::testing::NiceMock<MockLocalFeedback> mockLocalFeedback;
+    ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
+    ::testing::NiceMock<MockScreen> mockScreen;
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
+    HubMessageDispatcher dispatcher{buzzerBehavior};
+    ReconnectionPolicy policy;
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer};
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+    handler.OnMessageReceived("{\"type\":\"question_open\"}");
+    handler.OnConnectionLost();
+    handler.OnConnectionLost();
+    handler.OnConnectionLost();
+
+    EXPECT_CALL(mockScreen, Display(::testing::_, ::testing::_)).Times(0);
 
     handler.OnMessageReceived("{\"type\":\"timer_end\"}");
 }
