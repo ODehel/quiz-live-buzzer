@@ -19,6 +19,18 @@ TEST(MessageSerializerTest, AnswerBMessageCarriesTheValue)
     EXPECT_EQ(serializer.SerializeAnswer('B'), "{\"type\":\"answer\",\"value\":\"B\"}");
 }
 
+TEST(MessageSerializerTest, AnswerCMessageCarriesTheValue)
+{
+    MessageSerializer serializer;
+    EXPECT_EQ(serializer.SerializeAnswer('C'), "{\"type\":\"answer\",\"value\":\"C\"}");
+}
+
+TEST(MessageSerializerTest, AnswerDMessageCarriesTheValue)
+{
+    MessageSerializer serializer;
+    EXPECT_EQ(serializer.SerializeAnswer('D'), "{\"type\":\"answer\",\"value\":\"D\"}");
+}
+
 TEST(MessageSerializerTest, AuthRefreshMessageCarriesTheToken)
 {
     MessageSerializer serializer;
