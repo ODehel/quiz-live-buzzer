@@ -14,6 +14,8 @@
 #include "ScreenLocalFeedback.h"
 #include "TokenSessionMessageSender.h"
 #include "LoginRefusalHalt.h"
+#include "NetworkHalt.h"
+#include "WebSocketConnectionCloser.h"
 #include "BuzzerButtonPressTranslator.h"
 #include "HubMessageDispatcher.h"
 #include "ButtonPressDetector.h"
@@ -121,14 +123,17 @@ ArduinoHttpPoster arduinoHttpPoster;
 HttpTokenFetcher httpTokenFetcher{arduinoHttpPoster, "http://192.168.1.183:3000", ServerCredentials{HUB_USERNAME, HUB_PASSWORD}};
 // Passe par `tappableZonesScreen` pour que les zones tactiles restent masquées sur l'écran de refus.
 LoginOutcomeDisplay loginOutcomeDisplay{tappableZonesScreen};
-// Un `401` au login d'une reconnexion arrête le buzzer comme au démarrage : `loop()` ne fait plus rien.
-LoginRefusalHalt loginRefusalHalt{loginOutcomeDisplay};
+// Arrêt terminal du réseau (US-FW-006 CA-10) : ferme le client et fait que `loop()` ne fait plus rien. Deux causes, un
+// seul mécanisme : l'élimination (`ConnectionEventHandler`) et un `401` au login d'une reconnexion (`LoginRefusalHalt`).
+WebSocketConnectionCloser connectionCloser{client};
+NetworkHalt networkHalt{connectionCloser};
+LoginRefusalHalt loginRefusalHalt{loginOutcomeDisplay, networkHalt};
 TokenSessionMessageSender tokenSessionMessageSender{payloadSocketWriter, MessageSerializer{}, httpTokenFetcher, loginRefusalHalt};
 BuzzerButtonPressTranslator buzzerButtonPressTranslator{buzzerBehavior};
 HubMessageDispatcher hubMessageDispatcher{buzzerBehavior};
 ButtonPressDetector buttonPressDetector{physicalButtonReader, buzzerButtonPressTranslator};
 ButtonPressDetector touchPressDetector{touchButtonReader, buzzerButtonPressTranslator};
-ConnectionEventHandler connectionEventHandler{reconnectionPolicy, hubMessageDispatcher, tokenSessionMessageSender, lcdRenderer};
+ConnectionEventHandler connectionEventHandler{reconnectionPolicy, hubMessageDispatcher, tokenSessionMessageSender, lcdRenderer, networkHalt};
 BuzzerEventTranslator buzzerEventTranslator{connectionEventHandler};
 WebSocketEventListener webSocketEventListener{client, buzzerEventTranslator};
 
@@ -170,7 +175,7 @@ void setup()
 
 void loop()
 {
-    if (startupHalted || loginRefusalHalt.IsHalted())
+    if (startupHalted || networkHalt.IsHalted())
         return;
     webSocketEventListener.Loop();
     buttonPressDetector.Poll();

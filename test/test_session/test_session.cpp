@@ -104,26 +104,43 @@ TEST(TokenSessionMessageSenderTest, SendsNoAuthAndReportsTheRefusalWhenTheLoginI
     sender.SendAuth();
 }
 
-TEST(LoginRefusalHaltTest, IsNotHaltedBeforeAnyRefusal)
+TEST(LoginRefusalHaltTest, NetworkIsNotHaltedBeforeAnyRefusal)
 {
     ::testing::StrictMock<MockScreen> mockScreen;
     LoginOutcomeDisplay loginOutcomeDisplay{mockScreen};
-    LoginRefusalHalt halt{loginOutcomeDisplay};
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    LoginRefusalHalt halt{loginOutcomeDisplay, networkHalt};
 
-    EXPECT_FALSE(halt.IsHalted());
+    EXPECT_FALSE(networkHalt.IsHalted());
 }
 
-TEST(LoginRefusalHaltTest, HaltsAndShowsTheRefusalScreenWhenTheLoginIsRefused)
+TEST(LoginRefusalHaltTest, HaltsTheNetworkAndShowsTheRefusalScreenWhenTheLoginIsRefused)
 {
     MockScreen mockScreen;
     LoginOutcomeDisplay loginOutcomeDisplay{mockScreen};
-    LoginRefusalHalt halt{loginOutcomeDisplay};
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    LoginRefusalHalt halt{loginOutcomeDisplay, networkHalt};
 
     EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{ScreenPresenter{}.ScreenForLoginRefused()})).Times(1);
 
     halt.OnLoginRefused();
 
-    EXPECT_TRUE(halt.IsHalted());
+    EXPECT_TRUE(networkHalt.IsHalted());
+}
+
+TEST(LoginRefusalHaltTest, ClosesTheConnectionWhenTheLoginIsRefused)
+{
+    ::testing::NiceMock<MockScreen> mockScreen;
+    LoginOutcomeDisplay loginOutcomeDisplay{mockScreen};
+    MockConnectionCloser mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    LoginRefusalHalt halt{loginOutcomeDisplay, networkHalt};
+
+    EXPECT_CALL(mockConnectionCloser, Close()).Times(1);
+
+    halt.OnLoginRefused();
 }
 
 int main(int argc, char **argv)
