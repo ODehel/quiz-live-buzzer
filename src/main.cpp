@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <string>
 #include <WebSocketsClient.h>
+#include "ObservableWebSocketsClient.h"
 #include <WiFi.h>
 #include <vector>
 #include "LcdRenderer.h"
@@ -110,7 +111,7 @@ TouchZoneReader touchZoneReader{tappableZonesScreen.Zones()};
 TouchButtonReader touchButtonReader{gt911, touchZoneReader};
 ScreenLocalFeedback localFeedback{tappableZonesScreen};
 ReconnectionPolicy reconnectionPolicy;
-WebSocketsClient client;
+ObservableWebSocketsClient client;
 WebSocketPayloadSocketWriter payloadSocketWriter{client};
 WebSocketMessageSender messageSender{MessageSerializer{}, client};
 PhysicalButtonReader physicalButtonReader{pinBuzzReader};
@@ -132,6 +133,8 @@ BuzzerEventTranslator buzzerEventTranslator{connectionEventHandler};
 WebSocketEventListener webSocketEventListener{client, buzzerEventTranslator};
 
 constexpr unsigned long LOGIN_RETRY_DELAY_MS = 5000;
+// US-FW-006 CA-8 : 5 s fixes entre deux tentatives de reconnexion (la bibliothèque rouvre toutes les 500 ms par défaut).
+constexpr unsigned long RECONNECT_INTERVAL_MS = 5000;
 ArduinoSleeper arduinoSleeper;
 TokenAcquisition tokenAcquisition{httpTokenFetcher, arduinoSleeper, LOGIN_RETRY_DELAY_MS};
 bool startupHalted = false;
@@ -161,6 +164,7 @@ void setup()
     }
     Serial.println("Login OK, opening the WebSocket.");
     tokenSessionMessageSender.UpdateToken(login.token);
+    client.setReconnectInterval(RECONNECT_INTERVAL_MS);
     client.begin("192.168.1.183", 3000, "/ws");
 }
 

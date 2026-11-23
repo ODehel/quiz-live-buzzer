@@ -34,6 +34,9 @@ public:
         case BuzzerEventType::Disconnected:
             connectionEventListener.OnConnectionLost();
             break;
+        case BuzzerEventType::ConnectionAttemptFailed:
+            connectionEventListener.OnConnectionAttemptFailed();
+            break;
         }
     }
 };

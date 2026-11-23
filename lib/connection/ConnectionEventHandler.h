@@ -19,6 +19,12 @@ private:
     MessageDeserializer messageDeserializer;
     MessageRenderer &messageRenderer;
 
+    void PropagateEliminationIfAny()
+    {
+        if (reconnectionPolicy.IsEliminated())
+            hubMessageDispatcher.OnEliminated();
+    }
+
 public:
     ConnectionEventHandler(ReconnectionPolicy &reconnectionPolicy, HubMessageDispatcher &hubMessageDispatcher, SessionMessageSender &sessionMessageSender, MessageRenderer &messageRenderer)
         : reconnectionPolicy(reconnectionPolicy), hubMessageDispatcher(hubMessageDispatcher), sessionMessageSender(sessionMessageSender), messageRenderer(messageRenderer)
@@ -33,8 +39,13 @@ public:
     void OnConnectionLost() override
     {
         reconnectionPolicy.OnConnectionLost();
-        if (reconnectionPolicy.IsEliminated())
-            hubMessageDispatcher.OnEliminated();
+        PropagateEliminationIfAny();
+    }
+
+    void OnConnectionAttemptFailed() override
+    {
+        reconnectionPolicy.OnReconnectFailed();
+        PropagateEliminationIfAny();
     }
 
     void OnMessageReceived(const std::string &message) override
