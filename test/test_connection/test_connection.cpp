@@ -321,6 +321,43 @@ TEST(ConnectionEventHandlerSessionTest, ReconnectionSendsAFreshTokenAfterTheHubC
     handler.OnConnectionEstablished();
 }
 
+class InvalidHubTextTest : public ConnectionEventHandlerTest, public ::testing::WithParamInterface<std::string>
+{
+};
+
+TEST_P(InvalidHubTextTest, IsNotRendered)
+{
+    EXPECT_CALL(mockMessageRenderer, Apply(::testing::_)).Times(0);
+
+    handler.OnMessageReceived(GetParam());
+}
+
+TEST_P(InvalidHubTextTest, ChangesNeitherTheModeNorSendsAnything)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
+    EXPECT_CALL(mockSessionMessageSender, SendAuth()).Times(0);
+    EXPECT_CALL(mockSessionMessageSender, SendAuthRefresh()).Times(0);
+
+    handler.OnMessageReceived(GetParam());
+    buzzerBehavior.OnBuzzPressed();
+    buzzerBehavior.OnMcqPressed('A');
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    NotACompleteJsonObjectWithATextType,
+    InvalidHubTextTest,
+    ::testing::Values(
+        std::string{""},
+        std::string{"hello"},
+        std::string{"[]"},
+        std::string{"42"},
+        std::string{"null"},
+        std::string{"{}"},
+        std::string{"{\"type\":42}"},
+        std::string{"{\"type\":\"question_open\""},
+        std::string{"{\"type\":\"question_open\"}garbage"}));
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

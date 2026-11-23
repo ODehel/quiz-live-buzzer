@@ -1,13 +1,14 @@
 #ifndef MESSAGE_DESERIALIZER_H
 #define MESSAGE_DESERIALIZER_H
 
+#include <optional>
 #include <string>
 #include "HubMessage.h"
 
 class MessageDeserializer 
 {
 public:
-    HubMessage Parse(const std::string &json) const;
+    std::optional<HubMessage> Parse(const std::string &json) const;
 };
 
 #endif

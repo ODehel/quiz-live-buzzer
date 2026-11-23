@@ -1,10 +1,53 @@
 #include <ArduinoJson.h>
 #include "MessageDeserializer.h"
 
-HubMessage MessageDeserializer::Parse(const std::string &json) const
+namespace
+{
+// Lit le texte octet par octet pour savoir où ArduinoJson s'arrête : il ignore ce qui suit l'objet.
+class CountingReader
+{
+private:
+    const std::string &text;
+    size_t position = 0;
+
+public:
+    explicit CountingReader(const std::string &text) : text(text)
+    {
+    }
+
+    int read()
+    {
+        return position < text.size() ? static_cast<unsigned char>(text[position++]) : -1;
+    }
+
+    size_t readBytes(char *buffer, size_t length)
+    {
+        size_t count = 0;
+        while (count < length && position < text.size())
+            buffer[count++] = text[position++];
+        return count;
+    }
+
+    bool OnlyWhitespaceRemains() const
+    {
+        for (size_t i = position; i < text.size(); ++i)
+            if (text[i] != ' ' && text[i] != '\t' && text[i] != '\n' && text[i] != '\r')
+                return false;
+        return true;
+    }
+};
+}
+
+std::optional<HubMessage> MessageDeserializer::Parse(const std::string &json) const
 {
     JsonDocument doc;
-    deserializeJson(doc, json);
+    CountingReader reader{json};
+    if (deserializeJson(doc, reader))
+        return std::nullopt;
+    if (!reader.OnlyWhitespaceRemains())
+        return std::nullopt;
+    if (!doc["type"].is<const char *>())
+        return std::nullopt;
     HubMessage message{doc["type"].as<std::string>()};
     if (doc["remaining_seconds"].is<int>())
         message = message.WithRemainingSeconds(doc["remaining_seconds"].as<int>());

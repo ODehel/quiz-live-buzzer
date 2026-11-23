@@ -1,6 +1,7 @@
 #ifndef CONNECTION_EVENT_HANDLER_H
 #define CONNECTION_EVENT_HANDLER_H
 
+#include <optional>
 #include <string>
 #include "ReconnectionPolicy.h"
 #include "HubMessageDispatcher.h"
@@ -41,7 +42,11 @@ public:
         if (reconnectionPolicy.IsEliminated())
             return;
 
-        HubMessage hubMessage = messageDeserializer.Parse(message);
+        std::optional<HubMessage> parsed = messageDeserializer.Parse(message);
+        if (!parsed)
+            return;
+
+        HubMessage hubMessage = *parsed;
         const std::string &type = hubMessage.Type();
         messageRenderer.Apply(hubMessage);
         if (type == "auth_success")
