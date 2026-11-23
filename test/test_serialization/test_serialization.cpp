@@ -43,6 +43,18 @@ TEST(MessageSerializerTest, AuthMessageCarriesTheToken)
     EXPECT_EQ(serializer.SerializeAuth("any-token"), "{\"type\":\"auth\",\"token\":\"any-token\"}");
 }
 
+TEST(MessageSerializerTest, AuthRefreshMessageInsertsTheTokenAsIs)
+{
+    MessageSerializer serializer;
+    EXPECT_EQ(serializer.SerializeAuthRefresh("q\"b\\s/n\n"), "{\"type\":\"auth_refresh\",\"token\":\"q\"b\\s/n\n\"}");
+}
+
+TEST(MessageSerializerTest, AuthMessageInsertsTheTokenAsIs)
+{
+    MessageSerializer serializer;
+    EXPECT_EQ(serializer.SerializeAuth("q\"b\\s/n\n"), "{\"type\":\"auth\",\"token\":\"q\"b\\s/n\n\"}");
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
