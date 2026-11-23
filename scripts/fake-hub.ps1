@@ -9,6 +9,12 @@
     Once the buzzer is connected, an interactive menu sends one hub message per key press (render messages
     that the real hub never emits yet: question_title, question_open, buzz_locked...).
     Every message received from the buzzer (answer, buzz, auth_refresh...) is logged.
+    Two entries are not render messages but probes of the WebSocket adapter of the buzzer (src/WebSocketEventListener.cpp,
+    US-FW-004 CA-12): a valid question_open sent as a BINARY frame, and a valid question_open sent as a TEXT message
+    split in two frames (the first one complete, the last one a single newline). The buzzer must ignore both without a
+    sound: screen and mode unchanged, nothing sent back. A ping probe is NOT possible here: the KeepAliveInterval of
+    the HttpListener WebSocket makes the .NET Framework send an unsolicited PONG (WebSocketBase, BufferType.UnsolicitedPong),
+    never a PING, and no API of HttpListener sends a raw ping frame.
     The script stays ASCII-only (Windows PowerShell 5.1 reads a file without BOM as ANSI); accents in the
     messages are sent as JSON \u escapes.
     Run it in a real console (not the ISE: the menu reads single key presses).
@@ -82,7 +88,14 @@ $menu = @(
     @{ Key = 'i'; Label = 'question_result : SPEED, valide'
        Json = '{"type":"question_result","correct_answer":"Berlin","correct":true}' },
     @{ Key = 'j'; Label = 'question_result : SPEED, rate'
-       Json = '{"type":"question_result","correct_answer":"Berlin","correct":false}' }
+       Json = '{"type":"question_result","correct_answer":"Berlin","correct":false}' },
+    # Probes of the WebSocket adapter (US-FW-004 CA-12). Expected on the buzzer: nothing (screen, mode and log unchanged).
+    @{ Key = 'k'; Label = 'sonde adaptateur : question_open valide en trame BINAIRE (doit etre ignore)'
+       Mode = 'binary'
+       Json = '{"type":"question_open","title":"Quel animal a trois c\u0153urs ?"}' },
+    @{ Key = 'l'; Label = 'sonde adaptateur : question_open valide en 2 trames texte, 1re complete (doit etre ignore)'
+       Mode = 'fragmented'
+       Json = ('{"type":"question_open","title":"Quel animal a trois c\u0153urs ?"}' + "`n") }
 )
 
 function Show-Menu {
@@ -102,15 +115,30 @@ function Send-Http($response, [int]$status, [string]$json) {
     $response.Close()
 }
 
-function Send-Ws([string]$json) {
+# $mode: 'text' (default, one complete text frame) | 'binary' (one complete binary frame) |
+#        'fragmented' (one text message in two frames: every byte but the last with endOfMessage=false, then the last byte with true).
+function Send-Ws([string]$json, [string]$mode = 'text') {
     if (-not $script:socket -or $script:socket.State -ne [System.Net.WebSockets.WebSocketState]::Open) {
         Write-Log 'Aucun buzzer connecte : message non envoye.'
         return
     }
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
+    $none = [System.Threading.CancellationToken]::None
+    $shown = $json.Trim()
+    if ($mode -eq 'fragmented') {
+        $head = [System.ArraySegment[byte]]::new($bytes, 0, $bytes.Length - 1)
+        $tail = [System.ArraySegment[byte]]::new($bytes, $bytes.Length - 1, 1)
+        $script:socket.SendAsync($head, [System.Net.WebSockets.WebSocketMessageType]::Text, $false, $none).Wait()
+        $script:socket.SendAsync($tail, [System.Net.WebSockets.WebSocketMessageType]::Text, $true, $none).Wait()
+        Write-Log ('-> (texte en 2 trames : {0} octets puis 1 octet) {1}' -f ($bytes.Length - 1), $shown)
+        return
+    }
+    $type = [System.Net.WebSockets.WebSocketMessageType]::Text
+    if ($mode -eq 'binary') { $type = [System.Net.WebSockets.WebSocketMessageType]::Binary }
     $segment = [System.ArraySegment[byte]]::new($bytes)
-    $script:socket.SendAsync($segment, [System.Net.WebSockets.WebSocketMessageType]::Text, $true, [System.Threading.CancellationToken]::None).Wait()
-    Write-Log "-> $json"
+    $script:socket.SendAsync($segment, $type, $true, $none).Wait()
+    if ($mode -eq 'binary') { Write-Log "-> (trame binaire) $shown" }
+    else { Write-Log "-> $json" }
 }
 
 function Close-Socket {
@@ -206,7 +234,10 @@ try {
             if ($key -eq 'q') { $running = $false; break }
             if ($key -eq 'm') { Show-Menu; continue }
             $item = $menu | Where-Object { $_.Key -eq $key } | Select-Object -First 1
-            if ($item) { Send-Ws $item.Json }
+            if ($item) {
+                if ($item.Mode) { Send-Ws $item.Json $item.Mode }
+                else { Send-Ws $item.Json }
+            }
         }
     }
 }
