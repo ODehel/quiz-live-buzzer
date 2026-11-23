@@ -32,10 +32,15 @@ public:
     void OnConnectionLost() override
     {
         reconnectionPolicy.OnReconnectFailed();
+        if (reconnectionPolicy.IsEliminated())
+            hubMessageDispatcher.OnEliminated();
     }
 
     void OnMessageReceived(const std::string &message) override
     {
+        if (reconnectionPolicy.IsEliminated())
+            return;
+
         HubMessage hubMessage = messageDeserializer.Parse(message);
         const std::string &type = hubMessage.Type();
         messageRenderer.Apply(hubMessage);

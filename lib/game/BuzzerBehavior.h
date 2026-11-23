@@ -21,7 +21,7 @@ private:
     bool isEliminated = false;
     void ArmFromInert(Mode armedMode)
     {
-        if (mode == Mode::Inert)
+        if (!isEliminated && mode == Mode::Inert)
             mode = armedMode;
     }
 
@@ -90,6 +90,7 @@ public:
     void OnEliminated()
     {
         isEliminated = true;
+        mode = Mode::Inert;
     }
 };
 

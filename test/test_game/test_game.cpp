@@ -125,6 +125,50 @@ TEST_F(BuzzerBehaviorTest, EliminatedBuzzerIgnoresBuzzPress)
     buzzerBehavior.OnBuzzPressed();
 }
 
+TEST_F(BuzzerBehaviorTest, EliminatedBuzzerIsNoLongerArmed)
+{
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnEliminated();
+
+    EXPECT_FALSE(buzzerBehavior.IsArmed());
+}
+
+TEST_F(BuzzerBehaviorTest, EliminatedBuzzerIsNotArmedByQuestionChoices)
+{
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeAnswer(::testing::_)).Times(0);
+
+    buzzerBehavior.OnEliminated();
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnMcqPressed('A');
+
+    EXPECT_FALSE(buzzerBehavior.IsArmed());
+}
+
+TEST_F(BuzzerBehaviorTest, EliminatedBuzzerIsNotArmedByQuestionOpen)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz()).Times(0);
+
+    buzzerBehavior.OnEliminated();
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzPressed();
+
+    EXPECT_FALSE(buzzerBehavior.IsArmed());
+}
+
+TEST_F(BuzzerBehaviorTest, EliminatedBuzzerIsNotArmedByBuzzUnlocked)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz()).Times(0);
+
+    buzzerBehavior.OnEliminated();
+    buzzerBehavior.OnBuzzUnlocked();
+    buzzerBehavior.OnBuzzPressed();
+
+    EXPECT_FALSE(buzzerBehavior.IsArmed());
+}
+
 TEST_F(BuzzerBehaviorTest, ArmedBuzzerAcknowledgesAnswerOnButtonPress)
 {
     EXPECT_CALL(mockLocalFeedback, AcknowledgeAnswer('C')).Times(1);

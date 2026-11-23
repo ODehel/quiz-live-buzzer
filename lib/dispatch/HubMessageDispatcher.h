@@ -14,6 +14,11 @@ public:
     {
     }
 
+    void OnEliminated()
+    {
+        buzzerBehavior.OnEliminated();
+    }
+
     void Dispatch(const std::string &type)
     {
         if (type == "question_open")
