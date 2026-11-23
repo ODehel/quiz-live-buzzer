@@ -303,6 +303,61 @@ TEST(MessageDeserializerTest, ParsedObjectFollowedByASingleClosingBraceIsRejecte
     EXPECT_FALSE(deserializer.Parse("{\"type\":\"question_open\"}}").has_value());
 }
 
+class KnownHubTypeTest : public ::testing::TestWithParam<std::string>
+{
+};
+
+TEST_P(KnownHubTypeTest, ParsedMessageOfAKnownTypeIsReadAsReceived)
+{
+    MessageDeserializer deserializer;
+
+    std::optional<HubMessage> message = deserializer.Parse("{\"type\":\"" + GetParam() + "\"}");
+
+    ASSERT_TRUE(message.has_value());
+    EXPECT_EQ(message->Type(), GetParam());
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    TypesRoutedByTheBuzzer,
+    KnownHubTypeTest,
+    ::testing::Values(
+        std::string{"question_choices"},
+        std::string{"question_open"},
+        std::string{"timer_end"},
+        std::string{"buzz_unlocked"},
+        std::string{"auth_success"},
+        std::string{"token_expiring_soon"}));
+
+class UnrecognizedHubTypeTest : public ::testing::TestWithParam<std::string>
+{
+};
+
+TEST_P(UnrecognizedHubTypeTest, ParsedMessageOfAnUnrecognizedTypeIsReadAsReceivedAndNotNormalized)
+{
+    MessageDeserializer deserializer;
+
+    std::optional<HubMessage> message = deserializer.Parse("{\"type\":\"" + GetParam() + "\"}");
+
+    ASSERT_TRUE(message.has_value());
+    EXPECT_EQ(message->Type(), GetParam());
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    UnknownEmptyOrNotExactlyAKnownType,
+    UnrecognizedHubTypeTest,
+    ::testing::Values(
+        std::string{"unknown_type"},
+        std::string{""},
+        std::string{"QUESTION_OPEN"},
+        std::string{"Question_Choices"},
+        std::string{"BUZZ_UNLOCKED"},
+        std::string{"TIMER_END"},
+        std::string{" question_open"},
+        std::string{"question_open "},
+        std::string{"timer_end "},
+        std::string{"error"},
+        std::string{"ERROR"}));
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
