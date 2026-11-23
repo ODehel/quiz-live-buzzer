@@ -3,16 +3,16 @@
 
 #include "BuzzerEventTranslator.h"
 
-class WebSocketsClient;
+class ObservableWebSocketsClient;
 
 class WebSocketEventListener
 {
 private:
-    WebSocketsClient &client;
+    ObservableWebSocketsClient &client;
     BuzzerEventTranslator &buzzerEventTranslator;
 
 public:
-    WebSocketEventListener(WebSocketsClient &client, BuzzerEventTranslator &buzzerEventTranslator)
+    WebSocketEventListener(ObservableWebSocketsClient &client, BuzzerEventTranslator &buzzerEventTranslator)
         : client(client), buzzerEventTranslator(buzzerEventTranslator)
     {
     }

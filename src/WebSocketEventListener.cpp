@@ -1,5 +1,5 @@
 #include "WebSocketEventListener.h"
-#include "WebSocketsClient.h"
+#include "ObservableWebSocketsClient.h"
 
 void WebSocketEventListener::Begin()
 {
@@ -23,5 +23,6 @@ void WebSocketEventListener::Begin()
 
 void WebSocketEventListener::Loop()
 {
-    client.loop();
+    if (client.LoopAndTellIfTheConnectFailed())
+        buzzerEventTranslator.TranslateBuzzerEvent({BuzzerEventType::ConnectionAttemptFailed, ""});
 }

@@ -5,7 +5,8 @@ enum class BuzzerEventType
 {
     Connected,
     TextReceived,
-    Disconnected
+    Disconnected,
+    ConnectionAttemptFailed
 };
 
 #endif

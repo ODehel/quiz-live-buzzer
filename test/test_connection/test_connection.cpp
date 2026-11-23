@@ -29,6 +29,7 @@ class MockConnectionEventListener : public ConnectionEventListener
 public:
     MOCK_METHOD(void, OnConnectionEstablished, (), (override));
     MOCK_METHOD(void, OnConnectionLost, (), (override));
+    MOCK_METHOD(void, OnConnectionAttemptFailed, (), (override));
     MOCK_METHOD(void, OnMessageReceived, (const std::string &), (override));
 };
 
@@ -64,6 +65,81 @@ TEST_F(ConnectionEventHandlerTest, BuzzerEliminatedAtTheFourthDisconnectionAfter
     EXPECT_FALSE(policy.IsEliminated());
 
     handler.OnConnectionLost();
+    EXPECT_TRUE(policy.IsEliminated());
+}
+
+TEST_F(ConnectionEventHandlerTest, BuzzerEliminatedAtTheThirdFailedConnectionAttemptAfterTheLossOfTheEstablishedConnection)
+{
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+    handler.OnConnectionLost();
+
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionAttemptFailed();
+    EXPECT_FALSE(policy.IsEliminated());
+
+    handler.OnConnectionAttemptFailed();
+    EXPECT_TRUE(policy.IsEliminated());
+}
+
+TEST_F(ConnectionEventHandlerTest, FailedConnectionAttemptsCountEvenWithoutALossOfTheConnectionBefore)
+{
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionAttemptFailed();
+
+    EXPECT_TRUE(policy.IsEliminated());
+}
+
+TEST_F(ConnectionEventHandlerTest, ArmedBuzzerIsDisarmedWhenTheHubStaysUnreachable)
+{
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+    handler.OnMessageReceived("{\"type\":\"question_choices\"}");
+    handler.OnConnectionLost();
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionAttemptFailed();
+    EXPECT_TRUE(buzzerBehavior.IsArmed());
+
+    handler.OnConnectionAttemptFailed();
+
+    EXPECT_FALSE(buzzerBehavior.IsArmed());
+}
+
+TEST_F(ConnectionEventHandlerTest, FailedConnectionAttemptsBeforeTheFirstAuthSuccessNeverEliminate)
+{
+    for (int attempt = 0; attempt < 10; attempt++)
+        handler.OnConnectionAttemptFailed();
+
+    EXPECT_FALSE(policy.IsEliminated());
+}
+
+TEST_F(ConnectionEventHandlerTest, AuthSuccessBetweenFailedConnectionAttemptsResetsTheCount)
+{
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+    handler.OnConnectionLost();
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionAttemptFailed();
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+    handler.OnConnectionLost();
+
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionAttemptFailed();
+
+    EXPECT_FALSE(policy.IsEliminated());
+}
+
+TEST_F(ConnectionEventHandlerTest, ConnectionAttemptFailedEventEliminatesTheBuzzerAfterThreeFailures)
+{
+    BuzzerEventTranslator translator{handler};
+    translator.TranslateBuzzerEvent({BuzzerEventType::TextReceived, "{\"type\":\"auth_success\"}"});
+    translator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, ""});
+
+    translator.TranslateBuzzerEvent({BuzzerEventType::ConnectionAttemptFailed, ""});
+    translator.TranslateBuzzerEvent({BuzzerEventType::ConnectionAttemptFailed, ""});
+    EXPECT_FALSE(policy.IsEliminated());
+
+    translator.TranslateBuzzerEvent({BuzzerEventType::ConnectionAttemptFailed, ""});
     EXPECT_TRUE(policy.IsEliminated());
 }
 
@@ -213,6 +289,17 @@ TEST(BuzzerEventTranslatorTest, DisconnectionTriggersConnectionLost)
     EXPECT_CALL(mock, OnConnectionLost()).Times(1);
 
     translator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, ""});
+}
+
+TEST(BuzzerEventTranslatorTest, ConnectionAttemptFailedTriggersConnectionAttemptFailed)
+{
+    MockConnectionEventListener mock;
+    BuzzerEventTranslator translator{mock};
+
+    EXPECT_CALL(mock, OnConnectionAttemptFailed()).Times(1);
+    EXPECT_CALL(mock, OnConnectionLost()).Times(0);
+
+    translator.TranslateBuzzerEvent({BuzzerEventType::ConnectionAttemptFailed, ""});
 }
 
 TEST(BuzzerEventTranslatorTest, TextReceivedTriggersMessageReceived)
