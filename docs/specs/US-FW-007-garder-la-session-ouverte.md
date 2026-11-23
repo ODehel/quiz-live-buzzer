@@ -46,10 +46,10 @@ Tous les CA sont de la couche **logique**. « Preuve » dit ce qui établit le C
 Rien de ce qui suit n'est un CA : ce sont des constats consignés dans `DEBTS.md`, à rouvrir comme indiqué.
 
 - **Hub sans US-021** : au 2026-11-22 (`quiz-live-server` à `ef57459`), `ws-route.ts` ne traite pour un client authentifié que `request_game_state` ; aucun timer, aucun `token_expiring_soon` ni `token_expired`, `auth_refresh` ignoré. CA-1 à CA-7 ne se vérifient pas de bout en bout avant US-021 ; `scripts/fake-hub.ps1` n'émet pas non plus ces messages (non vérifié).
-- **`POST` bloquant du renouvellement** : le login se fait dans le callback de réception (`client.loop()` ne tourne pas) ; `HttpTokenFetcher` ne fixe aucun délai (non vérifié). Le hub coupe après 3 pings sans pong, un ping toutes les 30 s (US-015 CA-4, CA-7) : le risque est faible mais non mesuré, et il se répète à chaque message d'une rafale (CA-5).
+- **`POST` bloquant du renouvellement** : le login se fait dans le callback de réception (`client.loop()` ne tourne pas) ; `ArduinoHttpPoster` ne fixe aucun délai (non vérifié). Le hub coupe après 3 pings sans pong, un ping toutes les 30 s (US-015 CA-4, CA-7) : le risque est faible mais non mesuré, et il se répète à chaque message d'une rafale (CA-5).
 - **Coupure faute de renouvellement** (CA-3, CA-4) : le message `token_expired` puis la reconnexion perdent le message de jeu d'un mode armé, `game_resumed` ne ré-armant rien (décision #49, constat « Mode armé pendant la coupure »).
 - **Durée du token côté hub** : 3600 s par défaut, réglable (`JWT_EXPIRATION`) ; en dessous de 300 s, le hub prévient dès l'`auth_success`. Aucun CA : le comportement du buzzer est le même (CA-5).
-- **Écart de preuve** : CA-2 à CA-4 (renouvellement avec token frais, échecs), CA-5 (rafale), CA-6 (écran de l'`auth_success` de réponse), CA-7 (`token_expired`) n'ont aucun test natif ; `HttpTokenFetcher` reste sans test.
+- **Écart de preuve** : CA-2 à CA-4 (renouvellement avec token frais, échecs), CA-5 (rafale), CA-6 (écran de l'`auth_success` de réponse), CA-7 (`token_expired`) n'ont aucun test natif ; La correspondance statut → `LoginResult` de `HttpTokenFetcher` est testée (US-FW-005 CA-8) ; l'appel HTTP de `ArduinoHttpPoster` ne l'est pas.
 
 ## Sources
 

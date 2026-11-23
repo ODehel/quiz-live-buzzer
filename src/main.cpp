@@ -23,6 +23,7 @@
 #include "Gt911TouchReader.h"
 #include "TouchButtonReader.h"
 #include "ServerCredentials.h"
+#include "ArduinoHttpPoster.h"
 #include "HttpTokenFetcher.h"
 #include "ArduinoSleeper.h"
 #include "TokenAcquisition.h"
@@ -114,7 +115,8 @@ WebSocketMessageSender messageSender{MessageSerializer{}, client};
 PhysicalButtonReader physicalButtonReader{pinBuzzReader};
 BuzzerBehavior buzzerBehavior{messageSender, localFeedback};
 LcdRenderer lcdRenderer{tappableZonesScreen, buzzerBehavior};
-HttpTokenFetcher httpTokenFetcher{"http://192.168.1.183:3000", ServerCredentials{HUB_USERNAME, HUB_PASSWORD}};
+ArduinoHttpPoster arduinoHttpPoster;
+HttpTokenFetcher httpTokenFetcher{arduinoHttpPoster, "http://192.168.1.183:3000", ServerCredentials{HUB_USERNAME, HUB_PASSWORD}};
 TokenSessionMessageSender tokenSessionMessageSender{payloadSocketWriter, MessageSerializer{}, httpTokenFetcher};
 BuzzerButtonPressTranslator buzzerButtonPressTranslator{buzzerBehavior};
 HubMessageDispatcher hubMessageDispatcher{buzzerBehavior};

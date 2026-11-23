@@ -4,11 +4,18 @@
 #include <gmock/gmock.h>
 #include "TokenFetcher.h"
 #include "Sleeper.h"
+#include "HttpPoster.h"
 
 class MockTokenFetcher : public TokenFetcher
 {
 public:
     MOCK_METHOD(LoginResult, Fetch, (), (override));
+};
+
+class MockHttpPoster : public HttpPoster
+{
+public:
+    MOCK_METHOD(HttpResponse, PostJson, (const std::string &, const std::string &), (override));
 };
 
 class MockSleeper : public Sleeper
