@@ -307,7 +307,8 @@ TEST(ConnectionEventHandlerSessionTest, ReconnectionSendsAFreshTokenAfterTheHubC
     MockLocalFeedback mockLocalFeedback;
     MockPayloadSocketWriter mockPayloadSocketWriter;
     MockTokenFetcher mockTokenFetcher;
-    TokenSessionMessageSender tokenSessionMessageSender{mockPayloadSocketWriter, MessageSerializer{}, mockTokenFetcher};
+    ::testing::StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
+    TokenSessionMessageSender tokenSessionMessageSender{mockPayloadSocketWriter, MessageSerializer{}, mockTokenFetcher, mockLoginRefusalListener};
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;

@@ -53,7 +53,7 @@ Tous les CA sont de la couche **logique**. « Preuve » dit ce qui établit le C
 Rien de ce qui suit n'est un CA : ce sont des constats consignés dans `DEBTS.md`, à rouvrir comme indiqué.
 
 - **Deux logins au démarrage** (décision #48) : CA-9 décrit le comportement tel quel ; le second login est une dette existante (« Un `POST /api/v1/token` synchrone à chaque connexion »).
-- **`401` pendant une reconnexion** : `TokenSessionMessageSender::SendAuth` ignore un `InvalidCredentials` et envoie le dernier token ; le CDC se tait. Aucun CA, aucun code (décision #48) ; à rouvrir avec US-FW-006 (recul sur refus du hub, élimination).
+- **`401` pendant une reconnexion** : tranché par US-FW-006 CA-11 (décision #49) et implémenté le 2026-11-23 : `auth` n'est pas envoyé, le buzzer s'arrête comme au démarrage. Un autre échec du login garde la règle de CA-9 (dernier token).
 - **Message de jeu avant `auth_success`** : décision #47, rien de nouveau ici ; un appui avant `auth_success` est sans effet par l'Inerte (CA-11), pas par un état « authentifié ».
 - **Séquence bloquante, sans rendu d'init** : `setup()` garde la main pendant le Wi-Fi et le login (CA-1, CA-2, CA-4) ; le logo et le bandeau clignotant sont à US-FW-010. Dette existante.
 - **Adresse du hub en dur, HTTP clair** : `192.168.1.183:3000` figure deux fois dans `main.cpp`, les identifiants partent sans TLS. Dette existante, à rouvrir avec US-FW-022.
