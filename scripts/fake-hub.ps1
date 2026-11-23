@@ -9,6 +9,11 @@
     Once the buzzer is connected, an interactive menu sends one hub message per key press (render messages
     that the real hub never emits yet: question_title, question_open, buzz_locked...).
     Every message received from the buzzer (answer, buzz, auth_refresh...) is logged.
+    Keys [k] [l] [n] [o] send frames the buzzer must ignore without any visible effect (US-FW-004 CA-12):
+    a binary frame, a ping, an unsolicited pong and a text message split into three fragments. The binary
+    frame and the fragments carry a valid {"type":"timer_end"}: if the buzzer ever read them as a text
+    message, an armed buzzer would show "Trop tard". The buzzer answers a ping with a pong at the library
+    level: nothing is logged for it.
     The script stays ASCII-only (Windows PowerShell 5.1 reads a file without BOM as ANSI); accents in the
     messages are sent as JSON \u escapes.
     Run it in a real console (not the ISE: the menu reads single key presses).
@@ -82,7 +87,15 @@ $menu = @(
     @{ Key = 'i'; Label = 'question_result : SPEED, valide'
        Json = '{"type":"question_result","correct_answer":"Berlin","correct":true}' },
     @{ Key = 'j'; Label = 'question_result : SPEED, rate'
-       Json = '{"type":"question_result","correct_answer":"Berlin","correct":false}' }
+       Json = '{"type":"question_result","correct_answer":"Berlin","correct":false}' },
+    @{ Key = 'k'; Label = 'CA-12 : trame BINAIRE (octets de {"type":"timer_end"}), a ignorer'
+       Action = { Send-WsBinary '{"type":"timer_end"}' } },
+    @{ Key = 'l'; Label = 'CA-12 : PING (trame de controle 0x9), a ignorer'
+       Action = { Send-WsRawFrame ([byte[]](0x89, 0x04, 0x70, 0x69, 0x6E, 0x67)) 'PING (4 octets "ping")' } },
+    @{ Key = 'n'; Label = 'CA-12 : PONG non sollicite (trame de controle 0xA), a ignorer'
+       Action = { Send-WsRawFrame ([byte[]](0x8A, 0x04, 0x70, 0x6F, 0x6E, 0x67)) 'PONG non sollicite (4 octets "pong")' } },
+    @{ Key = 'o'; Label = 'CA-12 : texte FRAGMENTE en 3 morceaux (timer_end), perdu sans bruit'
+       Action = { Send-WsFragmented @('{"type":"tim', 'er_end"', '}') } }
 )
 
 function Show-Menu {
@@ -111,6 +124,59 @@ function Send-Ws([string]$json) {
     $segment = [System.ArraySegment[byte]]::new($bytes)
     $script:socket.SendAsync($segment, [System.Net.WebSockets.WebSocketMessageType]::Text, $true, [System.Threading.CancellationToken]::None).Wait()
     Write-Log "-> $json"
+}
+
+function Test-WsOpen {
+    if (-not $script:socket -or $script:socket.State -ne [System.Net.WebSockets.WebSocketState]::Open) {
+        Write-Log 'Aucun buzzer connecte : message non envoye.'
+        return $false
+    }
+    return $true
+}
+
+# One binary frame (US-FW-004 CA-12).
+function Send-WsBinary([string]$content) {
+    if (-not (Test-WsOpen)) { return }
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($content)
+    $segment = [System.ArraySegment[byte]]::new($bytes)
+    $script:socket.SendAsync($segment, [System.Net.WebSockets.WebSocketMessageType]::Binary, $true, [System.Threading.CancellationToken]::None).Wait()
+    Write-Log "-> (binaire) $content"
+}
+
+# One text message split into several WebSocket fragments: every part but the last is sent with
+# endOfMessage = $false (FIN = 0), so the buzzer receives a text frame then continuation frames.
+function Send-WsFragmented([string[]]$parts) {
+    if (-not (Test-WsOpen)) { return }
+    for ($i = 0; $i -lt $parts.Count; $i++) {
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($parts[$i])
+        $segment = [System.ArraySegment[byte]]::new($bytes)
+        $isLast = ($i -eq $parts.Count - 1)
+        $script:socket.SendAsync($segment, [System.Net.WebSockets.WebSocketMessageType]::Text, $isLast, [System.Threading.CancellationToken]::None).Wait()
+        Write-Log ('-> (fragment {0}/{1}, fin={2}) {3}' -f ($i + 1), $parts.Count, $isLast, $parts[$i])
+        Start-Sleep -Milliseconds 200
+    }
+}
+
+# A control frame (ping, pong) written straight on the network stream: System.Net.WebSockets has no public
+# way to send a ping on demand. Server frames are never masked. The stream is read from a private field of
+# the WebSocket object ('_stream'): if a .NET version renames it, the script says so and sends nothing.
+function Send-WsRawFrame([byte[]]$frame, [string]$label) {
+    if (-not (Test-WsOpen)) { return }
+    $flags = [System.Reflection.BindingFlags]'Instance,NonPublic'
+    $stream = $null
+    $type = $script:socket.GetType()
+    while ($type -and -not $stream) {
+        $field = $type.GetField('_stream', $flags)
+        if ($field) { $stream = $field.GetValue($script:socket) }
+        $type = $type.BaseType
+    }
+    if (-not $stream) {
+        Write-Log "Flux reseau du WebSocket introuvable (champ '_stream') : $label non envoye."
+        return
+    }
+    $stream.Write($frame, 0, $frame.Length)
+    $stream.Flush()
+    Write-Log "-> ($label)"
 }
 
 function Close-Socket {
@@ -206,7 +272,8 @@ try {
             if ($key -eq 'q') { $running = $false; break }
             if ($key -eq 'm') { Show-Menu; continue }
             $item = $menu | Where-Object { $_.Key -eq $key } | Select-Object -First 1
-            if ($item) { Send-Ws $item.Json }
+            if ($item -and $item.Action) { & $item.Action }
+            elseif ($item) { Send-Ws $item.Json }
         }
     }
 }
