@@ -50,17 +50,20 @@ protected:
         handler.OnConnectionLost();
         handler.OnConnectionLost();
         handler.OnConnectionLost();
+        handler.OnConnectionLost();
     }
 };
 
-TEST_F(ConnectionEventHandlerTest, BuzzerEliminatedAfterAThreeTimesDisconnection)
+TEST_F(ConnectionEventHandlerTest, BuzzerEliminatedAtTheFourthDisconnectionAfterAuthSuccess)
 {
     policy.OnAuthSuccess();
 
     handler.OnConnectionLost();
     handler.OnConnectionLost();
     handler.OnConnectionLost();
+    EXPECT_FALSE(policy.IsEliminated());
 
+    handler.OnConnectionLost();
     EXPECT_TRUE(policy.IsEliminated());
 }
 
@@ -88,12 +91,13 @@ TEST_F(ConnectionEventHandlerTest, SpeedArmedBuzzerIgnoresAPressOnceEliminated)
     EXPECT_FALSE(buzzerBehavior.IsArmed());
 }
 
-TEST_F(ConnectionEventHandlerTest, ArmedBuzzerStillAnswersAfterTwoDisconnections)
+TEST_F(ConnectionEventHandlerTest, ArmedBuzzerStillAnswersAfterThreeDisconnections)
 {
     EXPECT_CALL(mockHubMessageSender, SendAnswer('B')).Times(1);
 
     handler.OnMessageReceived("{\"type\":\"auth_success\"}");
     handler.OnMessageReceived("{\"type\":\"question_choices\"}");
+    handler.OnConnectionLost();
     handler.OnConnectionLost();
     handler.OnConnectionLost();
     buzzerBehavior.OnMcqPressed('B');
@@ -166,6 +170,7 @@ TEST_F(ConnectionEventHandlerTest, AuthSuccessMessageArmsThePolicy)
     handler.OnConnectionLost();
     handler.OnConnectionLost();
     handler.OnConnectionLost();
+    handler.OnConnectionLost();
 
     EXPECT_TRUE(policy.IsEliminated());
 }
@@ -182,6 +187,7 @@ TEST_F(ConnectionEventHandlerTest, DisconnectedEventTriggersConnectionLost)
     BuzzerEventTranslator translator{handler};
     policy.OnAuthSuccess();
 
+    translator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, ""});
     translator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, ""});
     translator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, ""});
     translator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, ""});
@@ -274,6 +280,7 @@ TEST(ConnectionEventHandlerRenderingTest, TimerEndReceivedByAnArmedBuzzerOnceEli
     ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer};
     handler.OnMessageReceived("{\"type\":\"auth_success\"}");
     handler.OnMessageReceived("{\"type\":\"question_open\"}");
+    handler.OnConnectionLost();
     handler.OnConnectionLost();
     handler.OnConnectionLost();
     handler.OnConnectionLost();

@@ -32,7 +32,7 @@ public:
 
     void OnConnectionLost() override
     {
-        reconnectionPolicy.OnReconnectFailed();
+        reconnectionPolicy.OnConnectionLost();
         if (reconnectionPolicy.IsEliminated())
             hubMessageDispatcher.OnEliminated();
     }

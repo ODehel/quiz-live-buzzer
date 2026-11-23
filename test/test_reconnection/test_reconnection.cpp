@@ -44,6 +44,55 @@ TEST(ReconnectionPolicyTest, EliminatedPolicyStaysEliminatedAfterAuthSuccess)
     EXPECT_TRUE(policy.IsEliminated());
 }
 
+TEST(ReconnectionPolicyTest, LossesBeforeTheFirstAuthSuccessNeverEliminate)
+{
+    ReconnectionPolicy policy;
+    for (int i = 0; i < 10; i++)
+    {
+        policy.OnConnectionLost();
+    }
+    EXPECT_FALSE(policy.IsEliminated());
+}
+
+TEST(ReconnectionPolicyTest, LossOfTheEstablishedConnectionIsNotAFailure)
+{
+    ReconnectionPolicy policy;
+    policy.OnAuthSuccess();
+    policy.OnConnectionLost();
+    for (int i = 0; i < 2; i++)
+    {
+        policy.OnConnectionLost();
+    }
+    EXPECT_FALSE(policy.IsEliminated());
+}
+
+TEST(ReconnectionPolicyTest, ThirdFailureAfterTheLossOfTheEstablishedConnectionEliminates)
+{
+    ReconnectionPolicy policy;
+    policy.OnAuthSuccess();
+    for (int i = 0; i < 4; i++)
+    {
+        policy.OnConnectionLost();
+    }
+    EXPECT_TRUE(policy.IsEliminated());
+}
+
+TEST(ReconnectionPolicyTest, AuthSuccessRearmsTheLossOfTheEstablishedConnection)
+{
+    ReconnectionPolicy policy;
+    policy.OnAuthSuccess();
+    for (int i = 0; i < 3; i++)
+    {
+        policy.OnConnectionLost();
+    }
+    policy.OnAuthSuccess();
+    for (int i = 0; i < 3; i++)
+    {
+        policy.OnConnectionLost();
+    }
+    EXPECT_FALSE(policy.IsEliminated());
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
