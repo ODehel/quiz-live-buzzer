@@ -80,7 +80,7 @@ Table de migration : le CDC n'est supprimé que lorsque chaque ligne est couvert
 | §4.1 Mode Inerte | ✅ US-FW-002 (CA-8, appuis ignorés, tous modes) ; appui du bouton rouge en Inerte : ✅ US-FW-003 |
 | §4.2 Modes armés MCQ | ✅ US-FW-002 |
 | §4.3 Modes armés SPEED (dont ré-armement) | ✅ US-FW-003 |
-| §4.4 Mode Éliminé | ✅ US-FW-006 (CA-3, CA-4, CA-9 : silence total ; CA-10 : réseau arrêté, logique testée, fermeture du client et arrêt de `loop()` dans `src/` ni compilés ni constatés sur le matériel) ; appui ignoré en Éliminé : ✅ US-FW-002 (CA-9, câblé par US-FW-006 CA-9) ; écran « Hors jeu » : ✅ US-FW-015 (CA-8, CA-12) |
+| §4.4 Mode Éliminé | ✅ US-FW-006 (CA-3, CA-4, CA-9 : silence total ; CA-10 : réseau arrêté, logique testée ; `src/` compilé (build `esp32`) et arrêt du réseau constaté côté hub le 2026-11-24 (un hub arrêté puis relancé ne revoit plus le buzzer) ; non constatés : la durée de l'élimination, la fermeture vue côté hub après un `401` en reconnexion, aucun journal série) ; appui ignoré en Éliminé : ✅ US-FW-002 (CA-9, câblé par US-FW-006 CA-9) ; écran « Hors jeu » : ✅ US-FW-015 (CA-8, CA-12) |
 | §5 Reconnexion WiFi | ✅ US-FW-006 (CA-1 à CA-6 : compteur, perte initiale exclue ; CA-7 : un connect raté compte, logique testée ; CA-8 : intervalle de 5 s) ; l'émission du connect raté et l'intervalle (`src/`) n'ont été ni compilés ni constatés sur le matériel |
 | §6 Table de transitions | ✅ lignes MCQ, Inerte, « tout mode armé » et Éliminé-appui : US-FW-002 ; lignes SPEED : ✅ US-FW-003 ; passage en Éliminé : ✅ US-FW-006 (CA-3, CA-9) |
 | §7 Recadrage du CSV | Supprimée (historique) ; écart « affichage progressif abandonné » : ✅ US-FW-011 (CA-2) |
