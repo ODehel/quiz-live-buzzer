@@ -82,6 +82,19 @@ public:
         return "Connexion refusée\nLe hub n’a pas accepté ce buzzer\nPréviens le maître du jeu";
     }
 
+    std::string ConnectionLostTitle() const
+    {
+        return "Connexion perdue";
+    }
+
+    // Le « 3 » est celui de la politique de reconnexion : trois échecs comptés mènent à « Hors jeu ».
+    static constexpr int ReconnectionAttemptCount = 3;
+
+    std::string ConnectionLostAttemptLabel(int attempt) const
+    {
+        return "Tentative " + std::to_string(attempt) + "/" + std::to_string(ReconnectionAttemptCount);
+    }
+
     std::string OutOfGameTitle() const
     {
         return "Hors jeu";

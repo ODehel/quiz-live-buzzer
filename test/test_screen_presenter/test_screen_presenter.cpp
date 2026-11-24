@@ -187,6 +187,34 @@ TEST(ScreenPresenterTopBarTest, AuthSuccessWithoutUsernameShowsAnEmptyName)
     EXPECT_EQ(TopBar::ForPlayer(""), topBar);
 }
 
+TEST(ScreenPresenterTopBarTest, AuthSuccessShowsALinkedTopBar)
+{
+    ScreenPresenter presenter;
+
+    const TopBar topBar = presenter.TopBarFor(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"));
+
+    EXPECT_FALSE(topBar.linkCut);
+}
+
+TEST(TopBarTest, ACutLinkKeepsTheNameAndTheVisibility)
+{
+    const TopBar cut = TopBar::ForPlayer("Camille").WithLinkCut();
+
+    EXPECT_TRUE(cut.visible);
+    EXPECT_EQ("Camille", cut.playerName);
+    EXPECT_TRUE(cut.linkCut);
+}
+
+TEST(TopBarTest, ACutLinkIsNotTheLinkedTopBarOfTheSameName)
+{
+    EXPECT_FALSE(TopBar::ForPlayer("Camille") == TopBar::ForPlayer("Camille").WithLinkCut());
+}
+
+TEST(TopBarTest, AHiddenTopBarHasNoCutLink)
+{
+    EXPECT_FALSE(TopBar::Hidden().linkCut);
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
@@ -201,4 +229,32 @@ TEST(ScreenPresenterOutOfGameTest, PresentsTheTitleTheCauseAndTheOnlyWayOut)
 
     const ScreenModel expected = OutOfGameScreen{"Hors jeu", "Connexion perdue après 3 tentatives", "Redémarre le buzzer pour revenir"};
     EXPECT_EQ(expected, screen);
+}
+
+TEST(ScreenPresenterConnectionLostTest, PresentsTheTitleAndTheAttemptInProgressOutOfThree)
+{
+    ScreenPresenter presenter;
+
+    const ScreenModel screen = presenter.ScreenForConnectionLost(2);
+
+    const ScreenModel expected = ConnectionLostScreen{"Connexion perdue", "Tentative 2/3", 2, 3};
+    EXPECT_EQ(expected, screen);
+}
+
+TEST(ScreenPresenterConnectionLostTest, NumbersTheFirstAndTheLastAttempt)
+{
+    ScreenPresenter presenter;
+
+    EXPECT_EQ((ScreenModel{ConnectionLostScreen{"Connexion perdue", "Tentative 1/3", 1, 3}}), presenter.ScreenForConnectionLost(1));
+    EXPECT_EQ((ScreenModel{ConnectionLostScreen{"Connexion perdue", "Tentative 3/3", 3, 3}}), presenter.ScreenForConnectionLost(3));
+}
+
+TEST(ScreenPresenterConnectionLostTest, LeavesTheDimmedScreenToTheRetainedOne)
+{
+    ScreenPresenter presenter;
+
+    const ConnectionLostScreen screen = std::get<ConnectionLostScreen>(presenter.ScreenForConnectionLost(1));
+
+    EXPECT_EQ(DimmedScreen{}, screen.dimmed);
+    EXPECT_FALSE(screen.bannerOnly);
 }

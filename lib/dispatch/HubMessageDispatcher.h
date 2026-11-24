@@ -19,6 +19,16 @@ public:
         buzzerBehavior.OnEliminated();
     }
 
+    void OnLinkLost()
+    {
+        buzzerBehavior.OnLinkLost();
+    }
+
+    void OnLinkEstablished()
+    {
+        buzzerBehavior.OnLinkEstablished();
+    }
+
     void Dispatch(const std::string &type)
     {
         if (type == "question_open")

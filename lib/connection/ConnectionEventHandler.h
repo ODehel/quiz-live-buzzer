@@ -11,6 +11,7 @@
 #include "MessageRenderer.h"
 #include "NetworkHalt.h"
 #include "OutOfGameDisplay.h"
+#include "LinkStateDisplay.h"
 
 class ConnectionEventHandler : public ConnectionEventListener
 {
@@ -21,6 +22,7 @@ private:
     MessageDeserializer messageDeserializer;
     MessageRenderer &messageRenderer;
     OutOfGameDisplay &outOfGameDisplay;
+    LinkStateDisplay &linkStateDisplay;
     NetworkHalt &networkHalt;
 
     void PropagateEliminationIfAny()
@@ -34,9 +36,20 @@ private:
         networkHalt.Halt();
     }
 
+    // La liaison est coupée dès la perte de la connexion établie et le reste jusqu'à l'`auth_success` suivant (US-FW-015 CA-1, CA-4) :
+    // les appuis sont ignorés et l'écran de coupure affiche la tentative en cours. Rien avant le premier `auth_success` (CA-6), ni une fois
+    // le réseau arrêté : l'élimination arrête le réseau (« Hors jeu » est terminal, jamais « 4/3 »), tout comme le refus du login.
+    void ShowLinkLostIfAny()
+    {
+        if (!reconnectionPolicy.IsArmed() || networkHalt.IsHalted())
+            return;
+        hubMessageDispatcher.OnLinkLost();
+        linkStateDisplay.ShowLinkLost(reconnectionPolicy.CurrentAttempt());
+    }
+
 public:
-    ConnectionEventHandler(ReconnectionPolicy &reconnectionPolicy, HubMessageDispatcher &hubMessageDispatcher, SessionMessageSender &sessionMessageSender, MessageRenderer &messageRenderer, OutOfGameDisplay &outOfGameDisplay, NetworkHalt &networkHalt)
-        : reconnectionPolicy(reconnectionPolicy), hubMessageDispatcher(hubMessageDispatcher), sessionMessageSender(sessionMessageSender), messageRenderer(messageRenderer), outOfGameDisplay(outOfGameDisplay), networkHalt(networkHalt)
+    ConnectionEventHandler(ReconnectionPolicy &reconnectionPolicy, HubMessageDispatcher &hubMessageDispatcher, SessionMessageSender &sessionMessageSender, MessageRenderer &messageRenderer, OutOfGameDisplay &outOfGameDisplay, LinkStateDisplay &linkStateDisplay, NetworkHalt &networkHalt)
+        : reconnectionPolicy(reconnectionPolicy), hubMessageDispatcher(hubMessageDispatcher), sessionMessageSender(sessionMessageSender), messageRenderer(messageRenderer), outOfGameDisplay(outOfGameDisplay), linkStateDisplay(linkStateDisplay), networkHalt(networkHalt)
     {
     }
 
@@ -52,12 +65,14 @@ public:
             return;
         reconnectionPolicy.OnConnectionLost();
         PropagateEliminationIfAny();
+        ShowLinkLostIfAny();
     }
 
     void OnConnectionAttemptFailed() override
     {
         reconnectionPolicy.OnReconnectFailed();
         PropagateEliminationIfAny();
+        ShowLinkLostIfAny();
     }
 
     void OnMessageReceived(const std::string &message) override
@@ -75,6 +90,7 @@ public:
         if (type == "auth_success")
         {
             reconnectionPolicy.OnAuthSuccess();
+            hubMessageDispatcher.OnLinkEstablished();
         }
         else if (type == "token_expiring_soon")
             sessionMessageSender.SendAuthRefresh();

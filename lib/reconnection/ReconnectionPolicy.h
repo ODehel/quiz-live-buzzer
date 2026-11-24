@@ -40,6 +40,18 @@ public:
     {
         return isEliminated;
     }
+
+    // Une première authentification a eu lieu : seule une connexion déjà établie peut être perdue (US-FW-015 CA-6).
+    bool IsArmed() const
+    {
+        return isArmed;
+    }
+
+    // La tentative en cours : les échecs comptés + 1 (« Tentative N/3 », US-FW-015 CA-1). La perte de la connexion établie n'est pas un échec.
+    int CurrentAttempt() const
+    {
+        return connectionFailuresCount + 1;
+    }
 };
 
 #endif

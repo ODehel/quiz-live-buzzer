@@ -1,5 +1,5 @@
 #include "WebSocketEventListener.h"
-#include "ObservableWebSocketsClient.h"
+#include "WebSocketsClient.h"
 
 void WebSocketEventListener::Begin()
 {
@@ -14,7 +14,8 @@ void WebSocketEventListener::Begin()
             buzzerEventTranslator.TranslateBuzzerEvent({BuzzerEventType::TextReceived, std::string(reinterpret_cast<char *>(payload), length)});
             break;
         case WStype_DISCONNECTED:
-            buzzerEventTranslator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, ""});
+            // La raison de la fermeture (absente à une fermeture sans motif) distingue la perte d'une connexion établie de l'échec d'une tentative.
+            buzzerEventTranslator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, payload ? std::string(reinterpret_cast<char *>(payload), length) : std::string()});
             break;
         default:
             break;
@@ -23,6 +24,5 @@ void WebSocketEventListener::Begin()
 
 void WebSocketEventListener::Loop()
 {
-    if (client.LoopAndTellIfTheConnectFailed())
-        buzzerEventTranslator.TranslateBuzzerEvent({BuzzerEventType::ConnectionAttemptFailed, ""});
+    client.loop();
 }

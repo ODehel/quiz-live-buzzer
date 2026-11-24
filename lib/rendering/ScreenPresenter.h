@@ -53,6 +53,12 @@ public:
         return OutOfGameScreen{displayState.OutOfGameTitle(), displayState.OutOfGameCause(), displayState.OutOfGameWayOut()};
     }
 
+    // Le bandeau de coupure de la tentative en cours ; le dernier écran à atténuer est ajouté par `RetainingScreen`.
+    ScreenModel ScreenForConnectionLost(int attempt) const
+    {
+        return ConnectionLostScreen{displayState.ConnectionLostTitle(), displayState.ConnectionLostAttemptLabel(attempt), attempt, DisplayState::ReconnectionAttemptCount};
+    }
+
     ScreenModel ScreenForTappedAnswer(char letter) const
     {
         const int zone = displayState.ZoneIndexForAnswer(letter);

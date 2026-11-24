@@ -17,6 +17,10 @@ private:
     ConnectionEventListener &connectionEventListener;
 
 public:
+    // La raison que la bibliothèque WebSockets (2.7.3) donne à la fermeture d'un client qui n'a jamais ouvert sa connexion : elle n'émet rien au
+    // connect raté lui-même, mais nettoie le client au tour suivant et le dit ainsi. Cette fermeture est l'échec de la tentative, une seule fois.
+    static constexpr const char *NeverOpenedDisconnectionReason = "TCP connection cleanup";
+
     BuzzerEventTranslator(ConnectionEventListener &connectionEventListener) : connectionEventListener(connectionEventListener)
     {
     }
@@ -32,7 +36,10 @@ public:
             connectionEventListener.OnMessageReceived(buzzerEvent.payload);
             break;
         case BuzzerEventType::Disconnected:
-            connectionEventListener.OnConnectionLost();
+            if (buzzerEvent.payload == NeverOpenedDisconnectionReason)
+                connectionEventListener.OnConnectionAttemptFailed();
+            else
+                connectionEventListener.OnConnectionLost();
             break;
         case BuzzerEventType::ConnectionAttemptFailed:
             connectionEventListener.OnConnectionAttemptFailed();

@@ -93,6 +93,42 @@ TEST(ReconnectionPolicyTest, AuthSuccessRearmsTheLossOfTheEstablishedConnection)
     EXPECT_FALSE(policy.IsEliminated());
 }
 
+TEST(ReconnectionPolicyTest, TheAttemptInProgressIsOneMoreThanTheCountedFailures)
+{
+    ReconnectionPolicy policy;
+    policy.OnAuthSuccess();
+    policy.OnConnectionLost();
+    EXPECT_EQ(policy.CurrentAttempt(), 1);
+
+    policy.OnReconnectFailed();
+    EXPECT_EQ(policy.CurrentAttempt(), 2);
+
+    policy.OnReconnectFailed();
+    EXPECT_EQ(policy.CurrentAttempt(), 3);
+}
+
+TEST(ReconnectionPolicyTest, AuthSuccessBringsTheAttemptInProgressBackToOne)
+{
+    ReconnectionPolicy policy;
+    policy.OnAuthSuccess();
+    policy.OnReconnectFailed();
+    policy.OnReconnectFailed();
+
+    policy.OnAuthSuccess();
+
+    EXPECT_EQ(policy.CurrentAttempt(), 1);
+}
+
+TEST(ReconnectionPolicyTest, IsArmedOnlyOnceAnAuthSuccessWasReceived)
+{
+    ReconnectionPolicy policy;
+    EXPECT_FALSE(policy.IsArmed());
+
+    policy.OnAuthSuccess();
+
+    EXPECT_TRUE(policy.IsArmed());
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

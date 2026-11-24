@@ -6,6 +6,7 @@
 #include "PayloadSocketWriter.h"
 #include "ConnectionCloser.h"
 #include "OutOfGameDisplay.h"
+#include "LinkStateDisplay.h"
 
 class MockPayloadSocketWriter : public PayloadSocketWriter
 {
@@ -23,6 +24,12 @@ class MockOutOfGameDisplay : public OutOfGameDisplay
 {
 public:
     MOCK_METHOD(void, ShowOutOfGame, (), (override));
+};
+
+class MockLinkStateDisplay : public LinkStateDisplay
+{
+public:
+    MOCK_METHOD(void, ShowLinkLost, (int), (override));
 };
 
 #endif

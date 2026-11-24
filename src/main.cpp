@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <string>
 #include <WebSocketsClient.h>
-#include "ObservableWebSocketsClient.h"
 #include <WiFi.h>
 #include <vector>
 #include "LcdRenderer.h"
@@ -24,6 +23,7 @@
 #include "WebSocketEventListener.h"
 #include "TouchZoneReader.h"
 #include "TappableZonesScreen.h"
+#include "RetainingScreen.h"
 #include "Gt911TouchReader.h"
 #include "TouchButtonReader.h"
 #include "ServerCredentials.h"
@@ -109,16 +109,19 @@ Gt911TouchReader gt911;
 GfxScreen gfxScreen{lcd};
 // Les zones tactiles suivent l'affichage : actives seulement quand les propositions A–D sont à l'écran (CDC §8.2).
 TappableZonesScreen tappableZonesScreen{gfxScreen, PanelWidth, PanelHeight};
+// Retient le dernier écran affiché, quel qu'en soit le producteur (message du hub ou feedback local), pour l'atténuer sous l'écran de coupure
+// (US-FW-015 CA-2) ; `LcdRenderer` et `ScreenLocalFeedback` passent par lui, le refus du login (terminal) reste direct.
+RetainingScreen retainingScreen{tappableZonesScreen};
 TouchZoneReader touchZoneReader{tappableZonesScreen.Zones()};
 TouchButtonReader touchButtonReader{gt911, touchZoneReader};
-ScreenLocalFeedback localFeedback{tappableZonesScreen};
+ScreenLocalFeedback localFeedback{retainingScreen};
 ReconnectionPolicy reconnectionPolicy;
-ObservableWebSocketsClient client;
+WebSocketsClient client;
 WebSocketPayloadSocketWriter payloadSocketWriter{client};
 WebSocketMessageSender messageSender{MessageSerializer{}, client};
 PhysicalButtonReader physicalButtonReader{pinBuzzReader};
 BuzzerBehavior buzzerBehavior{messageSender, localFeedback};
-LcdRenderer lcdRenderer{tappableZonesScreen, buzzerBehavior};
+LcdRenderer lcdRenderer{retainingScreen, buzzerBehavior};
 ArduinoHttpPoster arduinoHttpPoster;
 HttpTokenFetcher httpTokenFetcher{arduinoHttpPoster, "http://192.168.1.183:3000", ServerCredentials{HUB_USERNAME, HUB_PASSWORD}};
 // Passe par `tappableZonesScreen` pour que les zones tactiles restent masquées sur l'écran de refus.
@@ -133,7 +136,7 @@ BuzzerButtonPressTranslator buzzerButtonPressTranslator{buzzerBehavior};
 HubMessageDispatcher hubMessageDispatcher{buzzerBehavior};
 ButtonPressDetector buttonPressDetector{physicalButtonReader, buzzerButtonPressTranslator};
 ButtonPressDetector touchPressDetector{touchButtonReader, buzzerButtonPressTranslator};
-ConnectionEventHandler connectionEventHandler{reconnectionPolicy, hubMessageDispatcher, tokenSessionMessageSender, lcdRenderer, lcdRenderer, networkHalt};
+ConnectionEventHandler connectionEventHandler{reconnectionPolicy, hubMessageDispatcher, tokenSessionMessageSender, lcdRenderer, lcdRenderer, lcdRenderer, networkHalt};
 BuzzerEventTranslator buzzerEventTranslator{connectionEventHandler};
 WebSocketEventListener webSocketEventListener{client, buzzerEventTranslator};
 
