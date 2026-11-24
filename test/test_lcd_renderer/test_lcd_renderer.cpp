@@ -234,6 +234,45 @@ TEST(LcdRendererTest, QuestionChoicesLeavesTheScreenUnchangedWhenAQuestionIsAlre
     lcdRenderer.Apply(HubMessage{"question_choices"}.WithChoices({"Paris", "Lyon", "Nice", "Lille"}));
 }
 
+struct ArmingOpeningCase
+{
+    HubMessage message;
+    std::string openingText;
+};
+
+class ArmingOpeningMessageTest : public ::testing::TestWithParam<ArmingOpeningCase>
+{
+};
+
+TEST_P(ArmingOpeningMessageTest, LeavesTheScreenUnchangedWhenAQuestionIsAlreadyArmed)
+{
+    testing::StrictMock<MockScreen> mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    ON_CALL(armedModeReader, IsArmed()).WillByDefault(testing::Return(true));
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    lcdRenderer.Apply(GetParam().message);
+}
+
+TEST_P(ArmingOpeningMessageTest, ShowsTheOpeningScreenWhenNoQuestionIsArmed)
+{
+    testing::StrictMock<MockScreen> mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    ON_CALL(armedModeReader, IsArmed()).WillByDefault(testing::Return(false));
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{GetParam().openingText}})).Times(1);
+
+    lcdRenderer.Apply(GetParam().message);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    QuestionOpenAndBuzzUnlocked,
+    ArmingOpeningMessageTest,
+    ::testing::Values(
+        ArmingOpeningCase{HubMessage{"question_open"}.WithTitle("Quelle est la capitale du Portugal ?"), "Quelle est la capitale du Portugal ?"},
+        ArmingOpeningCase{HubMessage{"buzz_unlocked"}, "À nouveau possible de buzzer"}));
+
 TEST(LcdRendererTest, McqQuestionResultHighlightsTheCorrectZoneWithTheResultText)
 {
     testing::StrictMock<MockScreen> mockScreen;
