@@ -125,6 +125,17 @@ TEST_F(TappableZonesScreenTest, ATextScreenDeactivatesTheZones)
     EXPECT_EQ(TouchedAt(100, 100), ButtonInput::Unknown);
 }
 
+TEST_F(TappableZonesScreenTest, AnOutOfGameScreenDeactivatesTheZonesAndForwardsItsTopBar)
+{
+    ShowTheFourZones();
+    const ScreenModel outOfGame = OutOfGameScreen{"Hors jeu", "cause", "sortie"};
+
+    EXPECT_CALL(inner, Display(TopBar::ForPlayer("Camille"), outOfGame));
+    screen.Display(TopBar::ForPlayer("Camille"), outOfGame);
+
+    EXPECT_EQ(TouchedAt(100, 100), ButtonInput::Unknown);
+}
+
 TEST_F(TappableZonesScreenTest, AChosenZoneScreenDeactivatesTheZones)
 {
     ShowTheFourZones();

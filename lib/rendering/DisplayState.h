@@ -82,6 +82,21 @@ public:
         return "Connexion refusée\nLe hub n’a pas accepté ce buzzer\nPréviens le maître du jeu";
     }
 
+    std::string OutOfGameTitle() const
+    {
+        return "Hors jeu";
+    }
+
+    std::string OutOfGameCause() const
+    {
+        return "Connexion perdue après 3 tentatives";
+    }
+
+    std::string OutOfGameWayOut() const
+    {
+        return "Redémarre le buzzer pour revenir";
+    }
+
 private:
     std::string LcdTextForQuestionTitle(const HubMessage &message) const
     {

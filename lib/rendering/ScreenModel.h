@@ -69,6 +69,19 @@ struct ChosenZoneScreen
     }
 };
 
-using ScreenModel = std::variant<ScreenUnchanged, TextScreen, ZonesScreen, HighlightedZoneScreen, BannerScreen, ChosenZoneScreen>;
+// « Hors jeu » (CDC §8.2, US-FW-015 CA-8) : un anneau avec le symbole marche/arrêt, le titre, la cause et la seule sortie, sans zones.
+struct OutOfGameScreen
+{
+    std::string title;
+    std::string cause;
+    std::string wayOut;
+
+    bool operator==(const OutOfGameScreen &other) const
+    {
+        return title == other.title && cause == other.cause && wayOut == other.wayOut;
+    }
+};
+
+using ScreenModel = std::variant<ScreenUnchanged, TextScreen, ZonesScreen, HighlightedZoneScreen, BannerScreen, ChosenZoneScreen, OutOfGameScreen>;
 
 #endif

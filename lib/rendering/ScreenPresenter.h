@@ -48,6 +48,11 @@ public:
         return TextScreen{displayState.LcdTextForLoginRefused()};
     }
 
+    ScreenModel ScreenForOutOfGame() const
+    {
+        return OutOfGameScreen{displayState.OutOfGameTitle(), displayState.OutOfGameCause(), displayState.OutOfGameWayOut()};
+    }
+
     ScreenModel ScreenForTappedAnswer(char letter) const
     {
         const int zone = displayState.ZoneIndexForAnswer(letter);

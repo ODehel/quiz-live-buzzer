@@ -47,7 +47,8 @@ protected:
     ReconnectionPolicy policy;
     ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
     NetworkHalt networkHalt{mockConnectionCloser};
-    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, mockMessageRenderer, networkHalt};
+    ::testing::NiceMock<MockOutOfGameDisplay> mockOutOfGameDisplay;
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, mockMessageRenderer, mockOutOfGameDisplay, networkHalt};
 
     void EliminateTheBuzzer()
     {
@@ -145,6 +146,74 @@ TEST_F(ConnectionEventHandlerTest, ConnectionAttemptFailedEventEliminatesTheBuzz
 
     translator.TranslateBuzzerEvent({BuzzerEventType::ConnectionAttemptFailed, ""});
     EXPECT_TRUE(policy.IsEliminated());
+}
+
+TEST_F(ConnectionEventHandlerTest, OutOfGameScreenIsShownAtTheThirdFailedConnectionAttempt)
+{
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+    handler.OnConnectionLost();
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionAttemptFailed();
+
+    EXPECT_CALL(mockOutOfGameDisplay, ShowOutOfGame()).Times(1);
+
+    handler.OnConnectionAttemptFailed();
+}
+
+TEST_F(ConnectionEventHandlerTest, OutOfGameScreenIsNotShownBeforeTheThirdFailure)
+{
+    EXPECT_CALL(mockOutOfGameDisplay, ShowOutOfGame()).Times(0);
+
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+    handler.OnConnectionLost();
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionAttemptFailed();
+}
+
+TEST_F(ConnectionEventHandlerTest, OutOfGameScreenIsShownAtTheFourthDisconnectionAfterAuthSuccess)
+{
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+    handler.OnConnectionLost();
+    handler.OnConnectionLost();
+    handler.OnConnectionLost();
+
+    EXPECT_CALL(mockOutOfGameDisplay, ShowOutOfGame()).Times(1);
+
+    handler.OnConnectionLost();
+}
+
+TEST_F(ConnectionEventHandlerTest, OutOfGameScreenIsShownOnlyOnceWhateverComesAfterTheElimination)
+{
+    EXPECT_CALL(mockOutOfGameDisplay, ShowOutOfGame()).Times(1);
+
+    EliminateTheBuzzer();
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionLost();
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+}
+
+TEST_F(ConnectionEventHandlerTest, FailuresBeforeTheFirstAuthSuccessNeverShowTheOutOfGameScreen)
+{
+    EXPECT_CALL(mockOutOfGameDisplay, ShowOutOfGame()).Times(0);
+
+    for (int i = 0; i < 5; ++i)
+    {
+        handler.OnConnectionAttemptFailed();
+        handler.OnConnectionLost();
+    }
+}
+
+TEST_F(ConnectionEventHandlerTest, OutOfGameScreenDoesNotReplaceTheScreenOfAHaltedNetwork)
+{
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+    handler.OnConnectionLost();
+    networkHalt.Halt();
+
+    EXPECT_CALL(mockOutOfGameDisplay, ShowOutOfGame()).Times(0);
+
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionAttemptFailed();
 }
 
 TEST_F(ConnectionEventHandlerTest, McqArmedBuzzerIgnoresAPressOnceEliminated)
@@ -400,7 +469,7 @@ TEST(ConnectionEventHandlerRenderingTest, TimerEndIsRenderedWithTheModeOfBeforeT
     ReconnectionPolicy policy;
     ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
     NetworkHalt networkHalt{mockConnectionCloser};
-    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, networkHalt};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, lcdRenderer, networkHalt};
     buzzerBehavior.OnQuestionOpen();
 
     EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{"Trop tard"}})).Times(1);
@@ -420,7 +489,7 @@ TEST(ConnectionEventHandlerRenderingTest, TimerEndReceivedByAnArmedBuzzerOnceEli
     ReconnectionPolicy policy;
     ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
     NetworkHalt networkHalt{mockConnectionCloser};
-    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, networkHalt};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, lcdRenderer, networkHalt};
     handler.OnMessageReceived("{\"type\":\"auth_success\"}");
     handler.OnMessageReceived("{\"type\":\"question_open\"}");
     handler.OnConnectionLost();
@@ -445,11 +514,39 @@ TEST(ConnectionEventHandlerRenderingTest, AuthSuccessIsRenderedWithTheUsernameOf
     ReconnectionPolicy policy;
     ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
     NetworkHalt networkHalt{mockConnectionCloser};
-    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, networkHalt};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, lcdRenderer, networkHalt};
 
     EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"Connecté"}})).Times(1);
 
     handler.OnMessageReceived("{\"type\":\"auth_success\",\"role\":\"buzzer\",\"username\":\"quiz_buzzer_01\",\"expires_in\":3600}");
+}
+
+TEST(ConnectionEventHandlerRenderingTest, ThirdFailedReconnectionShowsTheOutOfGameScreenWithTheLastKnownNameThenNothingChangesIt)
+{
+    ::testing::NiceMock<MockHubMessageSender> mockHubMessageSender;
+    ::testing::NiceMock<MockLocalFeedback> mockLocalFeedback;
+    ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
+    ::testing::NiceMock<MockScreen> mockScreen;
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
+    HubMessageDispatcher dispatcher{buzzerBehavior};
+    ReconnectionPolicy policy;
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, lcdRenderer, networkHalt};
+    handler.OnMessageReceived("{\"type\":\"auth_success\",\"role\":\"buzzer\",\"username\":\"quiz_buzzer_01\",\"expires_in\":3600}");
+    handler.OnConnectionLost();
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionAttemptFailed();
+
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenPresenter{}.ScreenForOutOfGame())).Times(1);
+    handler.OnConnectionAttemptFailed();
+    ::testing::Mock::VerifyAndClearExpectations(&mockScreen);
+
+    EXPECT_CALL(mockScreen, Display(::testing::_, ::testing::_)).Times(0);
+    handler.OnMessageReceived("{\"type\":\"auth_success\",\"role\":\"buzzer\",\"username\":\"quiz_buzzer_02\",\"expires_in\":3600}");
+    handler.OnMessageReceived("{\"type\":\"question_choices\",\"choices\":[\"a\",\"b\",\"c\",\"d\"]}");
+    handler.OnConnectionLost();
 }
 
 TEST(ConnectionEventHandlerSessionTest, ReconnectionSendsAFreshTokenAfterTheHubConfirmedTheAuthentication)
@@ -466,7 +563,8 @@ TEST(ConnectionEventHandlerSessionTest, ReconnectionSendsAFreshTokenAfterTheHubC
     ReconnectionPolicy policy;
     ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
     NetworkHalt networkHalt{mockConnectionCloser};
-    ConnectionEventHandler handler{policy, dispatcher, tokenSessionMessageSender, mockMessageRenderer, networkHalt};
+    ::testing::NiceMock<MockOutOfGameDisplay> mockOutOfGameDisplay;
+    ConnectionEventHandler handler{policy, dispatcher, tokenSessionMessageSender, mockMessageRenderer, mockOutOfGameDisplay, networkHalt};
     tokenSessionMessageSender.UpdateToken("login-token");
 
     handler.OnMessageReceived("{\"type\":\"auth_success\",\"role\":\"buzzer\",\"username\":\"quiz_buzzer_01\",\"expires_in\":3600}");
@@ -492,7 +590,8 @@ TEST(ConnectionEventHandlerSessionTest, LoginRefusedDuringAReconnectionClosesThe
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
-    ConnectionEventHandler handler{policy, dispatcher, tokenSessionMessageSender, mockMessageRenderer, networkHalt};
+    ::testing::NiceMock<MockOutOfGameDisplay> mockOutOfGameDisplay;
+    ConnectionEventHandler handler{policy, dispatcher, tokenSessionMessageSender, mockMessageRenderer, mockOutOfGameDisplay, networkHalt};
     handler.OnMessageReceived("{\"type\":\"auth_success\"}");
     handler.OnConnectionLost();
     handler.OnConnectionAttemptFailed();
