@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <string>
 #include <WebSocketsClient.h>
-#include "ObservableWebSocketsClient.h"
 #include <WiFi.h>
 #include <vector>
 #include "LcdRenderer.h"
@@ -117,7 +116,7 @@ TouchZoneReader touchZoneReader{tappableZonesScreen.Zones()};
 TouchButtonReader touchButtonReader{gt911, touchZoneReader};
 ScreenLocalFeedback localFeedback{retainingScreen};
 ReconnectionPolicy reconnectionPolicy;
-ObservableWebSocketsClient client;
+WebSocketsClient client;
 WebSocketPayloadSocketWriter payloadSocketWriter{client};
 WebSocketMessageSender messageSender{MessageSerializer{}, client};
 PhysicalButtonReader physicalButtonReader{pinBuzzReader};

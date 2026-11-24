@@ -532,6 +532,48 @@ TEST(BuzzerEventTranslatorTest, ConnectionAttemptFailedTriggersConnectionAttempt
     translator.TranslateBuzzerEvent({BuzzerEventType::ConnectionAttemptFailed, ""});
 }
 
+// La bibliothèque WebSockets 2.7.3 n'émet rien au connect raté lui-même : au tour suivant, elle nettoie le client jamais ouvert et émet alors
+// une déconnexion de raison « TCP connection cleanup ». Cette fermeture est l'échec de la tentative, pas une perte de connexion établie.
+TEST(BuzzerEventTranslatorTest, DisconnectionOfAnAttemptThatNeverOpenedTriggersConnectionAttemptFailedOnly)
+{
+    MockConnectionEventListener mock;
+    BuzzerEventTranslator translator{mock};
+
+    EXPECT_CALL(mock, OnConnectionAttemptFailed()).Times(1);
+    EXPECT_CALL(mock, OnConnectionLost()).Times(0);
+
+    translator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, "TCP connection cleanup"});
+}
+
+TEST(BuzzerEventTranslatorTest, DisconnectionWithAnotherReasonStaysAConnectionLost)
+{
+    MockConnectionEventListener mock;
+    BuzzerEventTranslator translator{mock};
+
+    EXPECT_CALL(mock, OnConnectionLost()).Times(1);
+    EXPECT_CALL(mock, OnConnectionAttemptFailed()).Times(0);
+
+    translator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, "Connection lost"});
+}
+
+// Une tentative ratée ne produit qu'un événement : 2/3 après le premier échec, 3/3 après le deuxième, « Hors jeu » au troisième.
+TEST_F(ConnectionEventHandlerTest, EachFailedAttemptReportedByTheLibraryCountsOnceThroughTheTranslator)
+{
+    BuzzerEventTranslator translator{handler};
+    translator.TranslateBuzzerEvent({BuzzerEventType::TextReceived, "{\"type\":\"auth_success\"}"});
+
+    ::testing::InSequence inSequence;
+    EXPECT_CALL(mockLinkStateDisplay, ShowLinkLost(1)).Times(1);
+    EXPECT_CALL(mockLinkStateDisplay, ShowLinkLost(2)).Times(1);
+    EXPECT_CALL(mockLinkStateDisplay, ShowLinkLost(3)).Times(1);
+    EXPECT_CALL(mockOutOfGameDisplay, ShowOutOfGame()).Times(1);
+
+    translator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, "Connection lost"});
+    translator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, "TCP connection cleanup"});
+    translator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, "TCP connection cleanup"});
+    translator.TranslateBuzzerEvent({BuzzerEventType::Disconnected, "TCP connection cleanup"});
+}
+
 TEST(BuzzerEventTranslatorTest, TextReceivedTriggersMessageReceived)
 {
     MockConnectionEventListener mock;
