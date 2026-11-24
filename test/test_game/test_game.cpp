@@ -505,6 +505,78 @@ TEST_F(BuzzerBehaviorTest, InertBuzzerAfterTimerEndIgnoresEveryPress)
     EXPECT_FALSE(reader.IsArmed());
 }
 
+TEST_F(BuzzerBehaviorTest, McqArmedBuzzerIgnoresAPressWhileTheLinkIsCut)
+{
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeAnswer(::testing::_)).Times(0);
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnLinkLost();
+    buzzerBehavior.OnMcqPressed('A');
+}
+
+TEST_F(BuzzerBehaviorTest, SpeedArmedBuzzerIgnoresAPressWhileTheLinkIsCut)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz()).Times(0);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnLinkLost();
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, ArmedBuzzerKeepsItsModeWhileTheLinkIsCut)
+{
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnLinkLost();
+    buzzerBehavior.OnMcqPressed('A');
+
+    EXPECT_TRUE(buzzerBehavior.IsArmed());
+}
+
+TEST_F(BuzzerBehaviorTest, McqArmedBuzzerSendsItsAnswerOnceTheLinkIsEstablishedAgain)
+{
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('B')).Times(1);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeAnswer('B')).Times(1);
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnLinkLost();
+    buzzerBehavior.OnMcqPressed('B');
+    buzzerBehavior.OnLinkEstablished();
+    buzzerBehavior.OnMcqPressed('B');
+}
+
+TEST_F(BuzzerBehaviorTest, SpeedArmedBuzzerSendsItsBuzzOnceTheLinkIsEstablishedAgain)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz()).Times(1);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnLinkLost();
+    buzzerBehavior.OnBuzzPressed();
+    buzzerBehavior.OnLinkEstablished();
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, ALinkEstablishedWithoutAnyLossChangesNothing)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnLinkEstablished();
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, ALinkLostRepeatedKeepsThePressesIgnoredUntilTheLinkIsEstablished)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnLinkLost();
+    buzzerBehavior.OnLinkLost();
+    buzzerBehavior.OnBuzzPressed();
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

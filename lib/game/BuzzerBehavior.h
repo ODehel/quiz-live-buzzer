@@ -19,6 +19,7 @@ private:
     HubMessageSender &hubMessageSender;
     LocalFeedback &localFeedback;
     bool isEliminated = false;
+    bool isLinkCut = false;
     void ArmFromInert(Mode armedMode)
     {
         if (!isEliminated && mode == Mode::Inert)
@@ -37,7 +38,7 @@ public:
 
     void OnMcqPressed(char value)
     {
-        if (isEliminated)
+        if (isEliminated || isLinkCut)
             return;
 
         if (mode == Mode::McqArmed)
@@ -50,7 +51,7 @@ public:
 
     void OnBuzzPressed()
     {
-        if (isEliminated)
+        if (isEliminated || isLinkCut)
             return;
 
         if (mode == Mode::SpeedArmed)
@@ -85,6 +86,18 @@ public:
     void OnBuzzUnlocked()
     {
         ArmFromInert(Mode::SpeedArmed);
+    }
+
+    // Pendant la coupure (de la perte de la connexion établie à l'`auth_success` suivant), un appui est ignoré : ni envoi, ni verrou,
+    // ni feedback local, et le mode est conservé (US-FW-015 CA-4, CA-7).
+    void OnLinkLost()
+    {
+        isLinkCut = true;
+    }
+
+    void OnLinkEstablished()
+    {
+        isLinkCut = false;
     }
 
     void OnEliminated()

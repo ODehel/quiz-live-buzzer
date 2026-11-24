@@ -173,6 +173,21 @@ TEST_F(TappableZonesScreenTest, AnUnchangedScreenTouchesNeitherTheScreenNorTheZo
     EXPECT_EQ(TouchedAt(100, 100), ButtonInput::A);
 }
 
+
+TEST_F(TappableZonesScreenTest, AConnectionLostScreenCarryingTheQuestionDeactivatesTheZonesAndForwardsItself)
+{
+    ShowTheFourZones();
+    ConnectionLostScreen lost{"Connexion perdue", "Tentative 1/3", 1, 3};
+    lost.dimmed.zoneTexts = {"A : un", "B : deux", "C : trois", "D : quatre"};
+    const ScreenModel connectionLost = lost;
+    const TopBar cutTopBar = TopBar::ForPlayer("Camille").WithLinkCut();
+    EXPECT_CALL(inner, Display(cutTopBar, connectionLost)).Times(1);
+
+    screen.Display(cutTopBar, connectionLost);
+
+    EXPECT_EQ(TouchedAt(100, 100), ButtonInput::Unknown);
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

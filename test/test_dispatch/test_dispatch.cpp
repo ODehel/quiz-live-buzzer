@@ -330,3 +330,32 @@ INSTANTIATE_TEST_SUITE_P(
         HubTypeCase{"ErrorFromTheHub", "error"},
         HubTypeCase{"UpperCaseError", "ERROR"}),
     HubTypeCaseName);
+
+TEST(HubMessageDispatcherLinkTest, LinkLostMakesTheBuzzerIgnoreItsPresses)
+{
+    MockHubMessageSender mockHubMessageSender;
+    MockLocalFeedback mockLocalFeedback;
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    HubMessageDispatcher dispatcher{buzzerBehavior};
+
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+
+    dispatcher.Dispatch("question_open");
+    dispatcher.OnLinkLost();
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST(HubMessageDispatcherLinkTest, LinkEstablishedMakesTheBuzzerHearItsPressesAgain)
+{
+    MockHubMessageSender mockHubMessageSender;
+    MockLocalFeedback mockLocalFeedback;
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    HubMessageDispatcher dispatcher{buzzerBehavior};
+
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    dispatcher.Dispatch("question_open");
+    dispatcher.OnLinkLost();
+    dispatcher.OnLinkEstablished();
+    buzzerBehavior.OnBuzzPressed();
+}

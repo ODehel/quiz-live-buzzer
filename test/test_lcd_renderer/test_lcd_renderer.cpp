@@ -289,7 +289,7 @@ TEST(LcdRendererOutOfGameTest, ShowsTheOutOfGameScreenWithTheLastKnownName)
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
     lcdRenderer.Apply(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"));
 
-    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenPresenter{}.ScreenForOutOfGame())).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01").WithLinkCut(), ScreenPresenter{}.ScreenForOutOfGame())).Times(1);
 
     lcdRenderer.ShowOutOfGame();
 }
@@ -304,7 +304,7 @@ TEST(LcdRendererOutOfGameTest, KeepsTheNameOfTheLastAuthSuccessAfterOtherMessage
     lcdRenderer.Apply(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_02"));
     lcdRenderer.Apply(HubMessage{"buzz_accepted"});
 
-    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_02"), ScreenPresenter{}.ScreenForOutOfGame())).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_02").WithLinkCut(), ScreenPresenter{}.ScreenForOutOfGame())).Times(1);
 
     lcdRenderer.ShowOutOfGame();
 }
@@ -315,7 +315,67 @@ TEST(LcdRendererOutOfGameTest, ShowsAnEmptyNameWhenNoAuthSuccessWasEverReceived)
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer(""), ScreenPresenter{}.ScreenForOutOfGame())).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("").WithLinkCut(), ScreenPresenter{}.ScreenForOutOfGame())).Times(1);
 
     lcdRenderer.ShowOutOfGame();
+}
+
+TEST(LcdRendererLinkLostTest, ShowsTheConnectionLostScreenWithTheCutLinkAndTheLastKnownName)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+    lcdRenderer.Apply(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"));
+
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01").WithLinkCut(), ScreenPresenter{}.ScreenForConnectionLost(1))).Times(1);
+
+    lcdRenderer.ShowLinkLost(1);
+}
+
+TEST(LcdRendererLinkLostTest, NumbersTheAttemptItIsGiven)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, Display(::testing::_, ScreenPresenter{}.ScreenForConnectionLost(3))).Times(1);
+
+    lcdRenderer.ShowLinkLost(3);
+}
+
+TEST(LcdRendererLinkLostTest, KeepsTheNameOfTheLastAuthSuccessAfterOtherMessages)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+    lcdRenderer.Apply(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_02"));
+    lcdRenderer.Apply(HubMessage{"buzz_accepted"});
+
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_02").WithLinkCut(), ::testing::_)).Times(1);
+
+    lcdRenderer.ShowLinkLost(1);
+}
+
+TEST(LcdRendererLinkLostTest, ShowsAnEmptyNameWhenNoAuthSuccessWasEverReceived)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("").WithLinkCut(), ::testing::_)).Times(1);
+
+    lcdRenderer.ShowLinkLost(1);
+}
+
+TEST(LcdRendererLinkLostTest, AnAuthSuccessAfterTheLossShowsALinkedTopBarAgain)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+    lcdRenderer.Apply(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"));
+    lcdRenderer.ShowLinkLost(1);
+
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"Connecté"}})).Times(1);
+
+    lcdRenderer.Apply(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"));
 }
