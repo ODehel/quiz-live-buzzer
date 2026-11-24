@@ -77,6 +77,12 @@ public:
         return "Buzz envoyé";
     }
 
+    // Le logo en texte, puis le libellé d'attente : trois lignes de même taille (US-FW-010 CA-1, décision #28).
+    std::string LcdTextForInit() const
+    {
+        return "Buzz’\nO’Live\nConnexion…";
+    }
+
     std::string LcdTextForLoginRefused() const
     {
         return "Connexion refusée\nLe hub n’a pas accepté ce buzzer\nPréviens le maître du jeu";
