@@ -1386,3 +1386,23 @@ Alternatives écartées :
 - L'ordre « écran d'init avant `WiFi.begin` » vit dans `setup()` : aucun test natif ne le prouve (dette « Démarrage : preuves manquantes »). Le dessin des trois lignes sous le bandeau et l'icône « coupée » de l'init ne sont pas constatés sur la dalle.
 - Dette « `setup()` bloquant » : l'absence de rendu d'init est levée pour le statique ; reste le clignotement. Dette « Écran de login refusé en texte seul » : `TopBarForInit()` existe maintenant, mais le refus passe encore `Hidden()` (US-FW-015 CA-9).
 - Non exécutés ici : `pio test -e native` (suites natives compilées à la main, voir le handoff) et `pio run -e esp32` ; `src/main.cpp` contrôlé en syntaxe seulement, mêmes erreurs `LGFX` qu'avant.
+
+## #70 — fix(rendering): keep the screen unchanged when an armed buzzer receives question_choices
+
+**Contexte** — US-FW-002 CA-2 (décision #45, livré) fait ignorer par le mode tout message d'armement reçu hors Inerte. `LcdRenderer::Apply` rend le message avant son dispatch (décision #5) et lisait déjà l'état armé (`presenter.ScreenFor(message, armedModeReader.IsArmed())`), mais `ScreenPresenter::ScreenFor` n'utilisait ce paramètre que pour `timer_end` : un `question_choices` reçu par un buzzer déjà armé (MCQ non répondu, SPEED non buzzé) dessinait quatre zones tactiles mortes, les appuis A–D étant ignorés. C'est la dette « zones affichées mais mortes » de US-FW-002 et le CA-6 de US-FW-011 (« zones affichées = zones actives »). Aucun trou de CDC constaté : le CA-6 dit l'observable (écran inchangé, ni zones, ni en-tête, tactile intact, mode inchangé).
+
+**Décision** (périmètre figé avec Olivier : US-FW-011 CA-6 seul) —
+- **Type de commit `fix`** : correction d'un comportement incorrect (des zones affichées qui ne répondent pas).
+- Un buzzer déjà armé qui reçoit `question_choices` laisse son écran inchangé : `ScreenFor` rend `ScreenUnchanged` ; `LcdRenderer` n'appelle pas `Screen::Display`, donc les zones tactiles ne sont pas touchées (US-FW-011 CA-13). Un buzzer Inerte rend les zones comme avant.
+- **Hors périmètre, intacts** : `question_open` et `buzz_unlocked` reçus armés (US-FW-012 CA-13, même écart, encore ouvert), `timer_tick` (CA-8), l'appui pendant une coupure (US-021), les propositions inexploitables (CA-5), l'en-tête et le chrono.
+
+**Choix de Claude, à relire en PR** (aucun ne vient du CDC) —
+- **Où vit la règle** : dans `ScreenPresenter::ScreenFor`, à côté de `timer_end`, qui prend déjà l'état armé en paramètre ; `LcdRenderer` n'a pas changé. Écarté : un test dans `LcdRenderer` qui court-circuite avant le présenteur (deux endroits pour la même règle d'écran, et le présenteur est le seul à connaître quels messages arment).
+- **Condition** : `questionArmed` seul, sans regarder si les propositions sont exploitables. Des propositions inexploitables rendent déjà `ZonesScreen` vide donc écran inchangé (CA-5) ; armé, c'est inchangé aussi, sans distinction à faire.
+- **Tests** : trois niveaux, comme `timer_end`. `test_lcd_renderer` et `test_connection` sont ceux que la spec demande ; `test_screen_presenter` est ajouté (un test) parce que la règle y vit. Dans `test_connection`, deux tests de bout en bout avec le vrai `BuzzerBehavior` : MCQ armé par un premier `question_choices` puis un second non rendu ; SPEED armé, `question_choices` non rendu, un appui A n'envoie rien, `timer_end` rend « Trop tard » (le mode est resté SPEED). Les quatre tests sont nés rouges (écran dessiné), aucun né vert ; `QuestionChoicesShowsTheFourChoicesAsZonesOnScreen` fixe désormais explicitement `IsArmed()` à faux (ce qu'il supposait par défaut).
+- **Dette « zones affichées mais mortes »** : réécrite dans le constat de US-FW-002 (soldée pour `question_choices`, reste pour `question_open` et `buzz_unlocked`) ; la clause CA-6 est retirée de « Écran de question : preuves manquantes et tests à réécrire ».
+
+**Conséquences** —
+- Un buzzer resté armé (hub qui n'envoie pas `timer_end` avant la question suivante) garde le titre de la question précédente à l'écran jusqu'à `timer_end` : c'est ce que dit le CA-6, pas une régression. Le joueur ne voit pas les nouvelles propositions.
+- `ScreenFor` lit maintenant l'état armé pour deux messages ; US-FW-012 CA-13 en ajoutera deux (`question_open`, `buzz_unlocked`), US-FW-017 CA-4 et US-FW-020 CA-4 un chacun.
+- Non constaté sur la dalle : le hub (`main`, `54a320e`) n'émet pas `question_choices`, pas de smoke test. `pio test -e native` non exécuté ici (suites compilées à la main, voir le handoff) ; la CI de la PR fait foi.

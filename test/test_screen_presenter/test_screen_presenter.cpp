@@ -56,6 +56,15 @@ TEST(ScreenPresenterQuestionChoicesTest, PresentsTheFourChoicesAsZones)
     EXPECT_EQ(expected, screen);
 }
 
+TEST(ScreenPresenterQuestionChoicesTest, LeavesTheScreenUnchangedWhenAQuestionIsAlreadyArmed)
+{
+    ScreenPresenter presenter;
+
+    const ScreenModel screen = presenter.ScreenFor(HubMessage{"question_choices"}.WithChoices({"Paris", "Lyon", "Nice", "Lille"}), true);
+
+    EXPECT_EQ(ScreenModel{ScreenUnchanged{}}, screen);
+}
+
 TEST(ScreenPresenterQuestionChoicesTest, LeavesTheScreenUnchangedWithoutChoices)
 {
     ScreenPresenter presenter;

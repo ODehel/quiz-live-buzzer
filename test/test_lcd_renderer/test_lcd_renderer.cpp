@@ -216,9 +216,20 @@ TEST(LcdRendererTest, QuestionChoicesShowsTheFourChoicesAsZonesOnScreen)
 {
     testing::StrictMock<MockScreen> mockScreen;
     testing::NiceMock<MockArmedModeReader> armedModeReader;
+    ON_CALL(armedModeReader, IsArmed()).WillByDefault(testing::Return(false));
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
     EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{ZonesScreen{std::vector<std::string>{"A : Paris", "B : Lyon", "C : Nice", "D : Lille"}}})).Times(1);
+
+    lcdRenderer.Apply(HubMessage{"question_choices"}.WithChoices({"Paris", "Lyon", "Nice", "Lille"}));
+}
+
+TEST(LcdRendererTest, QuestionChoicesLeavesTheScreenUnchangedWhenAQuestionIsAlreadyArmed)
+{
+    testing::StrictMock<MockScreen> mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    ON_CALL(armedModeReader, IsArmed()).WillByDefault(testing::Return(true));
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
     lcdRenderer.Apply(HubMessage{"question_choices"}.WithChoices({"Paris", "Lyon", "Nice", "Lille"}));
 }

@@ -17,8 +17,9 @@ public:
         if (message.Type() == "timer_end")
             return questionArmed ? ScreenModel{TextScreen{displayState.LcdTextForTimeUp()}} : ScreenModel{ScreenUnchanged{}};
         const std::vector<std::string> zones = displayState.ZoneTextsFor(message);
+        // Un buzzer déjà armé ignore `question_choices` (US-FW-002 CA-2) : ses zones ne seraient pas actives, l'écran ne bouge pas (US-FW-011 CA-6).
         if (!zones.empty())
-            return ZonesScreen{zones};
+            return questionArmed ? ScreenModel{ScreenUnchanged{}} : ScreenModel{ZonesScreen{zones}};
         const std::string text = displayState.LcdTextFor(message);
         if (displayState.KeepsZonesFor(message))
             return BannerScreen{text};
