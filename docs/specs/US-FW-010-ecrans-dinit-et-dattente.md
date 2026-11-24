@@ -1,7 +1,7 @@
 # US-FW-010 — Écrans d'init et d'attente
 
 - **Couche** : rendu
-- **Statut** : Partielle, CA-1 à CA-7 rédigés depuis le réel le 2026-11-22 (CA-3 tenu par des tests natifs ; CA-5, CA-6 et CA-7 implémentés sans test de bout en bout ou de dessin ; CA-4 non implémenté : aucun sous-titre d'attente). `feat(startup): show the init screen while the buzzer connects` (2026-11-24, décision #69) : CA-1 implémenté et testé en natif au niveau du modèle (bandeau et trois lignes), le câblage dans `setup()` et le dessin sous le bandeau non constatés ; CA-2 implémenté sans nouvelle logique (les tests existants prouvent qu'aucun autre écran n'est rendu avant le premier message), non constaté sur la dalle
+- **Statut** : Partielle, CA-1 à CA-7 rédigés depuis le réel le 2026-11-22 (CA-3 tenu par des tests natifs ; CA-5, CA-6 et CA-7 implémentés sans test de bout en bout ou de dessin ; CA-4 non implémenté : aucun sous-titre d'attente). `feat(startup): show the init screen while the buzzer connects` (2026-11-24, décision #69) : CA-1 implémenté et testé en natif au niveau du modèle (bandeau et trois lignes), le câblage dans `setup()` et le dessin sous le bandeau non constatés ; CA-2 implémenté sans nouvelle logique (les tests existants prouvent qu'aucun autre écran n'est rendu avant le premier message), non constaté sur la dalle CA-1 et CA-2 implémentés (`feat(startup): show the init screen while the buzzer connects`, décision #69) et **constatés sur la dalle le 2026-11-24** (smoke test, observations d'Olivier ; Wi-Fi absent non provoqué).
 - **Dépend du hub** : US-009 (`auth_success`, CA-6), US-019 (`game_resumed`, CA-17 à CA-20). Lus à `ed6bd31` : le hub n'émet pas `game_resumed` (aucune occurrence dans `src/`).
 
 ## User story
