@@ -2,10 +2,11 @@
 #define WEB_SOCKET_EVENT_LISTENER_H
 
 #include "BuzzerEventTranslator.h"
+#include "NetworkLoop.h"
 
 class WebSocketsClient;
 
-class WebSocketEventListener
+class WebSocketEventListener : public NetworkLoop
 {
 private:
     WebSocketsClient &client;
@@ -18,7 +19,7 @@ public:
     }
 
     void Begin();
-    void Loop();
+    void Loop() override;
 };
 
 #endif
