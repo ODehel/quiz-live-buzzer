@@ -1406,3 +1406,26 @@ Alternatives écartées :
 - Un buzzer resté armé (hub qui n'envoie pas `timer_end` avant la question suivante) garde le titre de la question précédente à l'écran jusqu'à `timer_end` : c'est ce que dit le CA-6, pas une régression. Le joueur ne voit pas les nouvelles propositions.
 - `ScreenFor` lit maintenant l'état armé pour deux messages ; US-FW-012 CA-13 en ajoutera deux (`question_open`, `buzz_unlocked`), US-FW-017 CA-4 et US-FW-020 CA-4 un chacun.
 - Non constaté sur la dalle : le hub (`main`, `54a320e`) n'émet pas `question_choices`, pas de smoke test. `pio test -e native` non exécuté ici (suites compilées à la main, voir le handoff) ; la CI de la PR fait foi.
+
+
+## #71 — fix(rendering): keep the screen unchanged when an armed buzzer receives question_open or buzz_unlocked
+
+**Contexte** — US-FW-012 CA-13 : un buzzer déjà armé (SPEED non buzzé, ou MCQ non répondu) qui reçoit `question_open` ou `buzz_unlocked` laisse son écran inchangé, « seul un message qui arme est rendu ». Le mode les ignore déjà (US-FW-002 CA-2, décision #45), et `LcdRenderer::Apply` lit l'état armé avant l'aiguillage (décision #5) et le passe à `ScreenPresenter::ScreenFor` ; mais celui-ci ne l'utilisait que pour `timer_end` et, depuis la décision #70, `question_choices`. Un buzzer armé rendait donc encore le titre de `question_open` ou « À nouveau possible de buzzer » alors que son mode n'avait pas bougé : l'écran affichait un état que le buzzer n'avait pas. Même écart, même mécanisme que la décision #70. Aucun trou de CDC constaté : le CA dit l'observable (écran inchangé, message ignoré en entier, mode conservé).
+
+**Décision** (périmètre figé avec Olivier : US-FW-012 CA-13 seul) —
+- **Type de commit `fix`** : correction d'un comportement incorrect (un écran qui ne reflète pas l'état armé).
+- Un buzzer déjà armé qui reçoit `question_open` ou `buzz_unlocked` laisse son écran inchangé : `ScreenFor` rend `ScreenUnchanged` ; `LcdRenderer` n'appelle pas `Screen::Display`. Un buzzer Inerte rend ces écrans comme avant (texte actuel ; l'écran d'ouverture de CA-1 et CA-11 attend leurs `feat`).
+- **Hors périmètre, intacts** : CA-7 (l'état retenu : titre, numéro, « a buzzé » n'existe pas, il n'y a rien à « ne pas retenir »), `timer_tick`, le chrono, `intermediate_ranking`, `question_media`, tout autre CA.
+
+**Choix de Claude, à relire en PR** (aucun ne vient du CDC) —
+- **Où vit la règle** : dans `ScreenPresenter::ScreenFor`, comme `timer_end` et `question_choices`, avant `ZoneTextsFor` ; `LcdRenderer` et `BuzzerBehavior` n'ont pas changé. Écarté : une règle dans `LcdRenderer` (deux endroits pour la même règle d'écran).
+- **Forme** : une condition explicite sur les deux types (`question_open`, `buzz_unlocked`) en tête de `ScreenFor`, avec le commentaire de la règle. Écarté : un prédicat « message qui arme » dans `DisplayState` (une abstraction pour trois messages ; à reconsidérer quand US-FW-017 CA-4 et US-FW-020 CA-4 s'ajouteront, voir « Conséquences »).
+- **Condition** : `questionArmed` seul, sans regarder le titre ni `remaining_seconds` : armé, le message est ignoré en entier, même s'il serait inexploitable.
+- **Tests** : trois niveaux, comme `timer_end` et `question_choices`, tous deux paramétrés sur les deux messages (`question_open` avec titre, `buzz_unlocked`). `test_screen_presenter` et `test_lcd_renderer` : un test armé (écran inchangé, `Display` jamais appelé) et un test Inerte (texte d'ouverture actuel). `test_connection` : deux tests de bout en bout avec le vrai `BuzzerBehavior`, SPEED armé puis MCQ armé ; rien n'est rendu, et le mode conservé se prouve par l'appui (un appui rouge envoie le buzz en SPEED ; un appui A envoie la réponse en MCQ, un appui rouge n'envoie rien). Les huit tests armés sont nés rouges (écran dessiné), les quatre tests Inerte sont nés verts et ont été mutés. Aucun test existant ne figeait l'ancien comportement : aucun test réécrit.
+- **CA-7** : la trace du CA-13 le dit en toutes lettres (« hors de cette trace ») ; le `feat` de CA-7 devra laisser un message ignoré hors de son état, ce que « Un message ignoré (CA-13) ne le touche pas » (CA-7) exige déjà.
+
+**Conséquences** —
+- La dette « zones affichées mais mortes si le mode n'est pas Inerte » (constat de US-FW-002) est soldée pour les trois messages d'armement ; le constat est réécrit dans la spec de US-FW-002.
+- `ScreenFor` lit maintenant l'état armé pour quatre messages ; US-FW-017 CA-4 (`intermediate_ranking`) et US-FW-020 CA-4 (`question_media`) en ajouteront deux. Le moment de factoriser en un prédicat est là.
+- Même conséquence que la décision #70 : un buzzer resté armé (hub qui n'envoie pas `timer_end` avant la question suivante) ne voit ni la nouvelle ouverture ni la réouverture. À confirmer à l'intégration US-011 et US-012.
+- Non constaté sur la dalle : le hub n'émet ni `question_open` ni `buzz_unlocked` (`DEBTS.md`). `pio test -e native` non exécuté ici (suites compilées à la main, voir le handoff) ; la CI de la PR fait foi.

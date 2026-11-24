@@ -744,6 +744,54 @@ TEST(ConnectionEventHandlerRenderingTest, QuestionChoicesReceivedByAnArmedSpeedB
     handler.OnMessageReceived("{\"type\":\"timer_end\"}");
 }
 
+class ArmingOpeningMessageRenderingTest : public ::testing::TestWithParam<std::string>
+{
+protected:
+    ::testing::NiceMock<MockHubMessageSender> mockHubMessageSender;
+    ::testing::NiceMock<MockLocalFeedback> mockLocalFeedback;
+    ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
+    MockScreen mockScreen;
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
+    HubMessageDispatcher dispatcher{buzzerBehavior};
+    ReconnectionPolicy policy;
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, lcdRenderer, lcdRenderer, networkHalt};
+};
+
+TEST_P(ArmingOpeningMessageRenderingTest, ReceivedByAnArmedSpeedBuzzerIsNotRenderedAndKeepsItsMode)
+{
+    buzzerBehavior.OnQuestionOpen();
+
+    EXPECT_CALL(mockScreen, Display(::testing::_, ::testing::_)).Times(0);
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    handler.OnMessageReceived(GetParam());
+    buzzerBehavior.OnMcqPressed('A');
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_P(ArmingOpeningMessageRenderingTest, ReceivedByAnArmedMcqBuzzerIsNotRenderedAndKeepsItsMode)
+{
+    buzzerBehavior.OnQuestionChoices();
+
+    EXPECT_CALL(mockScreen, Display(::testing::_, ::testing::_)).Times(0);
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('A')).Times(1);
+
+    handler.OnMessageReceived(GetParam());
+    buzzerBehavior.OnBuzzPressed();
+    buzzerBehavior.OnMcqPressed('A');
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    QuestionOpenAndBuzzUnlocked,
+    ArmingOpeningMessageRenderingTest,
+    ::testing::Values(
+        std::string{"{\"type\":\"question_open\",\"title\":\"Quelle est la capitale du Portugal ?\"}"},
+        std::string{"{\"type\":\"buzz_unlocked\"}"}));
+
 TEST(ConnectionEventHandlerRenderingTest, AuthSuccessIsRenderedWithTheUsernameOfTheHubInTheTopBar)
 {
     ::testing::NiceMock<MockHubMessageSender> mockHubMessageSender;

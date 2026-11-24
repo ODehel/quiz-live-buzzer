@@ -46,6 +46,33 @@ TEST(ScreenPresenterTimerEndTest, LeavesTheScreenUnchangedWhenNoQuestionIsArmed)
     EXPECT_EQ(ScreenModel{ScreenUnchanged{}}, screen);
 }
 
+class ArmingOpeningMessageTest : public ::testing::TestWithParam<HubMessage>
+{
+};
+
+TEST_P(ArmingOpeningMessageTest, LeavesTheScreenUnchangedWhenAQuestionIsAlreadyArmed)
+{
+    ScreenPresenter presenter;
+
+    const ScreenModel screen = presenter.ScreenFor(GetParam(), true);
+
+    EXPECT_EQ(ScreenModel{ScreenUnchanged{}}, screen);
+}
+
+TEST_P(ArmingOpeningMessageTest, PresentsItsTextWhenNoQuestionIsArmed)
+{
+    ScreenPresenter presenter;
+
+    const ScreenModel screen = presenter.ScreenFor(GetParam(), false);
+
+    EXPECT_TRUE(std::holds_alternative<TextScreen>(screen));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    QuestionOpenAndBuzzUnlocked,
+    ArmingOpeningMessageTest,
+    ::testing::Values(HubMessage{"question_open"}.WithTitle("Quelle est la capitale du Portugal ?"), HubMessage{"buzz_unlocked"}));
+
 TEST(ScreenPresenterQuestionChoicesTest, PresentsTheFourChoicesAsZones)
 {
     ScreenPresenter presenter;
