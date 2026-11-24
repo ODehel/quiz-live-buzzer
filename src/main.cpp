@@ -32,6 +32,9 @@
 #include "ArduinoSleeper.h"
 #include "TokenAcquisition.h"
 #include "LoginOutcomeDisplay.h"
+#include "StartupSequence.h"
+#include "BuzzerLoop.h"
+#include "WebSocketConnectionOpener.h"
 #include "secrets.h"
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>
@@ -145,7 +148,10 @@ constexpr unsigned long LOGIN_RETRY_DELAY_MS = 5000;
 constexpr unsigned long RECONNECT_INTERVAL_MS = 5000;
 ArduinoSleeper arduinoSleeper;
 TokenAcquisition tokenAcquisition{httpTokenFetcher, arduinoSleeper, LOGIN_RETRY_DELAY_MS};
-bool startupHalted = false;
+WebSocketConnectionOpener webSocketConnectionOpener{client, "192.168.1.183", 3000, "/ws"};
+// Séquence de `setup()` après le Wi-Fi (US-FW-005) et tour de `loop()` : leur logique vit dans `lib/startup/`, ici on les câble.
+StartupSequence startupSequence{tokenAcquisition, loginOutcomeDisplay, tokenSessionMessageSender, webSocketConnectionOpener, RECONNECT_INTERVAL_MS};
+BuzzerLoop buzzerLoop{startupSequence, networkHalt, webSocketEventListener, buttonPressDetector, touchPressDetector};
 
 void setup()
 {
@@ -162,25 +168,13 @@ void setup()
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     while (WiFi.status() != WL_CONNECTED)
         delay(500);
-    LoginResult login = tokenAcquisition.Acquire();
-    loginOutcomeDisplay.Show(login);
-    if (login.status == LoginStatus::InvalidCredentials)
-    {
+    if (startupSequence.Run() == StartupOutcome::Halted)
         Serial.println("Login refused: invalid credentials, check secrets.h. Startup halted.");
-        startupHalted = true;
-        return;
-    }
-    Serial.println("Login OK, opening the WebSocket.");
-    tokenSessionMessageSender.UpdateToken(login.token);
-    client.setReconnectInterval(RECONNECT_INTERVAL_MS);
-    client.begin("192.168.1.183", 3000, "/ws");
+    else
+        Serial.println("Login OK, opening the WebSocket.");
 }
 
 void loop()
 {
-    if (startupHalted || networkHalt.IsHalted())
-        return;
-    webSocketEventListener.Loop();
-    buttonPressDetector.Poll();
-    touchPressDetector.Poll();
+    buzzerLoop.Tick();
 }
