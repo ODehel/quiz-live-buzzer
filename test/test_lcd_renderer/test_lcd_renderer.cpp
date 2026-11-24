@@ -281,3 +281,41 @@ int main(int argc, char **argv)
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
+
+TEST(LcdRendererOutOfGameTest, ShowsTheOutOfGameScreenWithTheLastKnownName)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+    lcdRenderer.Apply(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"));
+
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenPresenter{}.ScreenForOutOfGame())).Times(1);
+
+    lcdRenderer.ShowOutOfGame();
+}
+
+TEST(LcdRendererOutOfGameTest, KeepsTheNameOfTheLastAuthSuccessAfterOtherMessages)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+    lcdRenderer.Apply(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"));
+    lcdRenderer.Apply(HubMessage{"buzz_accepted"});
+    lcdRenderer.Apply(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_02"));
+    lcdRenderer.Apply(HubMessage{"buzz_accepted"});
+
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_02"), ScreenPresenter{}.ScreenForOutOfGame())).Times(1);
+
+    lcdRenderer.ShowOutOfGame();
+}
+
+TEST(LcdRendererOutOfGameTest, ShowsAnEmptyNameWhenNoAuthSuccessWasEverReceived)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader};
+
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer(""), ScreenPresenter{}.ScreenForOutOfGame())).Times(1);
+
+    lcdRenderer.ShowOutOfGame();
+}

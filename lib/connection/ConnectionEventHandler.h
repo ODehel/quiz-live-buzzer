@@ -10,6 +10,7 @@
 #include "ConnectionEventListener.h"
 #include "MessageRenderer.h"
 #include "NetworkHalt.h"
+#include "OutOfGameDisplay.h"
 
 class ConnectionEventHandler : public ConnectionEventListener
 {
@@ -19,19 +20,23 @@ private:
     SessionMessageSender &sessionMessageSender;
     MessageDeserializer messageDeserializer;
     MessageRenderer &messageRenderer;
+    OutOfGameDisplay &outOfGameDisplay;
     NetworkHalt &networkHalt;
 
     void PropagateEliminationIfAny()
     {
         if (!reconnectionPolicy.IsEliminated())
             return;
+        // Un réseau déjà arrêté (refus du login, US-FW-006 CA-10) garde son écran : « Hors jeu » ne le remplace pas, et ne s'affiche qu'une fois.
+        if (!networkHalt.IsHalted())
+            outOfGameDisplay.ShowOutOfGame();
         hubMessageDispatcher.OnEliminated();
         networkHalt.Halt();
     }
 
 public:
-    ConnectionEventHandler(ReconnectionPolicy &reconnectionPolicy, HubMessageDispatcher &hubMessageDispatcher, SessionMessageSender &sessionMessageSender, MessageRenderer &messageRenderer, NetworkHalt &networkHalt)
-        : reconnectionPolicy(reconnectionPolicy), hubMessageDispatcher(hubMessageDispatcher), sessionMessageSender(sessionMessageSender), messageRenderer(messageRenderer), networkHalt(networkHalt)
+    ConnectionEventHandler(ReconnectionPolicy &reconnectionPolicy, HubMessageDispatcher &hubMessageDispatcher, SessionMessageSender &sessionMessageSender, MessageRenderer &messageRenderer, OutOfGameDisplay &outOfGameDisplay, NetworkHalt &networkHalt)
+        : reconnectionPolicy(reconnectionPolicy), hubMessageDispatcher(hubMessageDispatcher), sessionMessageSender(sessionMessageSender), messageRenderer(messageRenderer), outOfGameDisplay(outOfGameDisplay), networkHalt(networkHalt)
     {
     }
 

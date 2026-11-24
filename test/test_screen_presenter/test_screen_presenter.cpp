@@ -192,3 +192,13 @@ int main(int argc, char **argv)
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
+
+TEST(ScreenPresenterOutOfGameTest, PresentsTheTitleTheCauseAndTheOnlyWayOut)
+{
+    ScreenPresenter presenter;
+
+    const ScreenModel screen = presenter.ScreenForOutOfGame();
+
+    const ScreenModel expected = OutOfGameScreen{"Hors jeu", "Connexion perdue après 3 tentatives", "Redémarre le buzzer pour revenir"};
+    EXPECT_EQ(expected, screen);
+}

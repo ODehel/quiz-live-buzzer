@@ -11,6 +11,7 @@
 #include "fonts/OswaldRegular30.h"
 #include "fonts/OswaldRegular38.h"
 #include "fonts/OswaldRegular48.h"
+#include <cmath>
 #include <string>
 #include <variant>
 #include <vector>
@@ -25,6 +26,14 @@ private:
     static const int resultBandDivisor = 4;  // le bandeau de résultat occupe 1/4 de la hauteur de la dalle, les zones le reste
     static const size_t noZone = zoneCount;  // indice hors grille : aucune zone en évidence
     static const int topBarHeight = 60;      // hauteur du bandeau du haut, trait de séparation compris
+
+    // « Hors jeu » (US-FW-015 CA-12) : une pile centrée de 362 px, dont les mesures viennent de la spec.
+    static const int ringDiameter = 128;     // anneau : diamètre extérieur, trait de ringStroke
+    static const int ringStroke = 9;
+    static const int stackGap = 24;          // écart entre l'anneau, le titre et les deux lignes
+    static const int titleBoxHeight = 62;    // boîte d'encre du titre en 48 px
+    static const int lineBoxHeight = 50;     // boîte d'encre d'une ligne en 38 px
+    static const int outOfGameStackHeight = ringDiameter + stackGap + titleBoxHeight + stackGap + lineBoxHeight + stackGap + lineBoxHeight;
 
     lgfx::LGFX_Device &lcd;
     const lgfx::GFXfont *fonts[3]; // de la plus grande taille (0) à la plus petite
@@ -43,7 +52,7 @@ public:
     }
 
     // Un type d'écran, un dessin : le modèle dit quoi montrer, les méthodes privées savent comment.
-    // Le bandeau du haut n'est dessiné qu'avec un `TextScreen` (le seul écran qui le porte aujourd'hui) ; les autres écrans l'ignorent.
+    // Le bandeau du haut n'est dessiné qu'avec un `TextScreen` et « Hors jeu » (les seuls écrans qui le portent aujourd'hui) ; les autres écrans l'ignorent.
     void Display(const TopBar &topBar, const ScreenModel &screenModel) override
     {
         std::visit(Overloaded{
@@ -53,7 +62,8 @@ public:
                        [this](const HighlightedZoneScreen &highlightedZoneScreen)
                        { HighlightZone(highlightedZoneScreen.zoneIndex, highlightedZoneScreen.bannerText); },
                        [this](const ChosenZoneScreen &chosenZoneScreen) { HighlightChosenZone(chosenZoneScreen.zoneIndex); },
-                       [this](const BannerScreen &bannerScreen) { ShowBanner(bannerScreen.bannerText); }},
+                       [this](const BannerScreen &bannerScreen) { ShowBanner(bannerScreen.bannerText); },
+                       [this, &topBar](const OutOfGameScreen &outOfGameScreen) { ShowOutOfGame(topBar, outOfGameScreen); }},
                    screenModel);
     }
 
@@ -68,6 +78,64 @@ private:
         }
         DrawTopBar(topBar);
         DrawTextIn(text, 0, topBarHeight, lcd.width(), lcd.height() - topBarHeight);
+    }
+
+    // Fond noir, bandeau du haut, puis la pile centrée dans le reste de la dalle : anneau rose `#ff8fa6` avec le symbole marche/arrêt,
+    // le titre en 48 px, la cause et la sortie en 38 px, en blanc, une ligne chacun. La liaison barrée du bandeau n'est pas dessinée (US-FW-009 CA-8).
+    void ShowOutOfGame(const TopBar &topBar, const OutOfGameScreen &screen)
+    {
+        lcd.fillScreen(TFT_BLACK);
+        int areaTop = 0;
+        if (topBar.visible)
+        {
+            DrawTopBar(topBar);
+            areaTop = topBarHeight;
+        }
+        const int stackTop = areaTop + (lcd.height() - areaTop - outOfGameStackHeight) / 2;
+        const int centerX = lcd.width() / 2;
+        const int ringCenterY = stackTop + ringDiameter / 2;
+        DrawPowerRing(centerX, ringCenterY);
+
+        const int titleTop = stackTop + ringDiameter + stackGap;
+        const int causeTop = titleTop + titleBoxHeight + stackGap;
+        const int wayOutTop = causeTop + lineBoxHeight + stackGap;
+        lcd.setTextSize(1);
+        lcd.setTextColor(TFT_WHITE);
+        lcd.setTextDatum(middle_center);
+        lcd.setFont(fonts[0]);
+        lcd.drawString(screen.title.c_str(), centerX, titleTop + titleBoxHeight / 2);
+        lcd.setFont(fonts[1]);
+        lcd.drawString(screen.cause.c_str(), centerX, causeTop + lineBoxHeight / 2);
+        lcd.drawString(screen.wayOut.c_str(), centerX, wayOutTop + lineBoxHeight / 2);
+    }
+
+    // L'anneau de 128 px (trait de 9 px) et, dedans, le symbole marche/arrêt de la maquette `fail-02-out.html` (viewBox 36, échelle
+    // 128/36) : un arc ouvert en haut (rayon 29 px, centre 3 px sous celui de l'anneau, ouverture de 86°) et une barre verticale de 30 px
+    // qui part du haut du centre ; même trait, bouts ronds. Dessinés au pinceau rond (des disques), sans dépendre du sens des angles de `fillArc`.
+    void DrawPowerRing(int centerX, int centerY)
+    {
+        const uint32_t ringColor = lcd.color888(0xff, 0x8f, 0xa6);
+        const int outerRadius = ringDiameter / 2;
+        lcd.fillCircle(centerX, centerY, outerRadius, ringColor);
+        lcd.fillCircle(centerX, centerY, outerRadius - ringStroke, TFT_BLACK);
+
+        const int brushRadius = ringStroke / 2;
+        const int arcRadius = 29;
+        const int arcCenterY = centerY + 3;
+        const float arcStartDegrees = 43.0f; // depuis la verticale, vers la droite, dans le sens des aiguilles d'une montre
+        const float arcEndDegrees = 317.0f;
+        const float degreesToRadians = 3.14159265f / 180.0f;
+        for (float degrees = arcStartDegrees; degrees <= arcEndDegrees; degrees += 1.0f)
+        {
+            const float radians = degrees * degreesToRadians;
+            lcd.fillCircle(centerX + static_cast<int>(lroundf(arcRadius * sinf(radians))),
+                           arcCenterY - static_cast<int>(lroundf(arcRadius * cosf(radians))),
+                           brushRadius, ringColor);
+        }
+        const int barTop = centerY - 30;
+        lcd.fillRect(centerX - brushRadius, barTop, ringStroke, centerY - barTop, ringColor);
+        lcd.fillCircle(centerX, barTop, brushRadius, ringColor);
+        lcd.fillCircle(centerX, centerY, brushRadius, ringColor);
     }
 
     // Le nom du joueur à gauche, « Buzz’O’Live » au centre, un trait dessous ; en petite police, sur une seule ligne.
