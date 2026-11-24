@@ -6,11 +6,13 @@
 #include "BuzzerLoop.h"
 #include "ButtonPressDetector.h"
 #include "ConnectionOpener.h"
+#include "InitScreenDisplay.h"
 #include "LoginOutcomeDisplay.h"
 #include "NetworkHalt.h"
 #include "NetworkLoop.h"
 #include "StartupSequence.h"
 #include "TokenAcquisition.h"
+#include "TappableZonesScreen.h"
 #include "TokenUpdater.h"
 
 using ::testing::Return;
@@ -110,6 +112,30 @@ TEST(TokenAcquisitionTest, TreatsASuccessWithoutTokenAsAFailure)
     LoginResult result = tokenAcquisition.Acquire();
 
     EXPECT_EQ("any-token", result.token);
+}
+
+TEST(InitScreenDisplayTest, ShowsTheLogoAndTheConnectionLabelUnderAnEmptyTopBarWithTheLinkCut)
+{
+    MockScreen mockScreen;
+    InitScreenDisplay initScreenDisplay{mockScreen};
+
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("").WithLinkCut(), ScreenModel{TextScreen{"Buzz’\nO’Live\nConnexion…"}})).Times(1);
+
+    initScreenDisplay.Show();
+}
+
+TEST(InitScreenDisplayTest, HidesTheTappableZonesWhenItGoesThroughTheTappableZonesScreen)
+{
+    MockScreen mockScreen;
+    EXPECT_CALL(mockScreen, Display(::testing::_, ::testing::_)).Times(::testing::AnyNumber());
+    TappableZonesScreen tappableZonesScreen{mockScreen, 800, 480};
+    InitScreenDisplay initScreenDisplay{tappableZonesScreen};
+    tappableZonesScreen.Display(TopBar::Hidden(), ZonesScreen{{"A", "B", "C", "D"}});
+    ASSERT_FALSE(tappableZonesScreen.Zones().empty());
+
+    initScreenDisplay.Show();
+
+    EXPECT_TRUE(tappableZonesScreen.Zones().empty());
 }
 
 TEST(LoginOutcomeDisplayTest, ShowsTheRefusalScreenWithoutTopBarWhenTheCredentialsAreRefused)

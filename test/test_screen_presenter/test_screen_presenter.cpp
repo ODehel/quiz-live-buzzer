@@ -150,6 +150,15 @@ TEST(ScreenPresenterStartupTest, ARefusedLoginPresentsTheReasonAndWhoToWarn)
     EXPECT_EQ(ScreenModel{TextScreen{"Connexion refusée\nLe hub n’a pas accepté ce buzzer\nPréviens le maître du jeu"}}, screen);
 }
 
+TEST(ScreenPresenterStartupTest, TheInitScreenPresentsTheLogoAndTheConnectionLabelOnThreeLines)
+{
+    ScreenPresenter presenter;
+
+    const ScreenModel screen = presenter.ScreenForInit();
+
+    EXPECT_EQ(ScreenModel{TextScreen{"Buzz’\nO’Live\nConnexion…"}}, screen);
+}
+
 TEST(ScreenPresenterTopBarTest, AuthSuccessShowsTheUsernameInTheTopBar)
 {
     ScreenPresenter presenter;
@@ -157,6 +166,15 @@ TEST(ScreenPresenterTopBarTest, AuthSuccessShowsTheUsernameInTheTopBar)
     const TopBar topBar = presenter.TopBarFor(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"));
 
     EXPECT_EQ(TopBar::ForPlayer("quiz_buzzer_01"), topBar);
+}
+
+TEST(ScreenPresenterTopBarTest, TheInitTopBarIsVisibleWithAnEmptyNameAndACutLink)
+{
+    ScreenPresenter presenter;
+
+    const TopBar topBar = presenter.TopBarForInit();
+
+    EXPECT_EQ(TopBar::ForPlayer("").WithLinkCut(), topBar);
 }
 
 class MessageWithoutTopBarTest : public ::testing::TestWithParam<std::string>

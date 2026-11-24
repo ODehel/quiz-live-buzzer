@@ -1365,3 +1365,24 @@ Alternatives écartées :
 - Preuves : US-FW-005 CA-5 et CA-11, US-FW-001 CA-8 (tour de `loop()`), US-FW-006 CA-10 et CA-11 (arrêt de `loop()`) passent de « constat » à « testé en natif » pour la logique ; le câblage de `main.cpp` et `WebSocketConnectionOpener` restent sans test natif.
 - Dette « Démarrage : preuves manquantes » réduite : il reste le constat sur la dalle du chemin du `401` au démarrage. Dette « Écran de login refusé en texte seul » : l'arrêt est porté par `StartupSequence`.
 - Non exécutés ici : `pio test -e native` et `pio run -e esp32` ; `src/main.cpp` contrôlé en syntaxe contre les en-têtes réels de `WebSockets` et de LovyanGFX (`-DLGFX_LINUX_FB`), hors la classe `LGFX` (bus RGB propre à l'ESP32-S3, déjà non compilable sur Linux avant ce commit).
+
+## #69 — feat(startup): show the init screen while the buzzer connects
+
+**Contexte** — Constaté sur la dalle le 2026-11-24 (hub éteint au démarrage) : `setup()` bloque sur le Wi-Fi et le login, l'écran reste vide. US-FW-010 CA-1 et CA-2 (décision #53) spécifient un écran d'init **statique**, dessiné dans `setup()` avant l'attente réseau, avec le bandeau du haut (nom vide, liaison « coupée ») et trois lignes de même taille (« Buzz’ », « O’Live », « Connexion… », libellés de la décision #28). Aucun trou de CDC constaté : le bandeau (US-FW-009 CA-3, CA-4), les libellés, les zones masquées et le chemin `tappableZonesScreen` sont dits ; l'absence de tout autre rendu avant le premier message était déjà tenue par `ConnectionEventHandler` (rien avant le premier `auth_success`, US-FW-015 CA-6) et par `LoginOutcomeDisplay` (seul un `401` affiche).
+
+**Décision** (périmètre et choix figés avec Olivier : logo en texte et « Connexion… » de la décision #28 ; écran dessiné dans `setup()` juste après `lcd.init()` et avant `WiFi.begin`) —
+- **Type de commit `feat`** : capacité observable (l'écran d'init apparaît à la mise sous tension).
+- **Hors périmètre, intacts** : clignotement du bandeau, habillage D1, batterie, CA-4 (sous-titre d'attente), `game_resumed`, bandeau du `401` (`LoginOutcomeDisplay` passe toujours `Hidden()`).
+
+**Choix de Claude, à relire en PR** (aucun ne vient des CDC) —
+- **`InitScreenDisplay`** (`lib/startup/`, `Show()`), sur le modèle de `LoginOutcomeDisplay` : il prend un `Screen&` (`main.cpp` lui passe `tappableZonesScreen`, comme à l'écran de refus) et appelle une fois `Display(bandeau, modèle)`. Écarté : une méthode de plus sur `LoginOutcomeDisplay` (deux raisons de changer pour une classe) ; l'appeler depuis `StartupSequence::Run()` (le Wi-Fi s'attend avant `Run()` : l'écran serait trop tard).
+- **Modèle d'écran** : `ScreenPresenter::ScreenForInit()` rend un `TextScreen` d'un seul texte à retours à la ligne (`DisplayState::LcdTextForInit()` : `"Buzz’\nO’Live\nConnexion…"`), comme l'écran de refus ; `ScreenPresenter::TopBarForInit()` rend `TopBar::ForPlayer("").WithLinkCut()`. La taille unique des trois lignes est celle que `GfxScreen` donne à tout `TextScreen` (US-FW-010 CA-7), non constatée sur la dalle.
+- **Pas de `RetainingScreen`** : l'init n'est pas un écran à atténuer sous une coupure (aucune coupure avant le premier `auth_success`) ; `tappableZonesScreen` seul, comme le brief et CA-2.
+- **`lcd.fillScreen(TFT_BLACK)` conservé** avant l'écran d'init (effacement initial inchangé).
+- **CA-2 sans nouvelle logique** : aucun test nouveau ne prétend le porter seul ; il est tenu par composition (tests existants cités dans US-FW-010). Un test composé vérifie en revanche que l'init, passé par `TappableZonesScreen`, désactive des zones actives.
+- **Tests** : deux dans `test_screen_presenter` (texte, bandeau), deux dans `test_startup` (`InitScreenDisplay` : appel exact attendu avec des littéraux, pas via le présenteur ; zones masquées). Les tests de texte, de bandeau et d'appel exact sont nés rouges (API absente) ; le test des zones n'a connu qu'un rouge de compilation (classe absente), jamais un rouge de comportement : il a été muté (17 mutants, tous tués).
+
+**Conséquences** —
+- L'ordre « écran d'init avant `WiFi.begin` » vit dans `setup()` : aucun test natif ne le prouve (dette « Démarrage : preuves manquantes »). Le dessin des trois lignes sous le bandeau et l'icône « coupée » de l'init ne sont pas constatés sur la dalle.
+- Dette « `setup()` bloquant » : l'absence de rendu d'init est levée pour le statique ; reste le clignotement. Dette « Écran de login refusé en texte seul » : `TopBarForInit()` existe maintenant, mais le refus passe encore `Hidden()` (US-FW-015 CA-9).
+- Non exécutés ici : `pio test -e native` (suites natives compilées à la main, voir le handoff) et `pio run -e esp32` ; `src/main.cpp` contrôlé en syntaxe seulement, mêmes erreurs `LGFX` qu'avant.

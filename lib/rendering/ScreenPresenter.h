@@ -38,9 +38,20 @@ public:
         return TopBar::Hidden();
     }
 
+    // Le bandeau de l'init : visible dès la mise sous tension, nom vide, liaison « coupée » (US-FW-010 CA-1, US-FW-009 CA-3 et CA-4).
+    TopBar TopBarForInit() const
+    {
+        return TopBar::ForPlayer("").WithLinkCut();
+    }
+
     ScreenModel ScreenForBuzzSent() const
     {
         return TextScreen{displayState.LcdTextForBuzzSent()};
+    }
+
+    ScreenModel ScreenForInit() const
+    {
+        return TextScreen{displayState.LcdTextForInit()};
     }
 
     ScreenModel ScreenForLoginRefused() const

@@ -32,6 +32,7 @@
 #include "ArduinoSleeper.h"
 #include "TokenAcquisition.h"
 #include "LoginOutcomeDisplay.h"
+#include "InitScreenDisplay.h"
 #include "StartupSequence.h"
 #include "BuzzerLoop.h"
 #include "WebSocketConnectionOpener.h"
@@ -129,6 +130,8 @@ ArduinoHttpPoster arduinoHttpPoster;
 HttpTokenFetcher httpTokenFetcher{arduinoHttpPoster, "http://192.168.1.183:3000", ServerCredentials{HUB_USERNAME, HUB_PASSWORD}};
 // Passe par `tappableZonesScreen` pour que les zones tactiles restent masquées sur l'écran de refus.
 LoginOutcomeDisplay loginOutcomeDisplay{tappableZonesScreen};
+// L'écran d'init passe aussi par `tappableZonesScreen` : zones masquées (US-FW-010 CA-1, CA-2).
+InitScreenDisplay initScreenDisplay{tappableZonesScreen};
 // Arrêt terminal du réseau (US-FW-006 CA-10) : ferme le client et fait que `loop()` ne fait plus rien. Deux causes, un
 // seul mécanisme : l'élimination (`ConnectionEventHandler`) et un `401` au login d'une reconnexion (`LoginRefusalHalt`).
 WebSocketConnectionCloser connectionCloser{client};
@@ -164,6 +167,7 @@ void setup()
     digitalWrite(2, HIGH); // backlight dalle (GPIO2)
     lcd.init();            // pilote la dalle DIS07050H
     lcd.fillScreen(TFT_BLACK);
+    initScreenDisplay.Show(); // avant toute attente réseau : il reste jusqu'au premier message rendu (US-FW-010 CA-1, CA-2)
 
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     while (WiFi.status() != WL_CONNECTED)
