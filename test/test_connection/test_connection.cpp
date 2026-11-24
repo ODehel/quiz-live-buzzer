@@ -14,6 +14,8 @@
 #include "HubMessageDispatcher.h"
 #include "BuzzerEventTranslator.h"
 #include "BuzzerEventType.h"
+#include "NetworkHalt.h"
+#include "LoginRefusalHalt.h"
 #include "MessageRenderer.h"
 #include "LcdRenderer.h"
 #include "../mocks/ScreenMocks.h"
@@ -43,7 +45,9 @@ protected:
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
-    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, mockMessageRenderer};
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, mockMessageRenderer, networkHalt};
 
     void EliminateTheBuzzer()
     {
@@ -336,6 +340,54 @@ TEST_F(ConnectionEventHandlerTest, ReceivedMessageIsRenderedByType)
     handler.OnMessageReceived("{\"type\":\"auth_success\"}");
 }
 
+TEST_F(ConnectionEventHandlerTest, BuzzerEliminatedByFailedConnectionAttemptsClosesTheConnectionToTheHub)
+{
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+    handler.OnConnectionLost();
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionAttemptFailed();
+
+    EXPECT_CALL(mockConnectionCloser, Close()).Times(1);
+
+    handler.OnConnectionAttemptFailed();
+}
+
+TEST_F(ConnectionEventHandlerTest, BuzzerEliminatedByDisconnectionsClosesTheConnectionToTheHub)
+{
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+    handler.OnConnectionLost();
+    handler.OnConnectionLost();
+    handler.OnConnectionLost();
+
+    EXPECT_CALL(mockConnectionCloser, Close()).Times(1);
+
+    handler.OnConnectionLost();
+}
+
+TEST_F(ConnectionEventHandlerTest, BuzzerNotYetEliminatedKeepsItsConnectionOpen)
+{
+    EXPECT_CALL(mockConnectionCloser, Close()).Times(0);
+
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+    handler.OnConnectionLost();
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionAttemptFailed();
+}
+
+TEST_F(ConnectionEventHandlerTest, DisconnectionEventOfTheClosedConnectionIsNotCountedOnceTheNetworkIsHalted)
+{
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+    handler.OnConnectionLost();
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionAttemptFailed();
+    // La bibliothèque émet la déconnexion pendant la fermeture du client.
+    ON_CALL(mockConnectionCloser, Close()).WillByDefault([this]() { handler.OnConnectionLost(); });
+
+    networkHalt.Halt();
+
+    EXPECT_FALSE(policy.IsEliminated());
+}
+
 TEST(ConnectionEventHandlerRenderingTest, TimerEndIsRenderedWithTheModeOfBeforeTheMessage)
 {
     ::testing::NiceMock<MockHubMessageSender> mockHubMessageSender;
@@ -346,7 +398,9 @@ TEST(ConnectionEventHandlerRenderingTest, TimerEndIsRenderedWithTheModeOfBeforeT
     LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
-    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer};
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, networkHalt};
     buzzerBehavior.OnQuestionOpen();
 
     EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{"Trop tard"}})).Times(1);
@@ -364,7 +418,9 @@ TEST(ConnectionEventHandlerRenderingTest, TimerEndReceivedByAnArmedBuzzerOnceEli
     LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
-    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer};
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, networkHalt};
     handler.OnMessageReceived("{\"type\":\"auth_success\"}");
     handler.OnMessageReceived("{\"type\":\"question_open\"}");
     handler.OnConnectionLost();
@@ -387,7 +443,9 @@ TEST(ConnectionEventHandlerRenderingTest, AuthSuccessIsRenderedWithTheUsernameOf
     LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
-    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer};
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, networkHalt};
 
     EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"Connecté"}})).Times(1);
 
@@ -406,7 +464,9 @@ TEST(ConnectionEventHandlerSessionTest, ReconnectionSendsAFreshTokenAfterTheHubC
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
-    ConnectionEventHandler handler{policy, dispatcher, tokenSessionMessageSender, mockMessageRenderer};
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    ConnectionEventHandler handler{policy, dispatcher, tokenSessionMessageSender, mockMessageRenderer, networkHalt};
     tokenSessionMessageSender.UpdateToken("login-token");
 
     handler.OnMessageReceived("{\"type\":\"auth_success\",\"role\":\"buzzer\",\"username\":\"quiz_buzzer_01\",\"expires_in\":3600}");
@@ -414,6 +474,37 @@ TEST(ConnectionEventHandlerSessionTest, ReconnectionSendsAFreshTokenAfterTheHubC
     EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(::testing::Return(LoginResult{LoginStatus::Success, "fresh-token"}));
     EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth\",\"token\":\"fresh-token\"}")).Times(1);
     handler.OnConnectionEstablished();
+}
+
+TEST(ConnectionEventHandlerSessionTest, LoginRefusedDuringAReconnectionClosesTheConnectionWithoutCountingItsDisconnection)
+{
+    ::testing::NiceMock<MockMessageRenderer> mockMessageRenderer;
+    MockHubMessageSender mockHubMessageSender;
+    MockLocalFeedback mockLocalFeedback;
+    ::testing::StrictMock<MockPayloadSocketWriter> mockPayloadSocketWriter;
+    MockTokenFetcher mockTokenFetcher;
+    ::testing::NiceMock<MockScreen> mockScreen;
+    LoginOutcomeDisplay loginOutcomeDisplay{mockScreen};
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    LoginRefusalHalt loginRefusalHalt{loginOutcomeDisplay, networkHalt};
+    TokenSessionMessageSender tokenSessionMessageSender{mockPayloadSocketWriter, MessageSerializer{}, mockTokenFetcher, loginRefusalHalt};
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    HubMessageDispatcher dispatcher{buzzerBehavior};
+    ReconnectionPolicy policy;
+    ConnectionEventHandler handler{policy, dispatcher, tokenSessionMessageSender, mockMessageRenderer, networkHalt};
+    handler.OnMessageReceived("{\"type\":\"auth_success\"}");
+    handler.OnConnectionLost();
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionAttemptFailed();
+    // La bibliothèque émet la déconnexion pendant la fermeture du client.
+    ON_CALL(mockConnectionCloser, Close()).WillByDefault([&handler]() { handler.OnConnectionLost(); });
+
+    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(::testing::Return(LoginResult{LoginStatus::InvalidCredentials, ""}));
+    EXPECT_CALL(mockConnectionCloser, Close()).Times(1);
+    handler.OnConnectionEstablished();
+
+    EXPECT_FALSE(policy.IsEliminated());
 }
 
 class InvalidHubTextTest : public ConnectionEventHandlerTest, public ::testing::WithParamInterface<std::string>
@@ -452,6 +543,39 @@ INSTANTIATE_TEST_SUITE_P(
         std::string{"{\"type\":42}"},
         std::string{"{\"type\":\"question_open\""},
         std::string{"{\"type\":\"question_open\"}garbage"}));
+
+TEST(NetworkHaltTest, ClosesTheConnectionWhenHalted)
+{
+    MockConnectionCloser mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+
+    EXPECT_CALL(mockConnectionCloser, Close()).Times(1);
+
+    networkHalt.Halt();
+}
+
+TEST(NetworkHaltTest, IsHaltedOnceHalted)
+{
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+
+    EXPECT_FALSE(networkHalt.IsHalted());
+
+    networkHalt.Halt();
+
+    EXPECT_TRUE(networkHalt.IsHalted());
+}
+
+TEST(NetworkHaltTest, ClosesTheConnectionOnlyOnceWhenHaltedAgain)
+{
+    MockConnectionCloser mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+
+    EXPECT_CALL(mockConnectionCloser, Close()).Times(1);
+
+    networkHalt.Halt();
+    networkHalt.Halt();
+}
 
 int main(int argc, char **argv)
 {

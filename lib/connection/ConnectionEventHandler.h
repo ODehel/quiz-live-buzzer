@@ -9,6 +9,7 @@
 #include "MessageDeserializer.h"
 #include "ConnectionEventListener.h"
 #include "MessageRenderer.h"
+#include "NetworkHalt.h"
 
 class ConnectionEventHandler : public ConnectionEventListener
 {
@@ -18,16 +19,19 @@ private:
     SessionMessageSender &sessionMessageSender;
     MessageDeserializer messageDeserializer;
     MessageRenderer &messageRenderer;
+    NetworkHalt &networkHalt;
 
     void PropagateEliminationIfAny()
     {
-        if (reconnectionPolicy.IsEliminated())
-            hubMessageDispatcher.OnEliminated();
+        if (!reconnectionPolicy.IsEliminated())
+            return;
+        hubMessageDispatcher.OnEliminated();
+        networkHalt.Halt();
     }
 
 public:
-    ConnectionEventHandler(ReconnectionPolicy &reconnectionPolicy, HubMessageDispatcher &hubMessageDispatcher, SessionMessageSender &sessionMessageSender, MessageRenderer &messageRenderer)
-        : reconnectionPolicy(reconnectionPolicy), hubMessageDispatcher(hubMessageDispatcher), sessionMessageSender(sessionMessageSender), messageRenderer(messageRenderer)
+    ConnectionEventHandler(ReconnectionPolicy &reconnectionPolicy, HubMessageDispatcher &hubMessageDispatcher, SessionMessageSender &sessionMessageSender, MessageRenderer &messageRenderer, NetworkHalt &networkHalt)
+        : reconnectionPolicy(reconnectionPolicy), hubMessageDispatcher(hubMessageDispatcher), sessionMessageSender(sessionMessageSender), messageRenderer(messageRenderer), networkHalt(networkHalt)
     {
     }
 
@@ -38,6 +42,9 @@ public:
 
     void OnConnectionLost() override
     {
+        // Fermer le client émet une déconnexion : une fermeture voulue n'est ni un échec ni une élimination (CA-11).
+        if (networkHalt.IsHalted())
+            return;
         reconnectionPolicy.OnConnectionLost();
         PropagateEliminationIfAny();
     }

@@ -3,28 +3,25 @@
 
 #include "LoginRefusalListener.h"
 #include "LoginOutcomeDisplay.h"
+#include "NetworkHalt.h"
 
-// Arrête le buzzer quand le login d'une reconnexion est refusé : même écran « Connexion refusée » qu'au démarrage.
+// Arrête le buzzer quand le login d'une reconnexion est refusé : même écran « Connexion refusée » qu'au démarrage,
+// et même arrêt du réseau que l'élimination.
 class LoginRefusalHalt : public LoginRefusalListener
 {
 private:
     LoginOutcomeDisplay &loginOutcomeDisplay;
-    bool halted = false;
+    NetworkHalt &networkHalt;
 
 public:
-    LoginRefusalHalt(LoginOutcomeDisplay &loginOutcomeDisplay) : loginOutcomeDisplay(loginOutcomeDisplay)
+    LoginRefusalHalt(LoginOutcomeDisplay &loginOutcomeDisplay, NetworkHalt &networkHalt) : loginOutcomeDisplay(loginOutcomeDisplay), networkHalt(networkHalt)
     {
     }
 
     void OnLoginRefused() override
     {
         loginOutcomeDisplay.Show(LoginResult{LoginStatus::InvalidCredentials, ""});
-        halted = true;
-    }
-
-    bool IsHalted() const
-    {
-        return halted;
+        networkHalt.Halt();
     }
 };
 
