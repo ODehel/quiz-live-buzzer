@@ -71,3 +71,9 @@ TEST(GlyphFilterTest, TextWithoutAnyCodeToReplaceShouldBeUnchanged)
     EXPECT_EQ(GlyphFilter::ReplaceCodesWithoutGlyph(""), "");
     EXPECT_EQ(GlyphFilter::ReplaceCodesWithoutGlyph("Quelle est la capitale de la France ?"), "Quelle est la capitale de la France ?");
 }
+
+int main(int argc, char **argv)
+{
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
