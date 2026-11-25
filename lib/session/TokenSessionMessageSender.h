@@ -24,9 +24,17 @@ public:
     {
     }
 
-    void SendAuthRefresh() override
+    // Un login frais, puis `auth_refresh` avec CE token (US-FW-007 CA-2). Échec du login, `200` sans token ou `401` : rien n'est envoyé, rien ne relance
+    // et rien ne s'arrête (CA-3, CA-4) ; contrairement à `SendAuth`, pas de repli sur le dernier token, qui n'aurait pas d'autre `exp`.
+    // Retourne vrai si l'`auth_refresh` est parti : le hub y répondra par un `auth_success`.
+    bool SendAuthRefresh() override
     {
+        LoginResult fresh = tokenFetcher.Fetch();
+        if (fresh.status != LoginStatus::Success || fresh.token.empty())
+            return false;
+        token = fresh.token;
         payloadSocketWriter.Write(messageSerializer.SerializeAuthRefresh(token));
+        return true;
     }
 
     void SendAuth() override
