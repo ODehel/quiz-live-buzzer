@@ -1587,3 +1587,39 @@ Alternatives écartées :
 - Spec US-FW-007 : statuts et preuves des CA-1 à CA-7, « Écart de preuve » réécrit ; index : « Implémentée ». US-FW-004 CA-9 : nom du test renommé.
 - Quand le hub implémentera US-021, le smoke test d'intégration (rafale, login en échec puis refusé, `token_expired` puis `4002`) reste à faire, avec une touche de `fake-hub.ps1` pour les trois messages.
 - 23 tests de plus (760 → 783) : `test_session` 9 → 14, `test_connection` 102 → 120. `pio test -e native` et `pio run -e esp32` non exécutés ici (suites compilées à la main, voir le handoff) ; la CI de la PR fait foi.
+
+## #78 — docs(specs): frame the token login without blocking the receive loop
+
+**Contexte** — Le login `POST /api/v1/token` est un appel bloquant (`ArduinoHttpPoster`, délai du framework non vérifié) : il gèle `client.loop()` dans le callback de connexion (login frais avant `auth`, US-FW-005 CA-9, décision #48) et dans le callback de réception (renouvellement, US-FW-007 CA-2, CA-5, décision #77). Le spec décrivait ce blocage comme un fait (US-FW-005 CA-8 et notes, US-FW-007 note « `POST` bloquant du renouvellement »), sans cible. La dette « Un `POST /api/v1/token` synchrone à chaque connexion » ne disait pas ce qu'on voulait à la place. Session de cadrage seule : aucun code, aucun test.
+
+**Décision** (cadrage validé par Olivier, 2026-11-25) —
+- **Périmètre** : seuls les `POST` du token « en jeu » deviennent non bloquants : le login à l'ouverture du WebSocket (US-FW-005 CA-9) et le renouvellement (US-FW-007 CA-2). Le login de `setup()` reste bloquant (init statique, décision #53 ; US-FW-005 CA-1, CA-2, CA-4, CA-11 inchangés). La photo (US-FW-020, décision #63) reste hors périmètre : sa dette demeure.
+- **Délai** : 5 s au plus pour un `POST` du token en jeu. Au-delà, c'est un échec, avec les règles existantes : au login d'ouverture, `auth` part avec le dernier token connu (US-FW-005 CA-9) ; au renouvellement, aucun `auth_refresh` (US-FW-007 CA-3).
+- **Un seul login de renouvellement à la fois** : un `token_expiring_soon` reçu pendant qu'un login de renouvellement est en vol est ignoré (le login en cours rend déjà un token frais). Cela **modifie** US-FW-007 CA-5 : « un renouvellement par message » devient « un renouvellement par login terminé » (CA-5, CA-8).
+- **Résultat tardif** : un login en vol qui aboutit après la fermeture de la connexion qui l'a demandé n'envoie rien, ni `auth` ni `auth_refresh` ; le token frais est conservé comme dernier token connu (US-FW-005 CA-9, US-FW-007 CA-9).
+- **Appui pendant le login d'une reconnexion, avant `auth`, en mode armé** : même règle que la coupure (décision #49, « Mode armé pendant la coupure » : constat reporté, ni CA ni code, dette conservée). Au premier démarrage, l'Inerte ignore l'appui (US-FW-005 CA-11) : rien à changer.
+- **Login frais à chaque ouverture** : reste la règle (US-FW-005 CA-9, décision #48 inchangée). « Ne redemander que près de l'expiration (`expires_in`) » reste une piste de la dette, non traitée ici.
+
+**Choix de Claude, à relire en PR** (hors des décisions ci-dessus) —
+- **Trois CA pour la décision 3 et la décision 4 côté renouvellement** : CA-5 (la rafale : un renouvellement par login terminé), CA-8 (un message reçu pendant un login de renouvellement en vol est ignoré), CA-9 (résultat après la fermeture). CA-5 et CA-8 se recouvrent en partie : CA-5 est le constat observable d'une rafale, CA-8 la règle unitaire. Écarté : tout mettre dans CA-5 (un CA, deux comportements). La décision 4 côté login d'ouverture est dans US-FW-005 CA-9, pas dans un CA propre : le CA existe déjà.
+- **Le non-blocage est décrit par son effet observable** (`client.loop()` continue de tourner : pings, messages du hub), sans nommer de mécanisme (tâche, machine à états, port) : le choix est celui de la session de code.
+- **CA-3 de US-FW-007 et CA-1 complétés** : le délai de 5 s dépassé est un échec de CA-3 ; CA-1 renvoie à CA-8 (« sauf si un login de renouvellement est déjà en vol »). Aucune valeur ni règle nouvelle.
+- **Statut de US-FW-007 : « Implémentée » devient « Partielle »** (spec et index `docs/specs/README.md`) : CA-5 décrit un comportement que le code n'a pas, CA-8 et CA-9 n'existent pas. Il redeviendra « Implémentée » quand le code aura suivi.
+- **Numéro** : #78, le dernier numéro du journal étant #77 (le brief annonçait #74 comme dernier connu).
+- **Le titre de la dette est conservé** (« Un `POST /api/v1/token` synchrone à chaque connexion ») : il est cité par les specs US-FW-005, US-FW-007, US-FW-020 et des décisions ; la dette est réécrite en « cadré / reste ».
+- **Statut « Non implémenté : écart de code » sans nom de test** : aucun test n'existe pour les comportements cadrés ; les tests cités de CA-2, CA-3, CA-5 sont conservés avec la mention de ce qu'ils prouvent encore (le contenu envoyé) et de ce qui changera (CA-5).
+- **Points ouverts non tranchés, consignés aux specs** : une nouvelle connexion ouverte pendant qu'un login est en vol ; un `token_expiring_soon` pendant le login d'ouverture ; un `401` reçu après la fermeture ; un login qui se termine alors que le buzzer est Éliminé ; ce que mesurent les 5 s (connexion, lecture, ou les deux) ; la justification « rafale » du compteur de US-FW-007 CA-6.
+
+**Alternatives écartées** (options refusées pendant l'interview) —
+- **Périmètre** : rendre aussi le login de `setup()` non bloquant (rouvrirait la décision #53 et US-FW-005 CA-1, CA-2, CA-11) ; un port HTTP commun au login et à la photo (cadrerait US-FW-020, hors de cette session).
+- **Délai** : 10 s ; aucun délai fixé (non testable).
+- **Rafale** : un renouvellement par message, mis en file ; un login de suivi regroupé.
+- **Réponse tardive** : jeter entièrement le résultat (le token frais serait perdu) ; l'envoyer sur la connexion courante.
+- **Appui pendant le login d'une reconnexion** : l'ignorer tant que `auth` n'est pas parti ; le retenir puis l'envoyer après `auth_success`.
+- **Login frais** : ne redemander que près de l'expiration (`expires_in`).
+
+**Conséquences** —
+- Écarts de code : US-FW-005 CA-8 (délai de 5 s du login en jeu) et CA-9 (non-blocage, délai, résultat après fermeture) ; US-FW-007 CA-2 (non-blocage, délai), CA-3 (délai), CA-5 (un par login terminé, remplace un par message), CA-8, CA-9. Tests à adapter : `ABurstOfTokenExpiringSoonTriggersOneAuthRefreshPerMessage` et `ConnectionEventHandlerRenewalSessionTest.ABurstOfTokenExpiringSoonRenewsTheSessionOncePerMessageWithEachFreshToken` décrivent l'ancien comportement ; les tests de `test_session` supposent un login synchrone ; le commentaire de `ConnectionEventHandler.h` sur la rafale change aussi.
+- Dette « Un `POST /api/v1/token` synchrone à chaque connexion » réécrite : cadrée, pas soldée ; restent le code, le login de `setup()`, la photo, « ne redemander que près de l'expiration » et l'appui en mode armé (constat « Mode armé pendant la coupure »).
+- Spec US-FW-007 : « Partielle » ; spec US-FW-005 : reste « Partielle », CA-8 et CA-9 en écart de code. Index mis à jour.
+- Pas de smoke test, pas de code, pas de test (type `docs`) ; ni `pio test` ni `pio run` : la CI de la PR fait foi.
