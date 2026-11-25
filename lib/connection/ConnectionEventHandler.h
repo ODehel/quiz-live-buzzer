@@ -6,6 +6,7 @@
 #include "ReconnectionPolicy.h"
 #include "HubMessageDispatcher.h"
 #include "SessionMessageSender.h"
+#include "SessionPoller.h"
 #include "MessageDeserializer.h"
 #include "ConnectionEventListener.h"
 #include "MessageRenderer.h"
@@ -13,7 +14,7 @@
 #include "OutOfGameDisplay.h"
 #include "LinkStateDisplay.h"
 
-class ConnectionEventHandler : public ConnectionEventListener
+class ConnectionEventHandler : public ConnectionEventListener, public SessionPoller
 {
 private:
     ReconnectionPolicy &reconnectionPolicy;
@@ -25,7 +26,9 @@ private:
     LinkStateDisplay &linkStateDisplay;
     NetworkHalt &networkHalt;
     // Les `auth_refresh` envoyés sur la connexion en cours dont l'`auth_success` n'est pas encore revenu (US-FW-007 CA-6). Un compteur et non
-    // un drapeau : une rafale de `token_expiring_soon` (CA-5) envoie un `auth_refresh` par message, donc reçoit autant d'`auth_success`.
+    // un drapeau : un login de renouvellement se termine et envoie `auth_refresh`, puis un nouveau `token_expiring_soon` arrive avant l'`auth_success`
+    // (CA-5, CA-8 : un seul login à la fois, mais pas un seul `auth_refresh` sans réponse). Il compte à l'envoi, pas à la demande : un login échoué,
+    // refusé ou dépassé n'envoie rien et n'attend aucune réponse.
     // Remis à 0 à l'ouverture d'une connexion : la réponse d'une connexion fermée ne viendra jamais, et l'`auth_success` suivant une ouverture s'affiche.
     int pendingAuthRefreshReplies = 0;
 
@@ -33,6 +36,8 @@ private:
     {
         if (!reconnectionPolicy.IsEliminated())
             return;
+        // Le login en vol est abandonné, son résultat jeté : rien n'est lu ni envoyé après l'élimination (US-FW-005 CA-12, US-FW-007 CA-9).
+        sessionMessageSender.Abandon();
         // Un réseau déjà arrêté (refus du login, US-FW-006 CA-10) garde son écran : « Hors jeu » ne le remplace pas, et ne s'affiche qu'une fois.
         if (!networkHalt.IsHalted())
             outOfGameDisplay.ShowOutOfGame();
@@ -68,6 +73,7 @@ public:
         // Fermer le client émet une déconnexion : une fermeture voulue n'est ni un échec ni une élimination (CA-11).
         if (networkHalt.IsHalted())
             return;
+        sessionMessageSender.OnConnectionClosed();
         reconnectionPolicy.OnConnectionLost();
         PropagateEliminationIfAny();
         ShowLinkLostIfAny();
@@ -78,6 +84,13 @@ public:
         reconnectionPolicy.OnReconnectFailed();
         PropagateEliminationIfAny();
         ShowLinkLostIfAny();
+    }
+
+    // Un tour de `loop()` : recueille le login terminé ou dépassé (US-FW-005 CA-9, US-FW-007 CA-2). Un `auth_refresh` envoyé attend son `auth_success` (CA-6).
+    void PollSession() override
+    {
+        if (sessionMessageSender.PollLogin())
+            pendingAuthRefreshReplies++;
     }
 
     void OnMessageReceived(const std::string &message) override
@@ -106,8 +119,7 @@ public:
         }
         else if (type == "token_expiring_soon")
         {
-            if (sessionMessageSender.SendAuthRefresh())
-                pendingAuthRefreshReplies++;
+            sessionMessageSender.SendAuthRefresh();
         }
         else
             hubMessageDispatcher.Dispatch(type);

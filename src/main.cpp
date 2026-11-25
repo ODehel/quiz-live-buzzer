@@ -29,6 +29,9 @@
 #include "TouchButtonReader.h"
 #include "ServerCredentials.h"
 #include "ArduinoHttpPoster.h"
+#include "ArduinoClock.h"
+#include "TaskAsyncLogin.h"
+#include "SessionPollingNetworkLoop.h"
 #include "HttpTokenFetcher.h"
 #include "ArduinoSleeper.h"
 #include "TokenAcquisition.h"
@@ -140,7 +143,12 @@ InitScreenDisplay initScreenDisplay{tappableZonesScreen};
 WebSocketConnectionCloser connectionCloser{client};
 NetworkHalt networkHalt{connectionCloser};
 LoginRefusalHalt loginRefusalHalt{loginOutcomeDisplay, networkHalt};
-TokenSessionMessageSender tokenSessionMessageSender{payloadSocketWriter, MessageSerializer{}, httpTokenFetcher, loginRefusalHalt};
+// Le login en jeu (à l'ouverture du WebSocket, au renouvellement) tourne dans une tâche, borné à 5 s depuis son lancement (US-FW-005 CA-8, CA-9) :
+// `loop()` continue pendant ce temps. Le login de `setup()` reste bloquant (`TokenAcquisition`).
+constexpr unsigned long LOGIN_TIMEOUT_MS = 5000;
+TaskAsyncLogin taskAsyncLogin{httpTokenFetcher};
+ArduinoClock arduinoClock;
+TokenSessionMessageSender tokenSessionMessageSender{payloadSocketWriter, MessageSerializer{}, taskAsyncLogin, arduinoClock, LOGIN_TIMEOUT_MS, loginRefusalHalt};
 BuzzerButtonPressTranslator buzzerButtonPressTranslator{buzzerBehavior};
 HubMessageDispatcher hubMessageDispatcher{buzzerBehavior};
 ButtonPressDetector buttonPressDetector{physicalButtonReader, buzzerButtonPressTranslator};
@@ -148,6 +156,8 @@ ButtonPressDetector touchPressDetector{touchButtonReader, buzzerButtonPressTrans
 ConnectionEventHandler connectionEventHandler{reconnectionPolicy, hubMessageDispatcher, tokenSessionMessageSender, lcdRenderer, lcdRenderer, lcdRenderer, networkHalt};
 BuzzerEventTranslator buzzerEventTranslator{connectionEventHandler};
 WebSocketEventListener webSocketEventListener{client, buzzerEventTranslator};
+// Un tour de réseau : le WebSocket, puis le login en vol (résultat, délai de 5 s).
+SessionPollingNetworkLoop sessionPollingNetworkLoop{webSocketEventListener, connectionEventHandler};
 
 constexpr unsigned long LOGIN_RETRY_DELAY_MS = 5000;
 // US-FW-006 CA-8 : 5 s fixes entre deux tentatives de reconnexion (la bibliothèque rouvre toutes les 500 ms par défaut).
@@ -157,7 +167,7 @@ TokenAcquisition tokenAcquisition{httpTokenFetcher, arduinoSleeper, LOGIN_RETRY_
 WebSocketConnectionOpener webSocketConnectionOpener{client, "192.168.1.183", 3000, "/ws"};
 // Séquence de `setup()` après le Wi-Fi (US-FW-005) et tour de `loop()` : leur logique vit dans `lib/startup/`, ici on les câble.
 StartupSequence startupSequence{tokenAcquisition, loginOutcomeDisplay, tokenSessionMessageSender, webSocketConnectionOpener, RECONNECT_INTERVAL_MS};
-BuzzerLoop buzzerLoop{startupSequence, networkHalt, webSocketEventListener, buttonPressDetector, touchPressDetector};
+BuzzerLoop buzzerLoop{startupSequence, networkHalt, sessionPollingNetworkLoop, buttonPressDetector, touchPressDetector};
 
 void setup()
 {
