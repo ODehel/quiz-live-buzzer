@@ -8,6 +8,8 @@
 #include "ProportionalTextMeasurer.h"
 #include "TextLayout.h"
 #include "../fixtures/OswaldRegular30Advances.h"
+#include "../fixtures/OswaldRegular38Advances.h"
+#include "../fixtures/OswaldRegular48Advances.h"
 
 using Lines = std::vector<std::string>;
 
@@ -462,17 +464,45 @@ TEST(TextLayoutProportionalTest, SizeShouldBeChosenFromGlyphWidthsNotFromTheNumb
     EXPECT_EQ(narrow.lines, (Lines{"ii ii"}));
 }
 
-// Largeurs réelles de la plus petite police (Oswald 30 px, interligne réglé à `QuizLineSpacingPercent`). Si un titre de
-// 250 caractères tient à cette taille, il tient à toutes : `Compute` ne garde une plus grande taille
-// que si le texte y tient aussi.
+// Largeurs réelles d'une police Oswald (copie de test générée par `scripts/extract-font-advances.py`), interligne réglé à
+// `QuizLineSpacingPercent`. Même formule que `ReadFontMetrics` (arrondi au pixel le plus proche).
+template <size_t AdvanceCount, size_t ExtraCount>
+static FontMetrics RealFont(int yAdvance, const int (&advances)[AdvanceCount], const int (&extraCodes)[ExtraCount],
+                            const int (&extraAdvances)[ExtraCount])
+{
+    std::vector<std::pair<uint32_t, int>> extras;
+    for (size_t i = 0; i < ExtraCount; ++i)
+        extras.emplace_back(extraCodes[i], extraAdvances[i]);
+    const int lineHeight = (yAdvance * QuizLineSpacingPercent + 50) / 100;
+    return FontMetrics(lineHeight, std::vector<int>(std::begin(advances), std::end(advances)), extras);
+}
+
+static FontMetrics RealFont30()
+{
+    return RealFont(OswaldRegular30YAdvance, OswaldRegular30Advances, OswaldRegular30ExtraCodes, OswaldRegular30ExtraAdvances);
+}
+
+static FontMetrics RealFont38()
+{
+    return RealFont(OswaldRegular38YAdvance, OswaldRegular38Advances, OswaldRegular38ExtraCodes, OswaldRegular38ExtraAdvances);
+}
+
+static FontMetrics RealFont48()
+{
+    return RealFont(OswaldRegular48YAdvance, OswaldRegular48Advances, OswaldRegular48ExtraCodes, OswaldRegular48ExtraAdvances);
+}
+
+// La plus petite police (Oswald 30 px). Si un titre de 250 caractères tient à cette taille, il tient à toutes : `Compute`
+// ne garde une plus grande taille que si le texte y tient aussi.
 static ProportionalTextMeasurer SmallestRealFont()
 {
-    const std::vector<int> advances(std::begin(OswaldRegular30Advances), std::end(OswaldRegular30Advances));
-    std::vector<std::pair<uint32_t, int>> extraAdvances;
-    for (size_t i = 0; i < std::size(OswaldRegular30ExtraCodes); ++i)
-        extraAdvances.emplace_back(OswaldRegular30ExtraCodes[i], OswaldRegular30ExtraAdvances[i]);
-    const int lineHeight = (OswaldRegular30YAdvance * QuizLineSpacingPercent + 50) / 100;
-    return ProportionalTextMeasurer({FontMetrics(lineHeight, advances, extraAdvances)});
+    return ProportionalTextMeasurer({RealFont30()});
+}
+
+// Les trois polices de `GfxScreen`, dans son ordre : 48, 38 puis 30 px (tailles 0, 1 et 2).
+static ProportionalTextMeasurer ThreeRealFonts()
+{
+    return ProportionalTextMeasurer({RealFont48(), RealFont38(), RealFont30()});
 }
 
 static int HeightOf(const TextLines &placed, const TextMeasurer &measurer)
@@ -509,6 +539,24 @@ TEST(TextLayoutRealFontTest, LineHeightShouldLeaveRoomBetweenADescenderAndTheAcc
     const int clearance = measurer.LineHeight(0) - OswaldRegular30DescenderDepth - OswaldRegular30AccentHeight;
 
     EXPECT_GE(clearance, 1);
+}
+
+// Même exigence qu'à 30 px, figée telle que mesurée (2 px à 38 px, 4 px à 48 px) : le pas entre deux lignes est 50 px à 38 px et
+// 64 px à 48 px, le descendant le plus bas fait 7 et 9 px sous la ligne de base, l'accent le plus haut 41 et 51 px au-dessus.
+TEST(TextLayoutRealFontTest, LineHeightShouldLeaveRoomBetweenADescenderAndTheAccentOfTheNextLineAt38Pixels)
+{
+    const ProportionalTextMeasurer measurer = ThreeRealFonts();
+
+    EXPECT_EQ(measurer.LineHeight(1), 50);
+    EXPECT_EQ(measurer.LineHeight(1) - OswaldRegular38DescenderDepth - OswaldRegular38AccentHeight, 2);
+}
+
+TEST(TextLayoutRealFontTest, LineHeightShouldLeaveRoomBetweenADescenderAndTheAccentOfTheNextLineAt48Pixels)
+{
+    const ProportionalTextMeasurer measurer = ThreeRealFonts();
+
+    EXPECT_EQ(measurer.LineHeight(0), 64);
+    EXPECT_EQ(measurer.LineHeight(0) - OswaldRegular48DescenderDepth - OswaldRegular48AccentHeight, 4);
 }
 
 // Œ, œ, ’, … et € sont mesurés avec leur largeur réelle (20, 21, 5, 17 et 15 px en Oswald 30 px), pas avec celle d'un `?`.
@@ -588,6 +636,123 @@ TEST(TextLayoutRealFontTest, UppercaseTitleWithItsQuestionNumberShouldFitOnTheSc
 
     EXPECT_LE(HeightOf(placed, measurer), AreaHeight);
     EXPECT_EQ(placed.lines.size(), 5u);
+}
+
+// Une proposition de QCM ou une réponse de rapidité de 40 caractères (la borne du hub), préfixée « A : », dans les zones
+// d'un écran de question. Dimensions de `TextLayout` : celles de la zone de 400 px de large moins la marge de 10 px de chaque
+// côté, soit 380 px, et 220 px (grille sans bandeau : 240 px de zone), 190 px (grille sous le seul bandeau du haut : 210 px) ou
+// 160 px (grille sous le bandeau du haut et un en-tête de 60 px : 180 px), avec les trois polices réelles.
+static const int ZoneWidth = 380;
+static const int GridZoneHeight = 220;
+static const int ZoneHeightUnderTheTopBar = 190;
+static const int ZoneHeightUnderTheHeader = 160;
+
+struct Placed
+{
+    TextLines lines;
+    int height;
+    int widestLine;
+};
+
+static Placed PlaceChoice(const std::string &character, int areaHeight)
+{
+    std::string choice = "A : ";
+    for (int i = 0; i < 40; ++i)
+        choice += character;
+    const ProportionalTextMeasurer measurer = ThreeRealFonts();
+    const TextLayout layout(measurer, ZoneWidth, areaHeight);
+    const TextLines lines = layout.Compute(choice);
+    int widestLine = 0;
+    for (const std::string &line : lines.lines)
+        widestLine = std::max(widestLine, measurer.Width(line, lines.size));
+    return Placed{lines, HeightOf(lines, measurer), widestLine};
+}
+
+static const int SmallestSize = 2; // Oswald 30 px
+
+static std::string Repeated(const std::string &character, int count)
+{
+    std::string text;
+    for (int i = 0; i < count; ++i)
+        text += character;
+    return text;
+}
+
+TEST(TextLayoutChoiceTest, FortyWideLettersShouldFitTheZoneOfTheGrid)
+{
+    const Placed placed = PlaceChoice("W", GridZoneHeight);
+
+    EXPECT_EQ(placed.lines.size, SmallestSize); // ni 48 px ni 38 px ne tiennent
+    EXPECT_EQ(placed.lines.lines, (Lines{"A :", Repeated("W", 17), Repeated("W", 17), Repeated("W", 6)}));
+    EXPECT_EQ(placed.widestLine, 374); // 17 W de 22 px : la ligne la plus large reste dans les 380 px de la zone
+    EXPECT_EQ(placed.height, 160);
+}
+
+TEST(TextLayoutChoiceTest, FortyFractionsShouldFitTheZoneOfTheGrid)
+{
+    const Placed placed = PlaceChoice("¼", GridZoneHeight);
+
+    EXPECT_EQ(placed.lines.size, SmallestSize);
+    EXPECT_EQ(placed.lines.lines, (Lines{"A :", Repeated("¼", 13), Repeated("¼", 13), Repeated("¼", 13), "¼"}));
+    EXPECT_EQ(placed.widestLine, 364); // 13 ¼ de 28 px
+    EXPECT_EQ(placed.height, 200);
+}
+
+// L'em dash est depuis le 2026-11-25 le glyphe le plus large des trois polices (31, 39 et 49 px) : plus large que `¼` (28, 36 et 45 px),
+// que le CDC tenait pour le plus large. Même résultat que pour `¼` : 12 tirets par ligne, 5 lignes.
+TEST(TextLayoutChoiceTest, FortyEmDashesShouldFitTheZoneOfTheGrid)
+{
+    const Placed placed = PlaceChoice("—", GridZoneHeight);
+
+    EXPECT_EQ(placed.lines.size, SmallestSize);
+    EXPECT_EQ(placed.lines.lines, (Lines{"A :", Repeated("—", 12), Repeated("—", 12), Repeated("—", 12), Repeated("—", 4)}));
+    EXPECT_EQ(placed.widestLine, 372); // 12 tirets de 31 px
+    EXPECT_EQ(placed.height, 200);
+}
+
+TEST(TextLayoutChoiceTest, FortyWideLettersShouldFitTheZoneUnderTheTopBar)
+{
+    const Placed placed = PlaceChoice("W", ZoneHeightUnderTheTopBar);
+
+    EXPECT_EQ(placed.lines.size, SmallestSize);
+    EXPECT_EQ(placed.lines.lines, (Lines{"A :", Repeated("W", 17), Repeated("W", 17), Repeated("W", 6)}));
+    EXPECT_EQ(placed.height, 160);
+}
+
+TEST(TextLayoutChoiceTest, FortyWideLettersShouldFillTheZoneUnderTheHeaderExactly)
+{
+    const Placed placed = PlaceChoice("W", ZoneHeightUnderTheHeader);
+
+    EXPECT_EQ(placed.lines.size, SmallestSize);
+    EXPECT_EQ(placed.lines.lines, (Lines{"A :", Repeated("W", 17), Repeated("W", 17), Repeated("W", 6)}));
+    EXPECT_EQ(placed.height, ZoneHeightUnderTheHeader); // pile : 4 lignes de 40 px
+}
+
+// Les trois tests suivants FIGENT UN CONSTAT REPORTÉ (US-FW-008 CA-9), ils ne le corrigent pas : au pire cas, le bloc dépasse la
+// zone (aucun rognage, CA-7) et mord sur la zone voisine ou sur le bandeau. Si un jour la mise en page change, ces valeurs sont
+// à revoir avec le CDC, pas à « réparer » dans le test.
+TEST(TextLayoutPinnedFindingTest, FortyFractionsShouldOverflowTheZoneUnderTheTopBarBy10Pixels)
+{
+    const Placed placed = PlaceChoice("¼", ZoneHeightUnderTheTopBar);
+
+    EXPECT_EQ(placed.lines.size, SmallestSize);
+    EXPECT_EQ(placed.lines.lines.size(), 5u); // « A : » seul, puis 13, 13, 13 et 1 `¼`
+    EXPECT_EQ(placed.height - ZoneHeightUnderTheTopBar, 10);
+}
+
+TEST(TextLayoutPinnedFindingTest, FortyFractionsShouldOverflowTheZoneUnderTheHeaderBy40Pixels)
+{
+    const Placed placed = PlaceChoice("¼", ZoneHeightUnderTheHeader);
+
+    EXPECT_EQ(placed.lines.size, SmallestSize);
+    EXPECT_EQ(placed.lines.lines.size(), 5u); // « A : » seul, puis 13, 13, 13 et 1 `¼`
+    EXPECT_EQ(placed.height - ZoneHeightUnderTheHeader, 40);
+}
+
+TEST(TextLayoutPinnedFindingTest, FortyEmDashesShouldOverflowTheZonesUnderTheTopBarAndUnderTheHeaderLikeFractions)
+{
+    EXPECT_EQ(PlaceChoice("—", ZoneHeightUnderTheTopBar).height - ZoneHeightUnderTheTopBar, 10);
+    EXPECT_EQ(PlaceChoice("—", ZoneHeightUnderTheHeader).height - ZoneHeightUnderTheHeader, 40);
 }
 
 int main(int argc, char **argv)

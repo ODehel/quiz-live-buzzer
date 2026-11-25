@@ -31,10 +31,12 @@ done
 git diff --stat src/fonts   # vide si la version de FreeType rend les mêmes pixels
 ```
 
-Puis régénérer la copie des largeurs de la plus petite police, que lisent les tests natifs :
+Puis régénérer la copie des largeurs des trois polices, que lisent les tests natifs :
 
 ```bash
-python3 scripts/extract-font-advances.py src/fonts/OswaldRegular30.h OswaldRegular30 test/fixtures/OswaldRegular30Advances.h
+for s in 30 38 48; do
+  python3 scripts/extract-font-advances.py src/fonts/OswaldRegular$s.h OswaldRegular$s test/fixtures/OswaldRegular${s}Advances.h
+done
 git diff --stat test/fixtures   # vide si les largeurs n'ont pas changé
 ```
 
