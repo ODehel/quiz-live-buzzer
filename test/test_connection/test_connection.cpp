@@ -925,7 +925,7 @@ TEST(ConnectionEventHandlerRenderingTest, AuthSuccessThenGameResumedAreRenderedA
 
     ::testing::InSequence inSequence;
     EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"En attente du maître du jeu\nLa partie va bientôt commencer"}})).Times(1);
-    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"Partie en cours"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"Partie en cours\nEn attente d’une question"}})).Times(1);
 
     handler.OnMessageReceived("{\"type\":\"auth_success\",\"role\":\"buzzer\",\"username\":\"quiz_buzzer_01\",\"expires_in\":3600}");
     handler.OnMessageReceived("{\"type\":\"game_resumed\"}");

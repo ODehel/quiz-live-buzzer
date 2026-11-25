@@ -22,7 +22,7 @@ public:
         if (type == "question_result")
             return LcdTextForQuestionResult(message);
         if (type == "game_resumed")
-            return "Partie en cours";
+            return LcdTextForGameResumed();
         if (type == "auth_success")
             return LcdTextForWaitingForGameMaster();
         if (type == "answer_received")
@@ -85,6 +85,12 @@ public:
     std::string LcdTextForWaitingForGameMaster() const
     {
         return "En attente du maître du jeu\nLa partie va bientôt commencer";
+    }
+
+    // L'écran de `game_resumed`, même mise en page que D4 : deux lignes de même taille (US-FW-010 CA-4, décision #82).
+    std::string LcdTextForGameResumed() const
+    {
+        return "Partie en cours\nEn attente d’une question";
     }
 
     std::string LcdTextForLoginRefused() const

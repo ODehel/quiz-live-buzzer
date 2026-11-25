@@ -23,6 +23,19 @@ TEST(LcdRendererTest, AuthSuccessMessageShowsTheWaitForTheGameMasterOnScreen)
     lcdRenderer.Apply(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"));
 }
 
+TEST(LcdRendererTest, GameResumedMessageShowsTheWaitForAQuestionOnScreenUnderTheTopBarOfTheAuthSuccess)
+{
+    MockScreen mockScreen;
+    testing::NiceMock<MockArmedModeReader> armedModeReader;
+    VisibleTopBar visibleTopBar;
+    LcdRenderer lcdRenderer{mockScreen, armedModeReader, visibleTopBar};
+    lcdRenderer.Apply(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"));
+
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"Partie en cours\nEn attente d’une question"}})).Times(1);
+
+    lcdRenderer.Apply(HubMessage{"game_resumed"});
+}
+
 using FixedTextCase = std::pair<std::string, std::string>;
 
 class MessageWithFixedTextTest : public ::testing::TestWithParam<FixedTextCase>

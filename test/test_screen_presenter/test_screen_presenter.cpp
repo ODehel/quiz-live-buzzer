@@ -11,6 +11,24 @@ TEST(ScreenPresenterTest, AuthSuccessPresentsTheWaitForTheGameMasterOnTwoLines)
     EXPECT_EQ(ScreenModel{TextScreen{"En attente du maître du jeu\nLa partie va bientôt commencer"}}, screen);
 }
 
+TEST(ScreenPresenterTest, GameResumedPresentsTheWaitForAQuestionOnTwoLines)
+{
+    ScreenPresenter presenter;
+
+    const ScreenModel screen = presenter.ScreenFor(HubMessage{"game_resumed"}, false);
+
+    EXPECT_EQ(ScreenModel{TextScreen{"Partie en cours\nEn attente d’une question"}}, screen);
+}
+
+TEST(ScreenPresenterTest, GameResumedPresentsTheWaitForAQuestionEvenWhenAQuestionIsArmed)
+{
+    ScreenPresenter presenter;
+
+    const ScreenModel screen = presenter.ScreenFor(HubMessage{"game_resumed"}, true);
+
+    EXPECT_EQ(ScreenModel{TextScreen{"Partie en cours\nEn attente d’une question"}}, screen);
+}
+
 class MessageWithoutDisplayTest : public ::testing::TestWithParam<std::string>
 {
 };
