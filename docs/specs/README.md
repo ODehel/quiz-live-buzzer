@@ -49,7 +49,7 @@ Ordre de travail : ordre numérique, la logique avant le rendu. Une US vide est 
 | [US-FW-004](US-FW-004-dialoguer-avec-le-hub.md) | Dialoguer avec le hub | Logique | US-009 | Partielle |
 | [US-FW-005](US-FW-005-demarrer-et-sauthentifier.md) | Démarrer et s'authentifier | Logique | US-003, US-009 | Partielle |
 | [US-FW-006](US-FW-006-se-reconnecter-ou-etre-elimine.md) | Se reconnecter ou être éliminé | Logique | US-009, US-019 | Partielle |
-| [US-FW-007](US-FW-007-garder-la-session-ouverte.md) | Garder la session ouverte | Logique | US-021 | Partielle |
+| [US-FW-007](US-FW-007-garder-la-session-ouverte.md) | Garder la session ouverte | Logique | US-021 (non implémentée : chemin mort de bout en bout) | Implémentée |
 | [US-FW-008](US-FW-008-afficher-des-textes-lisibles.md) | Afficher des textes lisibles | Rendu | — | Partielle |
 | [US-FW-009](US-FW-009-bandeau-du-haut.md) | Bandeau du haut | Rendu | US-009, US-010, US-019 (nom du participant à définir) | Partielle |
 | [US-FW-010](US-FW-010-ecrans-dinit-et-dattente.md) | Écrans d'init et d'attente | Rendu | US-009, US-019 (`game_resumed` non émis au 2026-11-22) | Partielle |

@@ -8,7 +8,7 @@
 class MockSessionMessageSender : public SessionMessageSender
 {
 public:
-    MOCK_METHOD(void, SendAuthRefresh, (), (override));
+    MOCK_METHOD(bool, SendAuthRefresh, (), (override));
     MOCK_METHOD(void, SendAuth, (), (override));
 };
 

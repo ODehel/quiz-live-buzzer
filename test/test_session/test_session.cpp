@@ -11,18 +11,96 @@
 using ::testing::Return;
 using ::testing::StrictMock;
 
-TEST(TokenSessionMessageSenderTest, SendsAuthRefreshCarryingTheUpdatedToken)
+TEST(TokenSessionMessageSenderTest, SendsAuthRefreshCarryingAFreshlyFetchedTokenNeverTheOldOne)
 {
     MockPayloadSocketWriter mockPayloadSocketWriter;
-    StrictMock<MockTokenFetcher> mockTokenFetcher;
+    MockTokenFetcher mockTokenFetcher;
     StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
     MessageSerializer messageSerializer;
     TokenSessionMessageSender sender{mockPayloadSocketWriter, messageSerializer, mockTokenFetcher, mockLoginRefusalListener};
 
-    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth_refresh\",\"token\":\"any-token\"}")).Times(1);
+    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(Return(LoginResult{LoginStatus::Success, "fresh-token"}));
+    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth_refresh\",\"token\":\"fresh-token\"}")).Times(1);
 
-    sender.UpdateToken("any-token");
+    sender.UpdateToken("old-token");
     sender.SendAuthRefresh();
+}
+
+TEST(TokenSessionMessageSenderTest, ReportsTheAuthRefreshAsSentOnceItCarriesAFreshToken)
+{
+    ::testing::NiceMock<MockPayloadSocketWriter> mockPayloadSocketWriter;
+    MockTokenFetcher mockTokenFetcher;
+    StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
+    MessageSerializer messageSerializer;
+    TokenSessionMessageSender sender{mockPayloadSocketWriter, messageSerializer, mockTokenFetcher, mockLoginRefusalListener};
+
+    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(Return(LoginResult{LoginStatus::Success, "fresh-token"}));
+
+    EXPECT_TRUE(sender.SendAuthRefresh());
+}
+
+TEST(TokenSessionMessageSenderTest, SendsNoAuthRefreshWhenTheRenewalLoginFails)
+{
+    MockPayloadSocketWriter mockPayloadSocketWriter;
+    MockTokenFetcher mockTokenFetcher;
+    StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
+    MessageSerializer messageSerializer;
+    TokenSessionMessageSender sender{mockPayloadSocketWriter, messageSerializer, mockTokenFetcher, mockLoginRefusalListener};
+
+    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(Return(LoginResult{LoginStatus::Failed, ""}));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(::testing::_)).Times(0);
+
+    sender.UpdateToken("old-token");
+    EXPECT_FALSE(sender.SendAuthRefresh());
+}
+
+TEST(TokenSessionMessageSenderTest, SendsNoAuthRefreshWhenTheRenewalLoginReturnsNoToken)
+{
+    MockPayloadSocketWriter mockPayloadSocketWriter;
+    MockTokenFetcher mockTokenFetcher;
+    StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
+    MessageSerializer messageSerializer;
+    TokenSessionMessageSender sender{mockPayloadSocketWriter, messageSerializer, mockTokenFetcher, mockLoginRefusalListener};
+
+    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(Return(LoginResult{LoginStatus::Success, ""}));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(::testing::_)).Times(0);
+
+    sender.UpdateToken("old-token");
+    EXPECT_FALSE(sender.SendAuthRefresh());
+}
+
+TEST(TokenSessionMessageSenderTest, SendsNoAuthRefreshAndStopsNothingWhenTheRenewalLoginIsRefused)
+{
+    MockPayloadSocketWriter mockPayloadSocketWriter;
+    MockTokenFetcher mockTokenFetcher;
+    StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
+    MessageSerializer messageSerializer;
+    TokenSessionMessageSender sender{mockPayloadSocketWriter, messageSerializer, mockTokenFetcher, mockLoginRefusalListener};
+
+    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(Return(LoginResult{LoginStatus::InvalidCredentials, ""}));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(::testing::_)).Times(0);
+
+    sender.UpdateToken("old-token");
+    EXPECT_FALSE(sender.SendAuthRefresh());
+}
+
+TEST(TokenSessionMessageSenderTest, SendsAuthCarryingTheRenewedTokenWhenTheFetchFailsAfterARenewal)
+{
+    MockPayloadSocketWriter mockPayloadSocketWriter;
+    MockTokenFetcher mockTokenFetcher;
+    StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
+    MessageSerializer messageSerializer;
+    TokenSessionMessageSender sender{mockPayloadSocketWriter, messageSerializer, mockTokenFetcher, mockLoginRefusalListener};
+
+    EXPECT_CALL(mockTokenFetcher, Fetch())
+        .WillOnce(Return(LoginResult{LoginStatus::Success, "renewed-token"}))
+        .WillOnce(Return(LoginResult{LoginStatus::Failed, ""}));
+    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth_refresh\",\"token\":\"renewed-token\"}")).Times(1);
+    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth\",\"token\":\"renewed-token\"}")).Times(1);
+
+    sender.UpdateToken("startup-token");
+    sender.SendAuthRefresh();
+    sender.SendAuth();
 }
 
 TEST(TokenSessionMessageSenderTest, SendsAuthCarryingAFreshlyFetchedToken)

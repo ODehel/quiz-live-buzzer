@@ -1157,6 +1157,260 @@ TEST(ConnectionEventHandlerSessionTest, LoginRefusedDuringAReconnectionClosesThe
     EXPECT_FALSE(policy.IsEliminated());
 }
 
+// Renouvellement de la session (US-FW-007) : un renouvellement par `token_expiring_soon` (CA-5), `token_expired` sans effet (CA-7),
+// et l'`auth_success` qui répond à un `auth_refresh` sans effet sur l'écran ni le mode (CA-6).
+static const std::string TokenExpiringSoon = "{\"type\":\"token_expiring_soon\"}";
+static const std::string AuthSuccess = "{\"type\":\"auth_success\"}";
+
+static auto AnAuthSuccess()
+{
+    return ::testing::Property(&HubMessage::Type, std::string{"auth_success"});
+}
+
+TEST_F(ConnectionEventHandlerTest, ABurstOfTokenExpiringSoonTriggersOneAuthRefreshPerMessage)
+{
+    EXPECT_CALL(mockSessionMessageSender, SendAuthRefresh()).Times(3);
+
+    handler.OnMessageReceived(TokenExpiringSoon);
+    handler.OnMessageReceived(TokenExpiringSoon);
+    handler.OnMessageReceived(TokenExpiringSoon);
+}
+
+TEST_F(ConnectionEventHandlerTest, TokenExpiredSendsNothingAndAsksForNoLogin)
+{
+    EXPECT_CALL(mockSessionMessageSender, SendAuthRefresh()).Times(0);
+    EXPECT_CALL(mockSessionMessageSender, SendAuth()).Times(0);
+
+    handler.OnMessageReceived("{\"type\":\"token_expired\"}");
+}
+
+TEST_F(ConnectionEventHandlerTest, TokenExpiredLeavesTheArmedModeUntouched)
+{
+    handler.OnMessageReceived("{\"type\":\"question_open\"}");
+
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    handler.OnMessageReceived("{\"type\":\"token_expired\"}");
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(ConnectionEventHandlerTest, AuthSuccessAnsweringAnAuthRefreshIsNotRendered)
+{
+    ON_CALL(mockSessionMessageSender, SendAuthRefresh()).WillByDefault(::testing::Return(true));
+    handler.OnMessageReceived(TokenExpiringSoon);
+
+    EXPECT_CALL(mockMessageRenderer, Apply(AnAuthSuccess())).Times(0);
+
+    handler.OnMessageReceived(AuthSuccess);
+}
+
+TEST_F(ConnectionEventHandlerTest, AuthSuccessAfterTheOpeningOfAConnectionIsRenderedEvenAfterARenewal)
+{
+    ON_CALL(mockSessionMessageSender, SendAuthRefresh()).WillByDefault(::testing::Return(true));
+    handler.OnMessageReceived(TokenExpiringSoon);
+    handler.OnMessageReceived(AuthSuccess);
+    handler.OnConnectionLost();
+    handler.OnConnectionEstablished();
+
+    EXPECT_CALL(mockMessageRenderer, Apply(AnAuthSuccess())).Times(1);
+
+    handler.OnMessageReceived(AuthSuccess);
+}
+
+TEST_F(ConnectionEventHandlerTest, AuthSuccessIsRenderedWhenNoAuthRefreshWasSent)
+{
+    ON_CALL(mockSessionMessageSender, SendAuthRefresh()).WillByDefault(::testing::Return(false));
+    handler.OnMessageReceived(TokenExpiringSoon);
+
+    EXPECT_CALL(mockMessageRenderer, Apply(AnAuthSuccess())).Times(1);
+
+    handler.OnMessageReceived(AuthSuccess);
+}
+
+TEST_F(ConnectionEventHandlerTest, EveryAuthSuccessAnsweringTheAuthRefreshesOfABurstIsSilentAndTheNextOneIsRendered)
+{
+    ON_CALL(mockSessionMessageSender, SendAuthRefresh()).WillByDefault(::testing::Return(true));
+    handler.OnMessageReceived(TokenExpiringSoon);
+    handler.OnMessageReceived(TokenExpiringSoon);
+
+    EXPECT_CALL(mockMessageRenderer, Apply(AnAuthSuccess())).Times(1);
+
+    handler.OnMessageReceived(AuthSuccess);
+    handler.OnMessageReceived(AuthSuccess);
+    handler.OnMessageReceived(AuthSuccess);
+}
+
+TEST_F(ConnectionEventHandlerTest, AnAuthRefreshLeftUnansweredDoesNotSilenceTheAuthSuccessOfTheNextConnection)
+{
+    ON_CALL(mockSessionMessageSender, SendAuthRefresh()).WillByDefault(::testing::Return(true));
+    handler.OnMessageReceived(AuthSuccess);
+    handler.OnMessageReceived(TokenExpiringSoon);
+    handler.OnConnectionLost();
+    handler.OnConnectionEstablished();
+
+    EXPECT_CALL(mockMessageRenderer, Apply(AnAuthSuccess())).Times(1);
+
+    handler.OnMessageReceived(AuthSuccess);
+}
+
+TEST_F(ConnectionEventHandlerTest, AuthSuccessAnsweringAnAuthRefreshResetsTheCountOfFailedReconnections)
+{
+    ON_CALL(mockSessionMessageSender, SendAuthRefresh()).WillByDefault(::testing::Return(true));
+    handler.OnMessageReceived(AuthSuccess);
+    handler.OnConnectionLost();
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionEstablished();
+    handler.OnMessageReceived(TokenExpiringSoon);
+
+    handler.OnMessageReceived(AuthSuccess);
+
+    handler.OnConnectionLost();
+    handler.OnConnectionAttemptFailed();
+    handler.OnConnectionAttemptFailed();
+    EXPECT_FALSE(policy.IsEliminated());
+}
+
+TEST_F(ConnectionEventHandlerTest, AuthSuccessAnsweringAnAuthRefreshLeavesTheArmedModeUntouched)
+{
+    ON_CALL(mockSessionMessageSender, SendAuthRefresh()).WillByDefault(::testing::Return(true));
+    handler.OnMessageReceived("{\"type\":\"question_open\"}");
+    handler.OnMessageReceived(TokenExpiringSoon);
+
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    handler.OnMessageReceived(AuthSuccess);
+    buzzerBehavior.OnBuzzPressed();
+}
+
+class ConnectionEventHandlerRenewalRenderingTest : public ::testing::Test
+{
+protected:
+    ::testing::NiceMock<MockHubMessageSender> mockHubMessageSender;
+    ::testing::NiceMock<MockLocalFeedback> mockLocalFeedback;
+    ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
+    ::testing::NiceMock<MockScreen> mockScreen;
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    VisibleTopBar visibleTopBar;
+    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior, visibleTopBar};
+    HubMessageDispatcher dispatcher{buzzerBehavior};
+    ReconnectionPolicy policy;
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, lcdRenderer, lcdRenderer, networkHalt};
+
+    void SetUp() override
+    {
+        ON_CALL(mockSessionMessageSender, SendAuthRefresh()).WillByDefault(::testing::Return(true));
+    }
+};
+
+TEST_F(ConnectionEventHandlerRenewalRenderingTest, AuthSuccessAnsweringAnAuthRefreshChangesNeitherTheScreenNorTheTopBar)
+{
+    handler.OnMessageReceived("{\"type\":\"question_choices\",\"choices\":[\"a\",\"b\",\"c\",\"d\"]}");
+    handler.OnMessageReceived(TokenExpiringSoon);
+
+    EXPECT_CALL(mockScreen, Display(::testing::_, ::testing::_)).Times(0);
+
+    handler.OnMessageReceived(AuthSuccess);
+}
+
+TEST_F(ConnectionEventHandlerRenewalRenderingTest, AuthSuccessAfterTheOpeningOfAConnectionIsDisplayedEvenAfterARenewal)
+{
+    handler.OnMessageReceived(TokenExpiringSoon);
+    handler.OnMessageReceived(AuthSuccess);
+    handler.OnConnectionEstablished();
+
+    EXPECT_CALL(mockScreen, Display(::testing::_, ::testing::_)).Times(1);
+
+    handler.OnMessageReceived(AuthSuccess);
+}
+
+TEST_F(ConnectionEventHandlerRenewalRenderingTest, TokenExpiredChangesNeitherTheScreenNorTheTopBar)
+{
+    handler.OnMessageReceived("{\"type\":\"question_choices\",\"choices\":[\"a\",\"b\",\"c\",\"d\"]}");
+
+    EXPECT_CALL(mockScreen, Display(::testing::_, ::testing::_)).Times(0);
+
+    handler.OnMessageReceived("{\"type\":\"token_expired\"}");
+}
+
+class ConnectionEventHandlerRenewalSessionTest : public ::testing::Test
+{
+protected:
+    ::testing::NiceMock<MockMessageRenderer> mockMessageRenderer;
+    MockHubMessageSender mockHubMessageSender;
+    MockLocalFeedback mockLocalFeedback;
+    ::testing::StrictMock<MockPayloadSocketWriter> mockPayloadSocketWriter;
+    ::testing::StrictMock<MockTokenFetcher> mockTokenFetcher;
+    ::testing::StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
+    TokenSessionMessageSender tokenSessionMessageSender{mockPayloadSocketWriter, MessageSerializer{}, mockTokenFetcher, mockLoginRefusalListener};
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    HubMessageDispatcher dispatcher{buzzerBehavior};
+    ReconnectionPolicy policy;
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    ::testing::NiceMock<MockOutOfGameDisplay> mockOutOfGameDisplay;
+    ::testing::NiceMock<MockLinkStateDisplay> mockLinkStateDisplay;
+    ConnectionEventHandler handler{policy, dispatcher, tokenSessionMessageSender, mockMessageRenderer, mockOutOfGameDisplay, mockLinkStateDisplay, networkHalt};
+};
+
+TEST_F(ConnectionEventHandlerRenewalSessionTest, TokenExpiringSoonSendsAnAuthRefreshCarryingTheTokenOfAFreshLogin)
+{
+    tokenSessionMessageSender.UpdateToken("login-token");
+
+    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(::testing::Return(LoginResult{LoginStatus::Success, "fresh-token"}));
+    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth_refresh\",\"token\":\"fresh-token\"}")).Times(1);
+
+    handler.OnMessageReceived(TokenExpiringSoon);
+}
+
+TEST_F(ConnectionEventHandlerRenewalSessionTest, ABurstOfTokenExpiringSoonRenewsTheSessionOncePerMessageWithEachFreshToken)
+{
+    EXPECT_CALL(mockTokenFetcher, Fetch())
+        .WillOnce(::testing::Return(LoginResult{LoginStatus::Success, "fresh-1"}))
+        .WillOnce(::testing::Return(LoginResult{LoginStatus::Success, "fresh-2"}));
+    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth_refresh\",\"token\":\"fresh-1\"}")).Times(1);
+    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth_refresh\",\"token\":\"fresh-2\"}")).Times(1);
+
+    handler.OnMessageReceived(TokenExpiringSoon);
+    handler.OnMessageReceived(TokenExpiringSoon);
+}
+
+TEST_F(ConnectionEventHandlerRenewalSessionTest, TokenExpiringSoonWithAFailedLoginSendsNothingAndStopsNothing)
+{
+    tokenSessionMessageSender.UpdateToken("login-token");
+    handler.OnMessageReceived(AuthSuccess);
+
+    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(::testing::Return(LoginResult{LoginStatus::Failed, ""}));
+
+    handler.OnMessageReceived(TokenExpiringSoon);
+
+    EXPECT_FALSE(networkHalt.IsHalted());
+    EXPECT_FALSE(policy.IsEliminated());
+}
+
+TEST_F(ConnectionEventHandlerRenewalSessionTest, TokenExpiringSoonWithARefusedLoginSendsNothingAndStopsNothing)
+{
+    tokenSessionMessageSender.UpdateToken("login-token");
+    handler.OnMessageReceived(AuthSuccess);
+
+    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(::testing::Return(LoginResult{LoginStatus::InvalidCredentials, ""}));
+    EXPECT_CALL(mockConnectionCloser, Close()).Times(0);
+
+    handler.OnMessageReceived(TokenExpiringSoon);
+
+    EXPECT_FALSE(networkHalt.IsHalted());
+    EXPECT_FALSE(policy.IsEliminated());
+}
+
+TEST_F(ConnectionEventHandlerRenewalSessionTest, TokenExpiredSendsNothingAndAsksForNoLogin)
+{
+    handler.OnMessageReceived(AuthSuccess);
+
+    handler.OnMessageReceived("{\"type\":\"token_expired\"}");
+}
+
 class InvalidHubTextTest : public ConnectionEventHandlerTest, public ::testing::WithParamInterface<std::string>
 {
 };
