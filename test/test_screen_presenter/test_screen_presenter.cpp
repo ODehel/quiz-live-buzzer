@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <tuple>
 #include "ScreenPresenter.h"
 
 TEST(ScreenPresenterTest, AuthSuccessPresentsTheTextConnecte)
@@ -72,6 +73,27 @@ INSTANTIATE_TEST_SUITE_P(
     QuestionOpenAndBuzzUnlocked,
     ArmingOpeningMessageTest,
     ::testing::Values(HubMessage{"question_open"}.WithTitle("Quelle est la capitale du Portugal ?"), HubMessage{"buzz_unlocked"}));
+
+// Un `timer_tick` ne remplace jamais l'écran, armé ou non, avec ou sans `remaining_seconds` (US-FW-011 CA-8, US-FW-012 CA-4).
+class TimerTickTest : public ::testing::TestWithParam<std::tuple<bool, HubMessage>>
+{
+};
+
+TEST_P(TimerTickTest, LeavesTheScreenUnchanged)
+{
+    ScreenPresenter presenter;
+
+    const ScreenModel screen = presenter.ScreenFor(std::get<1>(GetParam()), std::get<0>(GetParam()));
+
+    EXPECT_EQ(ScreenModel{ScreenUnchanged{}}, screen);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    ArmedOrNotWithOrWithoutRemainingSeconds,
+    TimerTickTest,
+    ::testing::Combine(
+        ::testing::Bool(),
+        ::testing::Values(HubMessage{"timer_tick"}.WithRemainingSeconds(25), HubMessage{"timer_tick"}.WithRemainingSeconds(0), HubMessage{"timer_tick"})));
 
 TEST(ScreenPresenterQuestionChoicesTest, PresentsTheFourChoicesAsZones)
 {

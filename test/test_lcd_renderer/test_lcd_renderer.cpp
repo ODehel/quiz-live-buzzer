@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <tuple>
 #include "LcdRenderer.h"
 #include "../mocks/ScreenMocks.h"
 #include "../mocks/GameMocks.h"
@@ -64,30 +65,28 @@ TEST(LcdRendererTimerEndTest, LeavesTheScreenUnchangedWhenNoQuestionIsArmed)
     lcdRenderer.Apply(HubMessage{"timer_end"});
 }
 
-using TimerTickCase = std::pair<int, std::string>;
+using TimerTickCase = std::tuple<bool, int>;
 
 class TimerTickTest : public ::testing::TestWithParam<TimerTickCase>
 {
 };
 
-TEST_P(TimerTickTest, ShowsTheRemainingSecondsOnScreen)
+TEST_P(TimerTickTest, LeavesTheScreenUnchanged)
 {
-    MockScreen mockScreen;
+    testing::StrictMock<MockScreen> mockScreen;
     testing::NiceMock<MockArmedModeReader> armedModeReader;
+    ON_CALL(armedModeReader, IsArmed()).WillByDefault(testing::Return(std::get<0>(GetParam())));
     LcdRenderer lcdRenderer{mockScreen, armedModeReader};
 
-    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{GetParam().second}})).Times(1);
-
-    lcdRenderer.Apply(HubMessage{"timer_tick"}.WithRemainingSeconds(GetParam().first));
+    lcdRenderer.Apply(HubMessage{"timer_tick"}.WithRemainingSeconds(std::get<1>(GetParam())));
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    RemainingSeconds,
+    ArmedOrNotWithRemainingSeconds,
     TimerTickTest,
-    ::testing::Values(
-        TimerTickCase{25, "25 s"},
-        TimerTickCase{5, "5 s"},
-        TimerTickCase{0, "0 s"}));
+    ::testing::Combine(
+        ::testing::Bool(),
+        ::testing::Values(25, 5, 0)));
 
 TEST(LcdRendererTimerTickTest, LeavesTheScreenUnchangedWithoutRemainingSeconds)
 {

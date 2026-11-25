@@ -792,6 +792,94 @@ INSTANTIATE_TEST_SUITE_P(
         std::string{"{\"type\":\"question_open\",\"title\":\"Quelle est la capitale du Portugal ?\"}"},
         std::string{"{\"type\":\"buzz_unlocked\"}"}));
 
+// Un `timer_tick` ne remplace jamais l'écran (US-FW-011 CA-8, US-FW-012 CA-4) et ne change pas le mode (US-FW-004 CA-5) : le vrai `BuzzerBehavior` le prouve par l'appui qui suit.
+class TimerTickRenderingTest : public ::testing::Test
+{
+protected:
+    ::testing::NiceMock<MockHubMessageSender> mockHubMessageSender;
+    ::testing::NiceMock<MockLocalFeedback> mockLocalFeedback;
+    ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
+    MockScreen mockScreen;
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
+    HubMessageDispatcher dispatcher{buzzerBehavior};
+    ReconnectionPolicy policy;
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, lcdRenderer, lcdRenderer, networkHalt};
+};
+
+TEST_F(TimerTickRenderingTest, ReceivedByAnArmedMcqBuzzerKeepsTheZonesAndTheMode)
+{
+    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{ZonesScreen{std::vector<std::string>{"A : Paris", "B : Lyon", "C : Nice", "D : Lille"}}})).Times(1);
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('A')).Times(1);
+
+    handler.OnMessageReceived("{\"type\":\"question_choices\",\"choices\":[\"Paris\",\"Lyon\",\"Nice\",\"Lille\"]}");
+    handler.OnMessageReceived("{\"type\":\"timer_tick\",\"remaining_seconds\":25}");
+    buzzerBehavior.OnBuzzPressed();
+    buzzerBehavior.OnMcqPressed('A');
+}
+
+TEST_F(TimerTickRenderingTest, ReceivedByAnArmedSpeedBuzzerKeepsTheTitleAndTheMode)
+{
+    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{"Quelle est la capitale du Portugal ?"}})).Times(1);
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    handler.OnMessageReceived("{\"type\":\"question_open\",\"title\":\"Quelle est la capitale du Portugal ?\"}");
+    handler.OnMessageReceived("{\"type\":\"timer_tick\",\"remaining_seconds\":25}");
+    buzzerBehavior.OnMcqPressed('A');
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(TimerTickRenderingTest, ReceivedByAnInertBuzzerIsNotRenderedAndArmsNothing)
+{
+    EXPECT_CALL(mockScreen, Display(::testing::_, ::testing::_)).Times(0);
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
+
+    handler.OnMessageReceived("{\"type\":\"timer_tick\",\"remaining_seconds\":25}");
+    buzzerBehavior.OnBuzzPressed();
+    buzzerBehavior.OnMcqPressed('A');
+}
+
+class TimerTickWithoutUsableRemainingSecondsTest : public ::testing::TestWithParam<std::string>
+{
+protected:
+    ::testing::NiceMock<MockHubMessageSender> mockHubMessageSender;
+    ::testing::NiceMock<MockLocalFeedback> mockLocalFeedback;
+    ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
+    MockScreen mockScreen;
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
+    HubMessageDispatcher dispatcher{buzzerBehavior};
+    ReconnectionPolicy policy;
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, lcdRenderer, lcdRenderer, networkHalt};
+};
+
+TEST_P(TimerTickWithoutUsableRemainingSecondsTest, LeavesTheScreenUnchangedForAnArmedBuzzer)
+{
+    buzzerBehavior.OnQuestionOpen();
+
+    EXPECT_CALL(mockScreen, Display(::testing::_, ::testing::_)).Times(0);
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
+
+    handler.OnMessageReceived(GetParam());
+    buzzerBehavior.OnBuzzPressed();
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    AbsentOrNotAnInteger,
+    TimerTickWithoutUsableRemainingSecondsTest,
+    ::testing::Values(
+        std::string{"{\"type\":\"timer_tick\"}"},
+        std::string{"{\"type\":\"timer_tick\",\"remaining_seconds\":\"25\"}"},
+        std::string{"{\"type\":\"timer_tick\",\"remaining_seconds\":2.5}"},
+        std::string{"{\"type\":\"timer_tick\",\"remaining_seconds\":null}"}));
+
 TEST(ConnectionEventHandlerRenderingTest, AuthSuccessIsRenderedWithTheUsernameOfTheHubInTheTopBar)
 {
     ::testing::NiceMock<MockHubMessageSender> mockHubMessageSender;
