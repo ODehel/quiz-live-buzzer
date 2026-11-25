@@ -7,10 +7,10 @@ TEST(DisplayStateTest, AuthSuccessShouldDisplayTheWaitForTheGameMasterOnTwoLines
     EXPECT_EQ(displayState.LcdTextFor(HubMessage{"auth_success"}), "En attente du maître du jeu\nLa partie va bientôt commencer");
 }
 
-TEST(DisplayStateTest, GameResumedShouldDisplayPartieEnCoursOnScreen)
+TEST(DisplayStateTest, GameResumedShouldDisplayTheWaitForAQuestionOnTwoLines)
 {
     DisplayState displayState;
-    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"game_resumed"}), "Partie en cours");
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"game_resumed"}), "Partie en cours\nEn attente d’une question");
 }
 
 TEST(DisplayStateTest, QuestionChoicesShouldGiveOneZoneTextPerChoice)

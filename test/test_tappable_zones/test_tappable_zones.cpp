@@ -136,6 +136,16 @@ TEST_F(TappableZonesScreenTest, TheWaitForTheGameMasterScreenOfAnAuthSuccessDeac
     EXPECT_EQ(TouchedAt(700, 400), ButtonInput::Unknown);
 }
 
+TEST_F(TappableZonesScreenTest, TheWaitForAQuestionScreenOfAGameResumedDeactivatesTheZones)
+{
+    ShowTheFourZones();
+
+    screen.Display(TopBar::ForPlayer("Camille"), ScreenPresenter{}.ScreenFor(HubMessage{"game_resumed"}, false));
+
+    EXPECT_EQ(TouchedAt(100, 100), ButtonInput::Unknown);
+    EXPECT_EQ(TouchedAt(700, 400), ButtonInput::Unknown);
+}
+
 TEST_F(TappableZonesScreenTest, AnOutOfGameScreenDeactivatesTheZonesAndForwardsItsTopBar)
 {
     ShowTheFourZones();
