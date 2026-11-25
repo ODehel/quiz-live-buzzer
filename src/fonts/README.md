@@ -45,4 +45,4 @@ La sortie est déterministe pour une version de FreeType donnée ; les en-têtes
 - Rendu monochrome (`FT_LOAD_TARGET_MONO`), pas de lissage : à ces tailles, les bords sont crénelés.
 - Un code absent de la police (les contrôles 0x7F à 0x9F) reçoit le glyphe de `?`, comme le suppose `ReadFontMetrics` (`lib/rendering/GfxFontMetrics.h`).
 - `yAdvance` est la hauteur de ligne native d'Oswald (environ 1,48 em) : l'interligne se règle à l'affichage, pas ici.
-- Hors Latin-1, seuls les codes de `EXTRA_CODES` ont un glyphe ; tout autre code est dessiné par LovyanGFX comme un blanc de 7 px (voir `DEBTS.md`, « Codes sans glyphe », et US-FW-008 CA-10).
+- Hors Latin-1, seuls les codes de `EXTRA_CODES` ont un glyphe ; tout autre code est dessiné par LovyanGFX comme un blanc de 7 px. Les textes mis en page par `TextLayout` n'en contiennent plus : `GlyphFilter` les remplace par un `?` avant la mise en page (US-FW-008 CA-10, décision #75) ; le nom du bandeau du haut, dessiné sans `TextLayout`, n'est pas filtré (voir `DEBTS.md`, « Remplacement des codes sans glyphe »).
