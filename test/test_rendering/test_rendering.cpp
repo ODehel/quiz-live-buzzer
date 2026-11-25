@@ -54,10 +54,10 @@ TEST(DisplayStateTest, BuzzLockedShouldDisplayWhoBuzzedOnScreen)
     EXPECT_EQ(displayState.LcdTextFor(HubMessage{"buzz_locked"}.WithBuzzerUsername("Alice")), "Alice a buzzé");
 }
 
-TEST(DisplayStateTest, TimerTickShouldDisplayTheRemainingSecondsOnScreen)
+TEST(DisplayStateTest, TimerTickWithRemainingSecondsShouldHaveNoTextToDisplay)
 {
     DisplayState displayState;
-    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"timer_tick"}.WithRemainingSeconds(25)), "25 s");
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"timer_tick"}.WithRemainingSeconds(25)), "");
 }
 
 TEST(DisplayStateTest, TimerTickWithoutRemainingSecondsShouldHaveNoTextToDisplay)

@@ -13,8 +13,6 @@ public:
     std::string LcdTextFor(const HubMessage &message) const
     {
         const std::string &type = message.Type();
-        if (type == "timer_tick")
-            return message.HasRemainingSeconds() ? LcdTextForRemainingSeconds(message.RemainingSeconds()) : "";
         if (type == "buzz_locked")
             return message.HasBuzzerUsername() ? LcdTextForBuzzedBy(message.BuzzerUsername()) : "";
         if (type == "question_open")
@@ -146,11 +144,6 @@ private:
         if (message.HasPlayerAnswer())
             text += "\nVotre réponse : " + message.PlayerAnswer();
         return text;
-    }
-
-    std::string LcdTextForRemainingSeconds(int seconds) const
-    {
-        return std::to_string(seconds) + " s";
     }
 
     std::string LcdTextForBuzzedBy(const std::string &username) const
