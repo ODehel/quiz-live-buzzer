@@ -13,11 +13,12 @@ class TappableZonesScreen : public Screen
 {
 private:
     Screen &screen;
-    ZoneGrid grid;
+    int panelWidth;
+    int panelHeight;
     std::vector<TouchZone> zones;
 
 public:
-    TappableZonesScreen(Screen &screen, int panelWidth, int panelHeight) : screen(screen), grid(panelWidth, 0, panelHeight)
+    TappableZonesScreen(Screen &screen, int panelWidth, int panelHeight) : screen(screen), panelWidth(panelWidth), panelHeight(panelHeight)
     {
     }
 
@@ -35,7 +36,7 @@ public:
                        [this, &topBar, &screenModel](const ZonesScreen &zonesScreen)
                        {
                            screen.Display(topBar, screenModel);
-                           ActivateZonesFor(zonesScreen.zoneTexts);
+                           ActivateZonesFor(topBar, zonesScreen.zoneTexts);
                        },
                        [this, &topBar, &screenModel](const auto &)
                        {
@@ -46,9 +47,12 @@ public:
     }
 
 private:
-    // Une zone tactile par texte affiché (quatre au plus, comme `GfxScreen`), sur le même découpage que le dessin.
-    void ActivateZonesFor(const std::vector<std::string> &zoneTexts)
+    // Une zone tactile par texte affiché (quatre au plus, comme `GfxScreen`), sur le même découpage que le dessin : sous le bandeau du haut s'il est visible,
+    // dont aucun point n'est tactile (US-FW-009 CA-7).
+    void ActivateZonesFor(const TopBar &topBar, const std::vector<std::string> &zoneTexts)
     {
+        const int areaTop = topBar.visible ? TopBar::Height : 0;
+        const ZoneGrid grid(panelWidth, areaTop, panelHeight - areaTop);
         const ButtonInput buttons[] = {ButtonInput::A, ButtonInput::B, ButtonInput::C, ButtonInput::D};
         const size_t zoneCount = sizeof(buttons) / sizeof(buttons[0]);
         zones.clear();

@@ -25,7 +25,7 @@ private:
     static const int zoneBorderInset = 2;    // px entre le bord de la zone et son cadre
     static const int resultBandDivisor = 4;  // le bandeau de résultat occupe 1/4 de la hauteur de la dalle, les zones le reste
     static const size_t noZone = zoneCount;  // indice hors grille : aucune zone en évidence
-    static const int topBarHeight = 60;      // hauteur du bandeau du haut, trait de séparation compris
+    static const int topBarHeight = TopBar::Height; // hauteur du bandeau du haut, trait de séparation compris (60 px, partagée avec les zones tactiles)
 
     // Couleurs en RVB 888 (`uint32_t`) : LovyanGFX lit un `int` (comme `TFT_WHITE`) en RVB 565. Rouge, rose et gris sont des valeurs de maquette
     // (`mockup.css`), hors du monochrome des autres écrans (US-FW-015), jamais vues sur la dalle.
@@ -65,18 +65,18 @@ public:
     }
 
     // Un type d'écran, un dessin : le modèle dit quoi montrer, les méthodes privées savent comment.
-    // Le bandeau du haut n'est dessiné qu'avec un `TextScreen`, « Hors jeu » et la coupure (les seuls écrans qui le portent aujourd'hui) ; les autres écrans l'ignorent.
+    // Le bandeau du haut est dessiné au-dessus de chaque modèle d'écran quand il est visible (US-FW-009 CA-7) ; le contenu occupe la dalle moins 60 px.
     // `GfxScreen` ne retient aucun écran : les propositions et la zone choisie arrivent dans le modèle (`RetainingScreen`).
     void Display(const TopBar &topBar, const ScreenModel &screenModel) override
     {
         std::visit(Overloaded{
                        [](const ScreenUnchanged &) {},
                        [this, &topBar](const TextScreen &textScreen) { Show(topBar, textScreen.text); },
-                       [this](const ZonesScreen &zonesScreen) { ShowZones(zonesScreen.zoneTexts); },
-                       [this](const HighlightedZoneScreen &highlightedZoneScreen)
-                       { HighlightZone(highlightedZoneScreen.zoneTexts, highlightedZoneScreen.zoneIndex, highlightedZoneScreen.bannerText); },
-                       [this](const ChosenZoneScreen &chosenZoneScreen) { HighlightChosenZone(chosenZoneScreen.zoneTexts, chosenZoneScreen.zoneIndex); },
-                       [this](const BannerScreen &bannerScreen) { ShowBanner(bannerScreen); },
+                       [this, &topBar](const ZonesScreen &zonesScreen) { ShowZones(topBar, zonesScreen.zoneTexts); },
+                       [this, &topBar](const HighlightedZoneScreen &highlightedZoneScreen)
+                       { HighlightZone(topBar, highlightedZoneScreen.zoneTexts, highlightedZoneScreen.zoneIndex, highlightedZoneScreen.bannerText); },
+                       [this, &topBar](const ChosenZoneScreen &chosenZoneScreen) { HighlightChosenZone(topBar, chosenZoneScreen.zoneTexts, chosenZoneScreen.zoneIndex); },
+                       [this, &topBar](const BannerScreen &bannerScreen) { ShowBanner(topBar, bannerScreen); },
                        [this, &topBar](const OutOfGameScreen &outOfGameScreen) { ShowOutOfGame(topBar, outOfGameScreen); },
                        [this, &topBar](const ConnectionLostScreen &connectionLostScreen) { ShowConnectionLost(topBar, connectionLostScreen); }},
                    screenModel);
@@ -265,34 +265,45 @@ private:
         lcd.drawString(screen.attemptLabel.c_str(), dotsLeft - attemptLabelGap, middle);
     }
 
-    // Une zone par texte, en grille 2x2 : A en haut à gauche, B en haut à droite, C en bas à gauche, D en bas à droite
-    // (`ZoneGrid`, le même découpage que les zones tactiles de `TappableZonesScreen`). Au-delà de quatre textes, les suivants ne sont pas dessinés.
-    void ShowZones(const std::vector<std::string> &zoneTexts)
+    // Fond noir, puis le bandeau du haut s'il est visible. Rend le haut de la place du contenu : 60 px sous le bandeau, 0 sans lui (US-FW-009 CA-7).
+    int ClearAndDrawTopBar(const TopBar &topBar)
     {
         lcd.fillScreen(TFT_BLACK);
-        DrawZones(zoneTexts, 0, lcd.height(), noZone);
+        if (!topBar.visible)
+            return 0;
+        DrawTopBar(topBar);
+        return topBarHeight;
     }
 
-    // Texte dans un bandeau en haut, les dernières zones affichées dessous (hauteur réduite), la zone zoneIndex en blanc plein.
-    void HighlightZone(const std::vector<std::string> &zoneTexts, size_t zoneIndex, const std::string &text)
+    // Une zone par texte, en grille 2x2 sous le bandeau du haut : A en haut à gauche, B en haut à droite, C en bas à gauche, D en bas à droite
+    // (`ZoneGrid`, le même découpage que les zones tactiles de `TappableZonesScreen`). Au-delà de quatre textes, les suivants ne sont pas dessinés.
+    void ShowZones(const TopBar &topBar, const std::vector<std::string> &zoneTexts)
+    {
+        const int areaTop = ClearAndDrawTopBar(topBar);
+        DrawZones(zoneTexts, areaTop, lcd.height() - areaTop, noZone);
+    }
+
+    // Sous le bandeau du haut : texte dans un bandeau en haut (un quart de la hauteur de la dalle, inchangé), les dernières zones affichées dessous
+    // (hauteur réduite), la zone zoneIndex en blanc plein.
+    void HighlightZone(const TopBar &topBar, const std::vector<std::string> &zoneTexts, size_t zoneIndex, const std::string &text)
     {
         const int bandHeight = lcd.height() / resultBandDivisor;
-        lcd.fillScreen(TFT_BLACK);
-        DrawTextIn(text, 0, 0, lcd.width(), bandHeight);
-        DrawZones(zoneTexts, bandHeight, lcd.height() - bandHeight, zoneIndex);
+        const int areaTop = ClearAndDrawTopBar(topBar);
+        DrawTextIn(text, 0, areaTop, lcd.width(), bandHeight);
+        DrawZones(zoneTexts, areaTop + bandHeight, lcd.height() - areaTop - bandHeight, zoneIndex);
     }
 
-    // Les dernières zones affichées en plein écran, la zone zoneIndex (celle que le joueur a touchée) en blanc plein, sans texte ajouté.
-    void HighlightChosenZone(const std::vector<std::string> &zoneTexts, size_t zoneIndex)
+    // Les dernières zones affichées sous le bandeau du haut, la zone zoneIndex (celle que le joueur a touchée) en blanc plein, sans texte ajouté.
+    void HighlightChosenZone(const TopBar &topBar, const std::vector<std::string> &zoneTexts, size_t zoneIndex)
     {
-        lcd.fillScreen(TFT_BLACK);
-        DrawZones(zoneTexts, 0, lcd.height(), zoneIndex);
+        const int areaTop = ClearAndDrawTopBar(topBar);
+        DrawZones(zoneTexts, areaTop, lcd.height() - areaTop, zoneIndex);
     }
 
     // Texte dans un bandeau en haut, les dernières zones affichées dessous, la zone choisie par le joueur toujours en évidence.
-    void ShowBanner(const BannerScreen &screen)
+    void ShowBanner(const TopBar &topBar, const BannerScreen &screen)
     {
-        HighlightZone(screen.zoneTexts, screen.chosenZone.value_or(noZone), screen.bannerText);
+        HighlightZone(topBar, screen.zoneTexts, screen.chosenZone.value_or(noZone), screen.bannerText);
     }
 
     // Dessine les zones dans la bande (top, areaHeight), sans effacer l'écran, de la couleur `color` (blanc, ou gris pour la coupure).

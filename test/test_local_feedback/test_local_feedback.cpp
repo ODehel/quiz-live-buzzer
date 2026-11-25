@@ -12,9 +12,11 @@ class AcknowledgeAnswerTest : public ::testing::TestWithParam<ChosenLetterCase>
 TEST_P(AcknowledgeAnswerTest, AcknowledgeAnswerHighlightsTheChosenZoneWithoutText)
 {
     MockScreen mockScreen;
-    ScreenLocalFeedback screenLocalFeedback{mockScreen};
+    VisibleTopBar visibleTopBar;
+    visibleTopBar.Set(TopBar::ForPlayer("Camille"));
+    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar};
 
-    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{ChosenZoneScreen{GetParam().second}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("Camille"), ScreenModel{ChosenZoneScreen{GetParam().second}})).Times(1);
 
     screenLocalFeedback.AcknowledgeAnswer(GetParam().first);
 }
@@ -27,7 +29,8 @@ INSTANTIATE_TEST_SUITE_P(
 TEST(ScreenLocalFeedbackTest, AcknowledgeAnswerWithAnUnknownLetterLeavesTheScreenUnchanged)
 {
     MockScreen mockScreen;
-    ScreenLocalFeedback screenLocalFeedback{mockScreen};
+    VisibleTopBar visibleTopBar;
+    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar};
 
     EXPECT_CALL(mockScreen, Display(testing::_, testing::_)).Times(0);
 
@@ -37,11 +40,48 @@ TEST(ScreenLocalFeedbackTest, AcknowledgeAnswerWithAnUnknownLetterLeavesTheScree
 TEST(ScreenLocalFeedbackTest, AcknowledgeBuzzShowsBuzzEnvoyeOnScreen)
 {
     MockScreen mockScreen;
-    ScreenLocalFeedback screenLocalFeedback{mockScreen};
+    VisibleTopBar visibleTopBar;
+    visibleTopBar.Set(TopBar::ForPlayer("Camille"));
+    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar};
 
-    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{"Buzz envoyé"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("Camille"), ScreenModel{TextScreen{"Buzz envoyé"}})).Times(1);
 
     screenLocalFeedback.AcknowledgeBuzz();
+}
+
+TEST(ScreenLocalFeedbackTest, AcknowledgeBuzzKeepsTheCutLinkOfTheVisibleTopBar)
+{
+    MockScreen mockScreen;
+    VisibleTopBar visibleTopBar;
+    visibleTopBar.Set(TopBar::ForPlayer("Camille").WithLinkCut());
+    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar};
+
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("Camille").WithLinkCut(), ScreenModel{TextScreen{"Buzz envoyé"}})).Times(1);
+
+    screenLocalFeedback.AcknowledgeBuzz();
+}
+
+TEST(ScreenLocalFeedbackTest, TheTopBarBeforeAnyAuthSuccessIsTheInitTopBar)
+{
+    MockScreen mockScreen;
+    VisibleTopBar visibleTopBar;
+    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar};
+
+    EXPECT_CALL(mockScreen, Display(ScreenPresenter{}.TopBarForInit(), ScreenModel{TextScreen{"Buzz envoyé"}})).Times(1);
+
+    screenLocalFeedback.AcknowledgeBuzz();
+}
+
+TEST(ScreenLocalFeedbackTest, ATopBarChangedAfterConstructionIsTheOneShownByTheNextFeedback)
+{
+    MockScreen mockScreen;
+    VisibleTopBar visibleTopBar;
+    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar};
+    visibleTopBar.Set(TopBar::ForPlayer("Camille"));
+
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("Camille"), ScreenModel{ChosenZoneScreen{0}})).Times(1);
+
+    screenLocalFeedback.AcknowledgeAnswer('A');
 }
 
 int main(int argc, char **argv)

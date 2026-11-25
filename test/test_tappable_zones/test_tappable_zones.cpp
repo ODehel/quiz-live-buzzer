@@ -188,6 +188,62 @@ TEST_F(TappableZonesScreenTest, AConnectionLostScreenCarryingTheQuestionDeactiva
     EXPECT_EQ(TouchedAt(100, 100), ButtonInput::Unknown);
 }
 
+// Sous le bandeau du haut (60 px), les zones se découpent dans la dalle moins 60 px, comme leur dessin (US-FW-009 CA-7) : 800 × 420 px, soit 400 × 210 px par zone.
+// `TouchZoneReader` compte les bords droit et bas dans la zone : les essais aux limites prennent un point de part et d'autre, pas le bord.
+TEST_F(TappableZonesScreenTest, NoPointOfAVisibleTopBarIsTouchable)
+{
+    screen.Display(TopBar::ForPlayer("Camille"), ZonesScreen{{"A : un", "B : deux", "C : trois", "D : quatre"}});
+
+    EXPECT_EQ(TouchedAt(100, 0), ButtonInput::Unknown);
+    EXPECT_EQ(TouchedAt(100, 59), ButtonInput::Unknown);
+    EXPECT_EQ(TouchedAt(600, 59), ButtonInput::Unknown);
+}
+
+TEST_F(TappableZonesScreenTest, TheZonesStartRightUnderAVisibleTopBar)
+{
+    screen.Display(TopBar::ForPlayer("Camille"), ZonesScreen{{"A : un", "B : deux", "C : trois", "D : quatre"}});
+
+    EXPECT_EQ(TouchedAt(0, 60), ButtonInput::A);
+    EXPECT_EQ(TouchedAt(799, 60), ButtonInput::B);
+}
+
+TEST_F(TappableZonesScreenTest, TheZonesShareTheHeightUnderAVisibleTopBarInTwoRowsOf210Pixels)
+{
+    screen.Display(TopBar::ForPlayer("Camille"), ZonesScreen{{"A : un", "B : deux", "C : trois", "D : quatre"}});
+
+    EXPECT_EQ(TouchedAt(100, 269), ButtonInput::A);
+    EXPECT_EQ(TouchedAt(600, 269), ButtonInput::B);
+    EXPECT_EQ(TouchedAt(100, 271), ButtonInput::C);
+    EXPECT_EQ(TouchedAt(600, 271), ButtonInput::D);
+    EXPECT_EQ(TouchedAt(100, 479), ButtonInput::C);
+}
+
+TEST_F(TappableZonesScreenTest, TheZonesShareTheWidthUnderAVisibleTopBarInTwoColumnsOf400Pixels)
+{
+    screen.Display(TopBar::ForPlayer("Camille"), ZonesScreen{{"A : un", "B : deux", "C : trois", "D : quatre"}});
+
+    EXPECT_EQ(TouchedAt(399, 100), ButtonInput::A);
+    EXPECT_EQ(TouchedAt(401, 100), ButtonInput::B);
+}
+
+TEST_F(TappableZonesScreenTest, ACutLinkTopBarCoversTheSameHeightAsALinkedOne)
+{
+    screen.Display(TopBar::ForPlayer("Camille").WithLinkCut(), ZonesScreen{{"A : un", "B : deux", "C : trois", "D : quatre"}});
+
+    EXPECT_EQ(TouchedAt(100, 59), ButtonInput::Unknown);
+    EXPECT_EQ(TouchedAt(100, 60), ButtonInput::A);
+}
+
+TEST_F(TappableZonesScreenTest, ShowingZonesWithoutATopBarAfterOneWithATopBarTakesBackTheFullPanel)
+{
+    screen.Display(TopBar::ForPlayer("Camille"), ZonesScreen{{"A : un", "B : deux", "C : trois", "D : quatre"}});
+
+    ShowTheFourZones();
+
+    EXPECT_EQ(TouchedAt(100, 10), ButtonInput::A);
+    EXPECT_EQ(TouchedAt(100, 250), ButtonInput::C);
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
