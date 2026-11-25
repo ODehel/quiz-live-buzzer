@@ -903,9 +903,32 @@ TEST(ConnectionEventHandlerRenderingTest, AuthSuccessIsRenderedWithTheUsernameOf
     NetworkHalt networkHalt{mockConnectionCloser};
     ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, lcdRenderer, lcdRenderer, networkHalt};
 
-    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"Connecté"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"En attente du maître du jeu\nLa partie va bientôt commencer"}})).Times(1);
 
     handler.OnMessageReceived("{\"type\":\"auth_success\",\"role\":\"buzzer\",\"username\":\"quiz_buzzer_01\",\"expires_in\":3600}");
+}
+
+TEST(ConnectionEventHandlerRenderingTest, AuthSuccessThenGameResumedAreRenderedAsTwoDisplaysInOrderWithTheSameTopBar)
+{
+    ::testing::NiceMock<MockHubMessageSender> mockHubMessageSender;
+    ::testing::NiceMock<MockLocalFeedback> mockLocalFeedback;
+    ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
+    MockScreen mockScreen;
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    VisibleTopBar visibleTopBar;
+    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior, visibleTopBar};
+    HubMessageDispatcher dispatcher{buzzerBehavior};
+    ReconnectionPolicy policy;
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, lcdRenderer, lcdRenderer, networkHalt};
+
+    ::testing::InSequence inSequence;
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"En attente du maître du jeu\nLa partie va bientôt commencer"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"Partie en cours"}})).Times(1);
+
+    handler.OnMessageReceived("{\"type\":\"auth_success\",\"role\":\"buzzer\",\"username\":\"quiz_buzzer_01\",\"expires_in\":3600}");
+    handler.OnMessageReceived("{\"type\":\"game_resumed\"}");
 }
 
 TEST(ConnectionEventHandlerRenderingTest, ThirdFailedReconnectionShowsTheOutOfGameScreenWithTheLastKnownNameThenNothingChangesIt)
@@ -985,7 +1008,7 @@ TEST_F(ConnectionLostRenderingTest, EachCountedFailureRepaintsOnlyTheBannerWithT
     handler.OnMessageReceived(AuthSuccessOfQuizBuzzer01);
     handler.OnConnectionLost();
 
-    const DimmedScreen connected{"Connecté", {}, std::nullopt};
+    const DimmedScreen connected{"En attente du maître du jeu\nLa partie va bientôt commencer", {}, std::nullopt};
     const TopBar cutTopBar = TopBar::ForPlayer("quiz_buzzer_01").WithLinkCut();
     ::testing::InSequence inSequence;
     EXPECT_CALL(mockScreen, Display(cutTopBar, Lost(2, connected, true))).Times(1);
@@ -1061,7 +1084,7 @@ TEST_F(ConnectionLostRenderingTest, AnAuthSuccessDuringTheLossReplacesTheConnect
     handler.OnConnectionLost();
     handler.OnConnectionAttemptFailed();
 
-    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"Connecté"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"En attente du maître du jeu\nLa partie va bientôt commencer"}})).Times(1);
 
     handler.OnMessageReceived(AuthSuccessOfQuizBuzzer01);
 }
@@ -1073,7 +1096,7 @@ TEST_F(ConnectionLostRenderingTest, TheQuestionIsNotRestoredByTheAuthSuccessAndT
     handler.OnConnectionLost();
     handler.OnMessageReceived(AuthSuccessOfQuizBuzzer01);
 
-    const DimmedScreen connected{"Connecté", {}, std::nullopt};
+    const DimmedScreen connected{"En attente du maître du jeu\nLa partie va bientôt commencer", {}, std::nullopt};
     EXPECT_CALL(mockScreen, Display(::testing::_, Lost(1, connected))).Times(1);
 
     handler.OnConnectionLost();

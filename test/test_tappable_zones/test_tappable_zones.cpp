@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include "../mocks/ScreenMocks.h"
+#include "ScreenPresenter.h"
 #include "TappableZonesScreen.h"
 #include "TouchZoneReader.h"
 
@@ -123,6 +124,16 @@ TEST_F(TappableZonesScreenTest, ATextScreenDeactivatesTheZones)
     screen.Display(TopBar::Hidden(), TextScreen{"12 s"});
 
     EXPECT_EQ(TouchedAt(100, 100), ButtonInput::Unknown);
+}
+
+TEST_F(TappableZonesScreenTest, TheWaitForTheGameMasterScreenOfAnAuthSuccessDeactivatesTheZones)
+{
+    ShowTheFourZones();
+
+    screen.Display(TopBar::ForPlayer("Camille"), ScreenPresenter{}.ScreenFor(HubMessage{"auth_success"}, false));
+
+    EXPECT_EQ(TouchedAt(100, 100), ButtonInput::Unknown);
+    EXPECT_EQ(TouchedAt(700, 400), ButtonInput::Unknown);
 }
 
 TEST_F(TappableZonesScreenTest, AnOutOfGameScreenDeactivatesTheZonesAndForwardsItsTopBar)

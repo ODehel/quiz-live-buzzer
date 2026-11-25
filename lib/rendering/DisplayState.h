@@ -24,7 +24,7 @@ public:
         if (type == "game_resumed")
             return "Partie en cours";
         if (type == "auth_success")
-            return "Connecté";
+            return LcdTextForWaitingForGameMaster();
         if (type == "answer_received")
             return "Réponse enregistrée";
         if (type == "buzz_accepted")
@@ -79,6 +79,12 @@ public:
     std::string LcdTextForInit() const
     {
         return "Buzz’\nO’Live\nConnexion…";
+    }
+
+    // D4, l'écran de chaque `auth_success` qui suit l'ouverture d'une connexion : deux lignes de même taille (US-FW-019 CA-1, décision #33).
+    std::string LcdTextForWaitingForGameMaster() const
+    {
+        return "En attente du maître du jeu\nLa partie va bientôt commencer";
     }
 
     std::string LcdTextForLoginRefused() const

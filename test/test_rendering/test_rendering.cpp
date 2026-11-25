@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 #include "DisplayState.h"
 
-TEST(DisplayStateTest, AuthSuccessShouldDisplayConnecteOnScreen)
+TEST(DisplayStateTest, AuthSuccessShouldDisplayTheWaitForTheGameMasterOnTwoLines)
 {
     DisplayState displayState;
-    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"auth_success"}), "Connecté");
+    EXPECT_EQ(displayState.LcdTextFor(HubMessage{"auth_success"}), "En attente du maître du jeu\nLa partie va bientôt commencer");
 }
 
 TEST(DisplayStateTest, GameResumedShouldDisplayPartieEnCoursOnScreen)

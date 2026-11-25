@@ -11,14 +11,14 @@ namespace
 const TopBar InitTopBar = ScreenPresenter{}.TopBarForInit();
 }
 
-TEST(LcdRendererTest, AuthSuccessMessageShowsConnecteOnScreen)
+TEST(LcdRendererTest, AuthSuccessMessageShowsTheWaitForTheGameMasterOnScreen)
 {
     MockScreen mockScreen;
     testing::NiceMock<MockArmedModeReader> armedModeReader;
     VisibleTopBar visibleTopBar;
     LcdRenderer lcdRenderer{mockScreen, armedModeReader, visibleTopBar};
 
-    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"Connecté"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"En attente du maître du jeu\nLa partie va bientôt commencer"}})).Times(1);
 
     lcdRenderer.Apply(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"));
 }
@@ -575,7 +575,7 @@ TEST(LcdRendererLinkLostTest, AnAuthSuccessAfterTheLossShowsALinkedTopBarAgain)
     lcdRenderer.Apply(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"));
     lcdRenderer.ShowLinkLost(1);
 
-    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"Connecté"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"En attente du maître du jeu\nLa partie va bientôt commencer"}})).Times(1);
 
     lcdRenderer.Apply(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"));
 }

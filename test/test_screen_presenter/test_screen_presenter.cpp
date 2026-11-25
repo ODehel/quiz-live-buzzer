@@ -2,13 +2,13 @@
 #include <tuple>
 #include "ScreenPresenter.h"
 
-TEST(ScreenPresenterTest, AuthSuccessPresentsTheTextConnecte)
+TEST(ScreenPresenterTest, AuthSuccessPresentsTheWaitForTheGameMasterOnTwoLines)
 {
     ScreenPresenter presenter;
 
     const ScreenModel screen = presenter.ScreenFor(HubMessage{"auth_success"}, false);
 
-    EXPECT_EQ(ScreenModel{TextScreen{"Connecté"}}, screen);
+    EXPECT_EQ(ScreenModel{TextScreen{"En attente du maître du jeu\nLa partie va bientôt commencer"}}, screen);
 }
 
 class MessageWithoutDisplayTest : public ::testing::TestWithParam<std::string>
