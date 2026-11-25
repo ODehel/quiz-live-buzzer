@@ -5,7 +5,7 @@ Usage : extract-font-advances.py <en-tête de police> <nom du tableau> <sortie>
 
 Les tests natifs ne peuvent pas inclure les en-têtes de police (ils incluent LovyanGFX.hpp) : ils lisent
 à la place cette copie des largeurs réelles : une avance par code de U+0020 à U+00FF, plus le code et
-l'avance de chaque glyphe hors Latin-1 (Œ, œ, ’, …, €). À régénérer à chaque changement de police ;
+l'avance de chaque glyphe hors Latin-1 (Œ, œ, –, —, ’, “, ”, …, €). À régénérer à chaque changement de police ;
 ne pas modifier à la main.
 """
 import re
@@ -55,7 +55,7 @@ def main(argv):
     lines = [
         "// Généré par scripts/extract-font-advances.py à partir de %s : ne pas modifier à la main." % header.replace("\\", "/").split("/")[-1],
         "// Largeurs réelles (avance en pixels) de la police : une par code de U+0020 à U+00FF, puis le code",
-        "// et l'avance de chaque glyphe hors Latin-1 (Œ, œ, ’, …, €).",
+        "// et l'avance de chaque glyphe hors Latin-1 (Œ, œ, –, —, ’, “, ”, …, €).",
         "#ifndef %s_ADVANCES_H" % name.upper(),
         "#define %s_ADVANCES_H" % name.upper(),
         "",

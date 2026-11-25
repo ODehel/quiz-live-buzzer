@@ -523,6 +523,18 @@ TEST(TextLayoutRealFontTest, FrenchLigaturesAndTypographicSymbolsShouldBeMeasure
     EXPECT_EQ(measurer.Width("€", 0), 15);
 }
 
+// – (U+2013), — (U+2014), “ (U+201C) et ” (U+201D) ont leur propre largeur (17, 31, 11 et 10 px en Oswald 30 px) : pas celle
+// d'un `?` (14 px), que la police leur donnait tant qu'elle n'avait pas leur glyphe.
+TEST(TextLayoutRealFontTest, DashesAndCurlyQuotationMarksShouldBeMeasuredWithTheirRealWidth)
+{
+    const ProportionalTextMeasurer measurer = SmallestRealFont();
+
+    EXPECT_EQ(measurer.Width("–", 0), 17);
+    EXPECT_EQ(measurer.Width("—", 0), 31);
+    EXPECT_EQ(measurer.Width("“", 0), 11);
+    EXPECT_EQ(measurer.Width("”", 0), 10);
+}
+
 // Même titre tout en majuscules (les majuscules sont les glyphes les plus larges d'un texte réel).
 static const char *const RealisticUppercaseTitle =
     "QUEL NAVIGATEUR PORTUGAIS, NÉ À SABROSA EN 1480, A CONDUIT LA PREMIÈRE EXPÉDITION À FAIRE LE TOUR DE "

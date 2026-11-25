@@ -1,6 +1,6 @@
 // Généré par scripts/extract-font-advances.py à partir de OswaldRegular30.h : ne pas modifier à la main.
 // Largeurs réelles (avance en pixels) de la police : une par code de U+0020 à U+00FF, puis le code
-// et l'avance de chaque glyphe hors Latin-1 (Œ, œ, ’, …, €).
+// et l'avance de chaque glyphe hors Latin-1 (Œ, œ, –, —, ’, “, ”, …, €).
 #ifndef OSWALDREGULAR30_ADVANCES_H
 #define OSWALDREGULAR30_ADVANCES_H
 
@@ -27,7 +27,7 @@ static const int OswaldRegular30Advances[] = {
     14, 13, 13, 13, 13, 13, 13, 10, 13, 13, 13, 13, 13, 12, 13, 12,
 };
 
-static const int OswaldRegular30ExtraCodes[] = {0x0152, 0x0153, 0x2019, 0x2026, 0x20AC};
-static const int OswaldRegular30ExtraAdvances[] = {20, 21, 5, 17, 15};
+static const int OswaldRegular30ExtraCodes[] = {0x0152, 0x0153, 0x2013, 0x2014, 0x2019, 0x201C, 0x201D, 0x2026, 0x20AC};
+static const int OswaldRegular30ExtraAdvances[] = {20, 21, 17, 31, 5, 11, 10, 17, 15};
 
 #endif
