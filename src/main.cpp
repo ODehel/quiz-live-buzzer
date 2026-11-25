@@ -11,6 +11,7 @@
 #include "PhysicalButtonReader.h"
 #include "BuzzerBehavior.h"
 #include "ScreenLocalFeedback.h"
+#include "VisibleTopBar.h"
 #include "TokenSessionMessageSender.h"
 #include "LoginRefusalHalt.h"
 #include "NetworkHalt.h"
@@ -118,14 +119,16 @@ TappableZonesScreen tappableZonesScreen{gfxScreen, PanelWidth, PanelHeight};
 RetainingScreen retainingScreen{tappableZonesScreen};
 TouchZoneReader touchZoneReader{tappableZonesScreen.Zones()};
 TouchButtonReader touchButtonReader{gt911, touchZoneReader};
-ScreenLocalFeedback localFeedback{retainingScreen};
+// Le bandeau du haut visible, partagé : `LcdRenderer` l'écrit, `ScreenLocalFeedback` le lit (US-FW-009 CA-3).
+VisibleTopBar visibleTopBar;
+ScreenLocalFeedback localFeedback{retainingScreen, visibleTopBar};
 ReconnectionPolicy reconnectionPolicy;
 WebSocketsClient client;
 WebSocketPayloadSocketWriter payloadSocketWriter{client};
 WebSocketMessageSender messageSender{MessageSerializer{}, client};
 PhysicalButtonReader physicalButtonReader{pinBuzzReader};
 BuzzerBehavior buzzerBehavior{messageSender, localFeedback};
-LcdRenderer lcdRenderer{retainingScreen, buzzerBehavior};
+LcdRenderer lcdRenderer{retainingScreen, buzzerBehavior, visibleTopBar};
 ArduinoHttpPoster arduinoHttpPoster;
 HttpTokenFetcher httpTokenFetcher{arduinoHttpPoster, "http://192.168.1.183:3000", ServerCredentials{HUB_USERNAME, HUB_PASSWORD}};
 // Passe par `tappableZonesScreen` pour que les zones tactiles restent masquées sur l'écran de refus.

@@ -34,12 +34,13 @@ public:
         return TextScreen{text};
     }
 
-    // Seul l'écran « Connecté » porte le bandeau du haut (CDC §8.2) : le nom vient de l'`username` d'`auth_success`.
-    TopBar TopBarFor(const HubMessage &message) const
+    // Le bandeau du haut de l'écran que ce message produit (US-FW-009 CA-1 et CA-3) : un `auth_success` le crée, nom = son `username`, liaison « liée » ;
+    // tout autre message garde le bandeau visible, même nom, même liaison.
+    TopBar TopBarFor(const HubMessage &message, const TopBar &visibleTopBar) const
     {
         if (message.Type() == "auth_success")
             return TopBar::ForPlayer(message.Username());
-        return TopBar::Hidden();
+        return visibleTopBar;
     }
 
     // Le bandeau de l'init : visible dès la mise sous tension, nom vide, liaison « coupée » (US-FW-010 CA-1, US-FW-009 CA-3 et CA-4).

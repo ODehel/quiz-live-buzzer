@@ -221,7 +221,7 @@ TEST(ScreenPresenterTopBarTest, AuthSuccessShowsTheUsernameInTheTopBar)
 {
     ScreenPresenter presenter;
 
-    const TopBar topBar = presenter.TopBarFor(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"));
+    const TopBar topBar = presenter.TopBarFor(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"), TopBar::ForPlayer("ancien nom").WithLinkCut());
 
     EXPECT_EQ(TopBar::ForPlayer("quiz_buzzer_01"), topBar);
 }
@@ -235,22 +235,22 @@ TEST(ScreenPresenterTopBarTest, TheInitTopBarIsVisibleWithAnEmptyNameAndACutLink
     EXPECT_EQ(TopBar::ForPlayer("").WithLinkCut(), topBar);
 }
 
-class MessageWithoutTopBarTest : public ::testing::TestWithParam<std::string>
+class MessageKeepingTheTopBarTest : public ::testing::TestWithParam<std::string>
 {
 };
 
-TEST_P(MessageWithoutTopBarTest, HidesTheTopBar)
+TEST_P(MessageKeepingTheTopBarTest, KeepsTheVisibleTopBarWithItsNameAndItsLink)
 {
     ScreenPresenter presenter;
 
-    const TopBar topBar = presenter.TopBarFor(HubMessage{GetParam()});
+    const TopBar topBar = presenter.TopBarFor(HubMessage{GetParam()}, TopBar::ForPlayer("quiz_buzzer_01").WithLinkCut());
 
-    EXPECT_EQ(TopBar::Hidden(), topBar);
+    EXPECT_EQ(TopBar::ForPlayer("quiz_buzzer_01").WithLinkCut(), topBar);
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    MessagesWithoutATopBar,
-    MessageWithoutTopBarTest,
+    MessagesKeepingTheTopBar,
+    MessageKeepingTheTopBarTest,
     ::testing::Values("game_resumed", "question_open", "question_title", "question_choices", "question_result",
                       "timer_tick", "timer_end", "buzz_locked", "buzz_accepted", "answer_received", "unknown_type"));
 
@@ -258,7 +258,7 @@ TEST(ScreenPresenterTopBarTest, AuthSuccessWithoutUsernameShowsAnEmptyName)
 {
     ScreenPresenter presenter;
 
-    const TopBar topBar = presenter.TopBarFor(HubMessage{"auth_success"});
+    const TopBar topBar = presenter.TopBarFor(HubMessage{"auth_success"}, TopBar::ForPlayer("ancien nom").WithLinkCut());
 
     EXPECT_EQ(TopBar::ForPlayer(""), topBar);
 }
@@ -267,7 +267,7 @@ TEST(ScreenPresenterTopBarTest, AuthSuccessShowsALinkedTopBar)
 {
     ScreenPresenter presenter;
 
-    const TopBar topBar = presenter.TopBarFor(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"));
+    const TopBar topBar = presenter.TopBarFor(HubMessage{"auth_success"}.WithUsername("quiz_buzzer_01"), TopBar::ForPlayer("ancien nom").WithLinkCut());
 
     EXPECT_FALSE(topBar.linkCut);
 }

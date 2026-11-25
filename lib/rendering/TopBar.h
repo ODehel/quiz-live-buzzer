@@ -6,9 +6,13 @@
 
 // Le bandeau du haut d'un écran (CDC §8.2, habillage commun) : dit *quoi* montrer, jamais comment le dessiner.
 // Le nom du joueur à gauche, « Buzz’O’Live » au centre, la liaison avec le hub à droite (US-FW-009 CA-8) : « liée », ou « coupée » (`linkCut`).
-// Pour l'instant, seuls l'écran « Connecté », « Hors jeu » et l'écran de coupure le portent.
+// Il est visible sur chaque écran qui s'affiche (US-FW-009 CA-3) ; `Hidden()` reste pour l'écran de refus du login (US-FW-015 CA-9).
 struct TopBar
 {
+    // Hauteur du bandeau, trait de séparation compris : la dalle moins cette hauteur est la place du contenu (US-FW-009 CA-6 et CA-7).
+    // `GfxScreen` le dessine, `TappableZonesScreen` découpe les zones tactiles dessous.
+    static constexpr int Height = 60;
+
     bool visible;
     std::string playerName;
     bool linkCut = false;

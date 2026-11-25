@@ -663,7 +663,8 @@ TEST(ConnectionEventHandlerRenderingTest, TimerEndIsRenderedWithTheModeOfBeforeT
     ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
     MockScreen mockScreen;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
+    VisibleTopBar visibleTopBar;
+    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior, visibleTopBar};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
     ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
@@ -671,7 +672,7 @@ TEST(ConnectionEventHandlerRenderingTest, TimerEndIsRenderedWithTheModeOfBeforeT
     ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, lcdRenderer, lcdRenderer, networkHalt};
     buzzerBehavior.OnQuestionOpen();
 
-    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{"Trop tard"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(ScreenPresenter{}.TopBarForInit(), ScreenModel{TextScreen{"Trop tard"}})).Times(1);
 
     handler.OnMessageReceived("{\"type\":\"timer_end\"}");
 }
@@ -683,7 +684,8 @@ TEST(ConnectionEventHandlerRenderingTest, TimerEndReceivedByAnArmedBuzzerOnceEli
     ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
     ::testing::NiceMock<MockScreen> mockScreen;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
+    VisibleTopBar visibleTopBar;
+    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior, visibleTopBar};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
     ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
@@ -708,14 +710,15 @@ TEST(ConnectionEventHandlerRenderingTest, QuestionChoicesReceivedByAnArmedMcqBuz
     ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
     MockScreen mockScreen;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
+    VisibleTopBar visibleTopBar;
+    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior, visibleTopBar};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
     ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
     NetworkHalt networkHalt{mockConnectionCloser};
     ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, lcdRenderer, lcdRenderer, networkHalt};
 
-    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{ZonesScreen{std::vector<std::string>{"A : Paris", "B : Lyon", "C : Nice", "D : Lille"}}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(ScreenPresenter{}.TopBarForInit(), ScreenModel{ZonesScreen{std::vector<std::string>{"A : Paris", "B : Lyon", "C : Nice", "D : Lille"}}})).Times(1);
 
     handler.OnMessageReceived("{\"type\":\"question_choices\",\"choices\":[\"Paris\",\"Lyon\",\"Nice\",\"Lille\"]}");
     handler.OnMessageReceived("{\"type\":\"question_choices\",\"choices\":[\"Rome\",\"Pise\",\"Turin\",\"Gênes\"]}");
@@ -728,7 +731,8 @@ TEST(ConnectionEventHandlerRenderingTest, QuestionChoicesReceivedByAnArmedSpeedB
     ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
     MockScreen mockScreen;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
+    VisibleTopBar visibleTopBar;
+    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior, visibleTopBar};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
     ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
@@ -736,7 +740,7 @@ TEST(ConnectionEventHandlerRenderingTest, QuestionChoicesReceivedByAnArmedSpeedB
     ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, lcdRenderer, lcdRenderer, networkHalt};
     buzzerBehavior.OnQuestionOpen();
 
-    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{"Trop tard"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(ScreenPresenter{}.TopBarForInit(), ScreenModel{TextScreen{"Trop tard"}})).Times(1);
     EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
 
     handler.OnMessageReceived("{\"type\":\"question_choices\",\"choices\":[\"Paris\",\"Lyon\",\"Nice\",\"Lille\"]}");
@@ -752,7 +756,8 @@ protected:
     ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
     MockScreen mockScreen;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
+    VisibleTopBar visibleTopBar;
+    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior, visibleTopBar};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
     ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
@@ -801,7 +806,8 @@ protected:
     ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
     MockScreen mockScreen;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
+    VisibleTopBar visibleTopBar;
+    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior, visibleTopBar};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
     ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
@@ -811,7 +817,7 @@ protected:
 
 TEST_F(TimerTickRenderingTest, ReceivedByAnArmedMcqBuzzerKeepsTheZonesAndTheMode)
 {
-    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{ZonesScreen{std::vector<std::string>{"A : Paris", "B : Lyon", "C : Nice", "D : Lille"}}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(ScreenPresenter{}.TopBarForInit(), ScreenModel{ZonesScreen{std::vector<std::string>{"A : Paris", "B : Lyon", "C : Nice", "D : Lille"}}})).Times(1);
     EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
     EXPECT_CALL(mockHubMessageSender, SendAnswer('A')).Times(1);
 
@@ -823,7 +829,7 @@ TEST_F(TimerTickRenderingTest, ReceivedByAnArmedMcqBuzzerKeepsTheZonesAndTheMode
 
 TEST_F(TimerTickRenderingTest, ReceivedByAnArmedSpeedBuzzerKeepsTheTitleAndTheMode)
 {
-    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{TextScreen{"Quelle est la capitale du Portugal ?"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(ScreenPresenter{}.TopBarForInit(), ScreenModel{TextScreen{"Quelle est la capitale du Portugal ?"}})).Times(1);
     EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
     EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1);
 
@@ -852,7 +858,8 @@ protected:
     ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
     MockScreen mockScreen;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
+    VisibleTopBar visibleTopBar;
+    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior, visibleTopBar};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
     ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
@@ -887,7 +894,8 @@ TEST(ConnectionEventHandlerRenderingTest, AuthSuccessIsRenderedWithTheUsernameOf
     ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
     MockScreen mockScreen;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
+    VisibleTopBar visibleTopBar;
+    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior, visibleTopBar};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
     ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
@@ -906,7 +914,8 @@ TEST(ConnectionEventHandlerRenderingTest, ThirdFailedReconnectionShowsTheOutOfGa
     ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
     ::testing::NiceMock<MockScreen> mockScreen;
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior};
+    VisibleTopBar visibleTopBar;
+    LcdRenderer lcdRenderer{mockScreen, buzzerBehavior, visibleTopBar};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
     ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
@@ -941,7 +950,8 @@ protected:
     ::testing::NiceMock<MockScreen> mockScreen;
     RetainingScreen retainingScreen{mockScreen};
     BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
-    LcdRenderer lcdRenderer{retainingScreen, buzzerBehavior};
+    VisibleTopBar visibleTopBar;
+    LcdRenderer lcdRenderer{retainingScreen, buzzerBehavior, visibleTopBar};
     HubMessageDispatcher dispatcher{buzzerBehavior};
     ReconnectionPolicy policy;
     ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
@@ -988,7 +998,7 @@ TEST_F(ConnectionLostRenderingTest, EachCountedFailureRepaintsOnlyTheBannerWithT
 
 TEST_F(ConnectionLostRenderingTest, TheLocalFeedbackOfAPressIsTheLastScreenTheConnectionLostScreenDims)
 {
-    ScreenLocalFeedback localFeedback{retainingScreen};
+    ScreenLocalFeedback localFeedback{retainingScreen, visibleTopBar};
     handler.OnMessageReceived(AuthSuccessOfQuizBuzzer01);
     handler.OnMessageReceived("{\"type\":\"question_choices\",\"choices\":[\"un\",\"deux\",\"trois\",\"quatre\"]}");
     localFeedback.AcknowledgeAnswer('C');
@@ -997,6 +1007,51 @@ TEST_F(ConnectionLostRenderingTest, TheLocalFeedbackOfAPressIsTheLastScreenTheCo
     EXPECT_CALL(mockScreen, Display(::testing::_, Lost(1, chosen))).Times(1);
 
     handler.OnConnectionLost();
+}
+
+// Les deux producteurs d'écran du câblage de `main.cpp` partagent le même bandeau visible (US-FW-009 CA-3) : le nom de l'`auth_success`
+// est celui du feedback local d'un appui, qui ne passe pas par `LcdRenderer`.
+class SharedTopBarRenderingTest : public ConnectionLostRenderingTest
+{
+protected:
+    ScreenLocalFeedback localFeedback{retainingScreen, visibleTopBar};
+};
+
+TEST_F(SharedTopBarRenderingTest, TheLocalFeedbackOfAnMcqPressKeepsTheNameOfTheAuthSuccess)
+{
+    handler.OnMessageReceived(AuthSuccessOfQuizBuzzer01);
+    handler.OnMessageReceived("{\"type\":\"question_choices\",\"choices\":[\"un\",\"deux\",\"trois\",\"quatre\"]}");
+
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"),
+                                    ScreenModel{ChosenZoneScreen{2, std::vector<std::string>{"A : un", "B : deux", "C : trois", "D : quatre"}}})).Times(1);
+
+    localFeedback.AcknowledgeAnswer('C');
+}
+
+TEST_F(SharedTopBarRenderingTest, TheLocalFeedbackOfASpeedPressKeepsTheNameOfTheAuthSuccess)
+{
+    handler.OnMessageReceived(AuthSuccessOfQuizBuzzer01);
+
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("quiz_buzzer_01"), ScreenModel{TextScreen{"Buzz envoyé"}})).Times(1);
+
+    localFeedback.AcknowledgeBuzz();
+}
+
+TEST_F(SharedTopBarRenderingTest, EveryScreenOfTheGameKeepsTheTopBarFromTheAuthSuccessToTheEnd)
+{
+    handler.OnMessageReceived(AuthSuccessOfQuizBuzzer01);
+    const TopBar topBar = TopBar::ForPlayer("quiz_buzzer_01");
+
+    ::testing::InSequence inSequence;
+    EXPECT_CALL(mockScreen, Display(topBar, ScreenModel{ZonesScreen{std::vector<std::string>{"A : un", "B : deux", "C : trois", "D : quatre"}}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(topBar, ::testing::VariantWith<ChosenZoneScreen>(::testing::_))).Times(1);
+    EXPECT_CALL(mockScreen, Display(topBar, ::testing::VariantWith<BannerScreen>(::testing::_))).Times(1);
+    EXPECT_CALL(mockScreen, Display(topBar, ScreenModel{TextScreen{"Trop tard"}})).Times(1);
+
+    handler.OnMessageReceived("{\"type\":\"question_choices\",\"choices\":[\"un\",\"deux\",\"trois\",\"quatre\"]}");
+    localFeedback.AcknowledgeAnswer('A');
+    handler.OnMessageReceived("{\"type\":\"answer_received\"}");
+    handler.OnMessageReceived("{\"type\":\"timer_end\"}");
 }
 
 TEST_F(ConnectionLostRenderingTest, AnAuthSuccessDuringTheLossReplacesTheConnectionLostScreenWithTheLinkedTopBar)
