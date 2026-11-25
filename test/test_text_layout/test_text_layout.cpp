@@ -595,3 +595,32 @@ int main(int argc, char **argv)
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
+
+TEST(TextLayoutRealFontTest, CharacterWithoutAGlyphShouldBePlacedAsAQuestionMarkOf14Pixels)
+{
+    const ProportionalTextMeasurer measurer = SmallestRealFont();
+    const TextLayout layout(measurer, AreaWidth, AreaHeight);
+
+    const TextLines placed = layout.Compute("\U0001F600");
+
+    ASSERT_EQ(placed.lines, Lines{"?"});
+    EXPECT_EQ(measurer.Width(placed.lines[0], 0), 14);
+}
+
+TEST(TextLayoutRealFontTest, ControlCodeOtherThanTheLineFeedShouldNotMakeALine)
+{
+    const ProportionalTextMeasurer measurer = SmallestRealFont();
+    const TextLayout layout(measurer, AreaWidth, AreaHeight);
+
+    EXPECT_EQ(layout.Compute("Oui\r\n\tNon").lines, (Lines{"Oui", "Non"}));
+    EXPECT_EQ(layout.Compute("\r\t").lines, Lines{});
+}
+
+TEST(TextLayoutRealFontTest, EmojiInATextShouldTakeTheRoomOfItsQuestionMarksWhenWrapping)
+{
+    const ProportionalTextMeasurer measurer = SmallestRealFont();
+    const TextLayout layout(measurer, measurer.Width("Brésil ??", 0), AreaHeight);
+
+    // Un drapeau (deux codes) devient « ?? » : la ligne tient pile, avec la largeur de deux `?`.
+    EXPECT_EQ(layout.Compute("Brésil \U0001F1E7\U0001F1F7").lines, (Lines{"Brésil ??"}));
+}

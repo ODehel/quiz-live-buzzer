@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include "GlyphFilter.h"
 #include "TextMeasurer.h"
 #include "Utf8.h"
 
@@ -16,6 +17,8 @@ struct TextLines
 // le texte, coupé aux espaces, tient en hauteur, puis rend les lignes à dessiner.
 // Les largeurs et hauteurs sont celles du TextMeasurer, en pixels.
 // Au-delà de ce que la plus petite taille peut contenir, le texte garde cette taille et déborde.
+// Les codes que la police n'a pas sont remplacés par un `?` avant la mise en page (voir `GlyphFilter`) : les lignes rendues
+// sont celles que `GfxScreen` dessine, la mesure et le dessin voient donc le même texte.
 class TextLayout
 {
 private:
@@ -29,8 +32,9 @@ public:
     {
     }
 
-    TextLines Compute(const std::string &text) const
+    TextLines Compute(const std::string &rawText) const
     {
+        const std::string text = GlyphFilter::ReplaceCodesWithoutGlyph(rawText);
         const int smallest = measurer.SizeCount() - 1;
         for (int size = 0; size < smallest; ++size)
         {
