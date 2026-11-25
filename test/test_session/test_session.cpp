@@ -1,185 +1,601 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <climits>
 #include "../mocks/ConnectionMocks.h"
+#include "../mocks/LoginFakes.h"
 #include "../mocks/ScreenMocks.h"
 #include "../mocks/SessionMocks.h"
 #include "../mocks/StartupMocks.h"
 #include "TokenSessionMessageSender.h"
 #include "LoginRefusalHalt.h"
 #include "MessageSerializer.h"
+#include "SessionPollingNetworkLoop.h"
 
-using ::testing::Return;
 using ::testing::StrictMock;
 
-TEST(TokenSessionMessageSenderTest, SendsAuthRefreshCarryingAFreshlyFetchedTokenNeverTheOldOne)
+constexpr unsigned long LoginTimeoutMilliseconds = 5000;
+
+static LoginResult AFreshToken(const std::string &token)
 {
-    MockPayloadSocketWriter mockPayloadSocketWriter;
-    MockTokenFetcher mockTokenFetcher;
-    StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
-    MessageSerializer messageSerializer;
-    TokenSessionMessageSender sender{mockPayloadSocketWriter, messageSerializer, mockTokenFetcher, mockLoginRefusalListener};
-
-    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(Return(LoginResult{LoginStatus::Success, "fresh-token"}));
-    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth_refresh\",\"token\":\"fresh-token\"}")).Times(1);
-
-    sender.UpdateToken("old-token");
-    sender.SendAuthRefresh();
+    return LoginResult{LoginStatus::Success, token};
 }
 
-TEST(TokenSessionMessageSenderTest, ReportsTheAuthRefreshAsSentOnceItCarriesAFreshToken)
+static const LoginResult ALoginThatFailed{LoginStatus::Failed, ""};
+static const LoginResult ALoginWithoutToken{LoginStatus::Success, ""};
+static const LoginResult ARefusedLogin{LoginStatus::InvalidCredentials, ""};
+
+static std::string AuthWith(const std::string &token)
 {
-    ::testing::NiceMock<MockPayloadSocketWriter> mockPayloadSocketWriter;
-    MockTokenFetcher mockTokenFetcher;
-    StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
-    MessageSerializer messageSerializer;
-    TokenSessionMessageSender sender{mockPayloadSocketWriter, messageSerializer, mockTokenFetcher, mockLoginRefusalListener};
-
-    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(Return(LoginResult{LoginStatus::Success, "fresh-token"}));
-
-    EXPECT_TRUE(sender.SendAuthRefresh());
+    return "{\"type\":\"auth\",\"token\":\"" + token + "\"}";
 }
 
-TEST(TokenSessionMessageSenderTest, SendsNoAuthRefreshWhenTheRenewalLoginFails)
+static std::string AuthRefreshWith(const std::string &token)
 {
-    MockPayloadSocketWriter mockPayloadSocketWriter;
-    MockTokenFetcher mockTokenFetcher;
-    StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
-    MessageSerializer messageSerializer;
-    TokenSessionMessageSender sender{mockPayloadSocketWriter, messageSerializer, mockTokenFetcher, mockLoginRefusalListener};
-
-    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(Return(LoginResult{LoginStatus::Failed, ""}));
-    EXPECT_CALL(mockPayloadSocketWriter, Write(::testing::_)).Times(0);
-
-    sender.UpdateToken("old-token");
-    EXPECT_FALSE(sender.SendAuthRefresh());
+    return "{\"type\":\"auth_refresh\",\"token\":\"" + token + "\"}";
 }
 
-TEST(TokenSessionMessageSenderTest, SendsNoAuthRefreshWhenTheRenewalLoginReturnsNoToken)
+class TokenSessionMessageSenderTest : public ::testing::Test
 {
-    MockPayloadSocketWriter mockPayloadSocketWriter;
-    MockTokenFetcher mockTokenFetcher;
+protected:
+    StrictMock<MockPayloadSocketWriter> mockPayloadSocketWriter;
+    FakeAsyncLogin login;
+    FakeClock clock;
     StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
-    MessageSerializer messageSerializer;
-    TokenSessionMessageSender sender{mockPayloadSocketWriter, messageSerializer, mockTokenFetcher, mockLoginRefusalListener};
+    TokenSessionMessageSender sender{mockPayloadSocketWriter, MessageSerializer{}, login, clock, LoginTimeoutMilliseconds, mockLoginRefusalListener};
+};
 
-    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(Return(LoginResult{LoginStatus::Success, ""}));
-    EXPECT_CALL(mockPayloadSocketWriter, Write(::testing::_)).Times(0);
+// ---- Login d'ouverture (US-FW-005 CA-9, CA-12) ----
 
-    sender.UpdateToken("old-token");
-    EXPECT_FALSE(sender.SendAuthRefresh());
-}
-
-TEST(TokenSessionMessageSenderTest, SendsNoAuthRefreshAndStopsNothingWhenTheRenewalLoginIsRefused)
+TEST_F(TokenSessionMessageSenderTest, StartsALoginWithoutSendingAnythingWhenAConnectionOpens)
 {
-    MockPayloadSocketWriter mockPayloadSocketWriter;
-    MockTokenFetcher mockTokenFetcher;
-    StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
-    MessageSerializer messageSerializer;
-    TokenSessionMessageSender sender{mockPayloadSocketWriter, messageSerializer, mockTokenFetcher, mockLoginRefusalListener};
-
-    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(Return(LoginResult{LoginStatus::InvalidCredentials, ""}));
-    EXPECT_CALL(mockPayloadSocketWriter, Write(::testing::_)).Times(0);
-
-    sender.UpdateToken("old-token");
-    EXPECT_FALSE(sender.SendAuthRefresh());
-}
-
-TEST(TokenSessionMessageSenderTest, SendsAuthCarryingTheRenewedTokenWhenTheFetchFailsAfterARenewal)
-{
-    MockPayloadSocketWriter mockPayloadSocketWriter;
-    MockTokenFetcher mockTokenFetcher;
-    StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
-    MessageSerializer messageSerializer;
-    TokenSessionMessageSender sender{mockPayloadSocketWriter, messageSerializer, mockTokenFetcher, mockLoginRefusalListener};
-
-    EXPECT_CALL(mockTokenFetcher, Fetch())
-        .WillOnce(Return(LoginResult{LoginStatus::Success, "renewed-token"}))
-        .WillOnce(Return(LoginResult{LoginStatus::Failed, ""}));
-    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth_refresh\",\"token\":\"renewed-token\"}")).Times(1);
-    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth\",\"token\":\"renewed-token\"}")).Times(1);
-
-    sender.UpdateToken("startup-token");
-    sender.SendAuthRefresh();
     sender.SendAuth();
+
+    EXPECT_EQ(login.starts, 1);
+    EXPECT_TRUE(login.IsInFlight());
 }
 
-TEST(TokenSessionMessageSenderTest, SendsAuthCarryingAFreshlyFetchedToken)
+TEST_F(TokenSessionMessageSenderTest, SendsNothingWhileTheLoginIsInFlight)
 {
-    MockPayloadSocketWriter mockPayloadSocketWriter;
-    MockTokenFetcher mockTokenFetcher;
-    StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
-    MessageSerializer messageSerializer;
-    TokenSessionMessageSender sender{mockPayloadSocketWriter, messageSerializer, mockTokenFetcher, mockLoginRefusalListener};
+    sender.SendAuth();
 
-    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(Return(LoginResult{LoginStatus::Success, "fresh-token"}));
-    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth\",\"token\":\"fresh-token\"}")).Times(1);
+    EXPECT_FALSE(sender.PollLogin());
+    clock.Advance(LoginTimeoutMilliseconds - 1);
+    EXPECT_FALSE(sender.PollLogin());
+}
 
+TEST_F(TokenSessionMessageSenderTest, SendsAuthCarryingAFreshlyFetchedToken)
+{
     sender.UpdateToken("startup-token");
     sender.SendAuth();
+    login.Finish(AFreshToken("fresh-token"));
+
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("fresh-token"))).Times(1);
+
+    EXPECT_FALSE(sender.PollLogin());
 }
 
-TEST(TokenSessionMessageSenderTest, FetchesAFreshTokenOnEveryAuth)
+TEST_F(TokenSessionMessageSenderTest, SendsAuthOnlyOnceWhenTheLoginEnded)
 {
-    MockPayloadSocketWriter mockPayloadSocketWriter;
-    MockTokenFetcher mockTokenFetcher;
-    StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
-    MessageSerializer messageSerializer;
-    TokenSessionMessageSender sender{mockPayloadSocketWriter, messageSerializer, mockTokenFetcher, mockLoginRefusalListener};
-
-    EXPECT_CALL(mockTokenFetcher, Fetch())
-        .WillOnce(Return(LoginResult{LoginStatus::Success, "first-token"}))
-        .WillOnce(Return(LoginResult{LoginStatus::Success, "second-token"}));
-    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth\",\"token\":\"first-token\"}")).Times(1);
-    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth\",\"token\":\"second-token\"}")).Times(1);
-
     sender.SendAuth();
-    sender.SendAuth();
+    login.Finish(AFreshToken("fresh-token"));
+
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("fresh-token"))).Times(1);
+
+    sender.PollLogin();
+    sender.PollLogin();
 }
 
-TEST(TokenSessionMessageSenderTest, SendsAuthCarryingTheLastKnownTokenWhenTheFetchFails)
+TEST_F(TokenSessionMessageSenderTest, FetchesAFreshTokenOnEveryAuth)
 {
-    MockPayloadSocketWriter mockPayloadSocketWriter;
-    MockTokenFetcher mockTokenFetcher;
-    StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
-    MessageSerializer messageSerializer;
-    TokenSessionMessageSender sender{mockPayloadSocketWriter, messageSerializer, mockTokenFetcher, mockLoginRefusalListener};
+    sender.SendAuth();
+    login.Finish(AFreshToken("first-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("first-token"))).Times(1);
+    sender.PollLogin();
 
-    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(Return(LoginResult{LoginStatus::Failed, ""}));
-    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth\",\"token\":\"any-token\"}")).Times(1);
+    sender.OnConnectionClosed();
+    sender.SendAuth();
+    login.Finish(AFreshToken("second-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("second-token"))).Times(1);
+    sender.PollLogin();
 
+    EXPECT_EQ(login.starts, 2);
+}
+
+TEST_F(TokenSessionMessageSenderTest, SendsAuthCarryingTheLastKnownTokenWhenTheFetchFails)
+{
     sender.UpdateToken("any-token");
     sender.SendAuth();
+    login.Finish(ALoginThatFailed);
+
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("any-token"))).Times(1);
+
+    sender.PollLogin();
 }
 
-TEST(TokenSessionMessageSenderTest, SendsAuthCarryingTheLastKnownTokenWhenTheFetchReturnsNoToken)
+TEST_F(TokenSessionMessageSenderTest, SendsAuthCarryingTheLastKnownTokenWhenTheFetchReturnsNoToken)
 {
-    MockPayloadSocketWriter mockPayloadSocketWriter;
-    MockTokenFetcher mockTokenFetcher;
-    StrictMock<MockLoginRefusalListener> mockLoginRefusalListener;
-    MessageSerializer messageSerializer;
-    TokenSessionMessageSender sender{mockPayloadSocketWriter, messageSerializer, mockTokenFetcher, mockLoginRefusalListener};
-
-    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(Return(LoginResult{LoginStatus::Success, ""}));
-    EXPECT_CALL(mockPayloadSocketWriter, Write("{\"type\":\"auth\",\"token\":\"any-token\"}")).Times(1);
-
     sender.UpdateToken("any-token");
     sender.SendAuth();
+    login.Finish(ALoginWithoutToken);
+
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("any-token"))).Times(1);
+
+    sender.PollLogin();
 }
 
-TEST(TokenSessionMessageSenderTest, SendsNoAuthAndReportsTheRefusalWhenTheLoginIsRefused)
+TEST_F(TokenSessionMessageSenderTest, SendsNoAuthAndReportsTheRefusalWhenTheLoginIsRefused)
 {
-    MockPayloadSocketWriter mockPayloadSocketWriter;
-    MockTokenFetcher mockTokenFetcher;
-    MockLoginRefusalListener mockLoginRefusalListener;
-    MessageSerializer messageSerializer;
-    TokenSessionMessageSender sender{mockPayloadSocketWriter, messageSerializer, mockTokenFetcher, mockLoginRefusalListener};
+    sender.UpdateToken("any-token");
+    sender.SendAuth();
+    login.Finish(ARefusedLogin);
 
-    EXPECT_CALL(mockTokenFetcher, Fetch()).WillOnce(Return(LoginResult{LoginStatus::InvalidCredentials, ""}));
-    EXPECT_CALL(mockPayloadSocketWriter, Write(::testing::_)).Times(0);
     EXPECT_CALL(mockLoginRefusalListener, OnLoginRefused()).Times(1);
 
+    sender.PollLogin();
+}
+
+TEST_F(TokenSessionMessageSenderTest, SendsAuthCarryingTheLastKnownTokenWhenTheLoginExceedsFiveSeconds)
+{
     sender.UpdateToken("any-token");
     sender.SendAuth();
+    clock.Advance(LoginTimeoutMilliseconds - 1);
+    EXPECT_FALSE(sender.PollLogin());
+    clock.Advance(1);
+
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("any-token"))).Times(1);
+
+    sender.PollLogin();
+}
+
+TEST_F(TokenSessionMessageSenderTest, AbandonsTheLoginThatExceededFiveSeconds)
+{
+    sender.SendAuth();
+    clock.Advance(LoginTimeoutMilliseconds);
+    EXPECT_CALL(mockPayloadSocketWriter, Write(::testing::_)).Times(1);
+
+    sender.PollLogin();
+
+    EXPECT_EQ(login.abandons, 1);
+    EXPECT_FALSE(login.IsInFlight());
+}
+
+TEST_F(TokenSessionMessageSenderTest, MeasuresTheFiveSecondsFromTheStartOfTheLogin)
+{
+    clock.Advance(12345);
+    sender.SendAuth();
+    clock.Advance(LoginTimeoutMilliseconds - 1);
+
+    EXPECT_FALSE(sender.PollLogin());
+    EXPECT_EQ(login.abandons, 0);
+}
+
+TEST_F(TokenSessionMessageSenderTest, MeasuresTheFiveSecondsAcrossTheOverflowOfTheClock)
+{
+    clock.SetNow(ULONG_MAX - 1000);
+    sender.SendAuth();
+    clock.Advance(500);
+    EXPECT_FALSE(sender.PollLogin());
+    EXPECT_EQ(login.abandons, 0);
+    clock.Advance(LoginTimeoutMilliseconds - 501);
+
+    EXPECT_FALSE(sender.PollLogin());
+    EXPECT_EQ(login.abandons, 0);
+
+    clock.Advance(1);
+    EXPECT_CALL(mockPayloadSocketWriter, Write(::testing::_)).Times(1);
+
+    sender.PollLogin();
+}
+
+TEST_F(TokenSessionMessageSenderTest, SendsNothingWhenTheLoginEndsAfterTheConnectionClosed)
+{
+    sender.UpdateToken("any-token");
+    sender.SendAuth();
+    sender.OnConnectionClosed();
+    login.Finish(AFreshToken("late-token"));
+
+    EXPECT_FALSE(sender.PollLogin());
+}
+
+TEST_F(TokenSessionMessageSenderTest, SendsNothingWhenTheLoginFailsAfterTheConnectionClosed)
+{
+    sender.SendAuth();
+    sender.OnConnectionClosed();
+    login.Finish(ALoginThatFailed);
+
+    EXPECT_FALSE(sender.PollLogin());
+}
+
+TEST_F(TokenSessionMessageSenderTest, SendsNothingWhenTheLoginTimesOutAfterTheConnectionClosed)
+{
+    sender.SendAuth();
+    sender.OnConnectionClosed();
+    clock.Advance(LoginTimeoutMilliseconds);
+
+    EXPECT_FALSE(sender.PollLogin());
+    EXPECT_EQ(login.abandons, 1);
+}
+
+TEST_F(TokenSessionMessageSenderTest, KeepsTheFreshTokenOfALoginEndedAfterTheConnectionClosedAsTheLastKnownToken)
+{
+    sender.UpdateToken("startup-token");
+    sender.SendAuth();
+    sender.OnConnectionClosed();
+    login.Finish(AFreshToken("late-token"));
+    sender.PollLogin();
+
+    sender.SendAuth();
+    login.Finish(ALoginThatFailed);
+
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("late-token"))).Times(1);
+
+    sender.PollLogin();
+}
+
+TEST_F(TokenSessionMessageSenderTest, IgnoresTheRefusalOfALoginEndedAfterTheConnectionClosed)
+{
+    sender.SendAuth();
+    sender.OnConnectionClosed();
+    login.Finish(ARefusedLogin);
+
+    EXPECT_CALL(mockLoginRefusalListener, OnLoginRefused()).Times(0);
+
+    EXPECT_FALSE(sender.PollLogin());
+}
+
+TEST_F(TokenSessionMessageSenderTest, AbandonsTheLoginInFlightWhenANewConnectionOpens)
+{
+    sender.SendAuth();
+    sender.OnConnectionClosed();
+    sender.SendAuth();
+
+    EXPECT_EQ(login.abandons, 1);
+    EXPECT_EQ(login.starts, 2);
+    EXPECT_TRUE(login.IsInFlight());
+}
+
+TEST_F(TokenSessionMessageSenderTest, KeepsNoTokenFromTheLoginAbandonedByANewConnection)
+{
+    sender.UpdateToken("startup-token");
+    sender.SendAuth();
+    login.Finish(AFreshToken("abandoned-token"));
+    sender.OnConnectionClosed();
+    sender.SendAuth();
+    login.Finish(ALoginThatFailed);
+
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("startup-token"))).Times(1);
+
+    sender.PollLogin();
+}
+
+TEST_F(TokenSessionMessageSenderTest, AbandonsTheLoginInFlightWhenTheBuzzerIsEliminated)
+{
+    sender.UpdateToken("startup-token");
+    sender.SendAuth();
+    sender.OnConnectionClosed();
+
+    sender.Abandon();
+    login.Finish(AFreshToken("abandoned-token"));
+
+    EXPECT_EQ(login.abandons, 1);
+    EXPECT_FALSE(sender.PollLogin());
+}
+
+TEST_F(TokenSessionMessageSenderTest, KeepsNoTokenFromTheLoginAbandonedByTheElimination)
+{
+    sender.UpdateToken("startup-token");
+    sender.SendAuth();
+    login.Finish(AFreshToken("abandoned-token"));
+    sender.OnConnectionClosed();
+    sender.Abandon();
+
+    sender.SendAuth();
+    login.Finish(ALoginThatFailed);
+
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("startup-token"))).Times(1);
+
+    sender.PollLogin();
+}
+
+TEST_F(TokenSessionMessageSenderTest, NeverPollsAgainTheLoginAbandonedByTheElimination)
+{
+    sender.SendAuth();
+    sender.OnConnectionClosed();
+    sender.Abandon();
+
+    clock.Advance(LoginTimeoutMilliseconds);
+
+    EXPECT_FALSE(sender.PollLogin());
+    EXPECT_EQ(login.abandons, 1);
+}
+
+TEST_F(TokenSessionMessageSenderTest, PollsNothingWhenNoLoginIsInFlight)
+{
+    clock.Advance(2 * LoginTimeoutMilliseconds);
+
+    EXPECT_FALSE(sender.PollLogin());
+    EXPECT_EQ(login.abandons, 0);
+}
+
+TEST_F(TokenSessionMessageSenderTest, AbandonsNothingWhenNoLoginIsInFlight)
+{
+    sender.Abandon();
+
+    EXPECT_EQ(login.abandons, 0);
+}
+
+// ---- Login de renouvellement (US-FW-007 CA-2, CA-3, CA-4, CA-5, CA-8, CA-9) ----
+
+TEST_F(TokenSessionMessageSenderTest, StartsALoginWithoutSendingAnythingWhenTheHubAnnouncesTheExpiry)
+{
+    sender.SendAuth();
+    login.Finish(AFreshToken("opening-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("opening-token"))).Times(1);
+    sender.PollLogin();
+
+    sender.SendAuthRefresh();
+
+    EXPECT_EQ(login.starts, 2);
+    EXPECT_TRUE(login.IsInFlight());
+    EXPECT_FALSE(sender.PollLogin());
+}
+
+TEST_F(TokenSessionMessageSenderTest, SendsAuthRefreshCarryingAFreshlyFetchedTokenNeverTheOldOne)
+{
+    sender.UpdateToken("old-token");
+    sender.SendAuth();
+    login.Finish(AFreshToken("old-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("old-token"))).Times(1);
+    sender.PollLogin();
+
+    sender.SendAuthRefresh();
+    login.Finish(AFreshToken("fresh-token"));
+
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthRefreshWith("fresh-token"))).Times(1);
+
+    sender.PollLogin();
+}
+
+TEST_F(TokenSessionMessageSenderTest, ReportsTheAuthRefreshAsSentOnceItCarriesAFreshToken)
+{
+    sender.SendAuth();
+    login.Finish(AFreshToken("opening-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(::testing::_)).Times(2);
+    sender.PollLogin();
+
+    sender.SendAuthRefresh();
+    login.Finish(AFreshToken("fresh-token"));
+
+    EXPECT_TRUE(sender.PollLogin());
+    EXPECT_FALSE(sender.PollLogin());
+}
+
+TEST_F(TokenSessionMessageSenderTest, SendsNoAuthRefreshWhenTheRenewalLoginFails)
+{
+    sender.SendAuth();
+    login.Finish(AFreshToken("opening-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("opening-token"))).Times(1);
+    sender.PollLogin();
+
+    sender.SendAuthRefresh();
+    login.Finish(ALoginThatFailed);
+
+    EXPECT_FALSE(sender.PollLogin());
+}
+
+TEST_F(TokenSessionMessageSenderTest, SendsNoAuthRefreshWhenTheRenewalLoginReturnsNoToken)
+{
+    sender.SendAuth();
+    login.Finish(AFreshToken("opening-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("opening-token"))).Times(1);
+    sender.PollLogin();
+
+    sender.SendAuthRefresh();
+    login.Finish(ALoginWithoutToken);
+
+    EXPECT_FALSE(sender.PollLogin());
+}
+
+TEST_F(TokenSessionMessageSenderTest, SendsNoAuthRefreshAndStopsNothingWhenTheRenewalLoginIsRefused)
+{
+    sender.SendAuth();
+    login.Finish(AFreshToken("opening-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("opening-token"))).Times(1);
+    sender.PollLogin();
+
+    sender.SendAuthRefresh();
+    login.Finish(ARefusedLogin);
+
+    EXPECT_CALL(mockLoginRefusalListener, OnLoginRefused()).Times(0);
+
+    EXPECT_FALSE(sender.PollLogin());
+}
+
+TEST_F(TokenSessionMessageSenderTest, SendsNoAuthRefreshAndAbandonsTheRenewalLoginThatExceedsFiveSeconds)
+{
+    sender.SendAuth();
+    login.Finish(AFreshToken("opening-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("opening-token"))).Times(1);
+    sender.PollLogin();
+
+    sender.SendAuthRefresh();
+    clock.Advance(LoginTimeoutMilliseconds - 1);
+    EXPECT_FALSE(sender.PollLogin());
+    clock.Advance(1);
+
+    EXPECT_FALSE(sender.PollLogin());
+    EXPECT_EQ(login.abandons, 1);
+    EXPECT_FALSE(login.IsInFlight());
+}
+
+TEST_F(TokenSessionMessageSenderTest, SendsAuthCarryingTheRenewedTokenWhenTheFetchFailsAfterARenewal)
+{
+    sender.UpdateToken("startup-token");
+    sender.SendAuth();
+    login.Finish(AFreshToken("opening-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("opening-token"))).Times(1);
+    sender.PollLogin();
+    sender.SendAuthRefresh();
+    login.Finish(AFreshToken("renewed-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthRefreshWith("renewed-token"))).Times(1);
+    sender.PollLogin();
+
+    sender.OnConnectionClosed();
+    sender.SendAuth();
+    login.Finish(ALoginThatFailed);
+
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("renewed-token"))).Times(1);
+
+    sender.PollLogin();
+}
+
+TEST_F(TokenSessionMessageSenderTest, IgnoresTheAnnouncementOfTheExpiryWhileTheOpeningLoginIsInFlight)
+{
+    sender.UpdateToken("startup-token");
+    sender.SendAuth();
+
+    sender.SendAuthRefresh();
+
+    EXPECT_EQ(login.starts, 1);
+    login.Finish(AFreshToken("opening-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("opening-token"))).Times(1);
+    EXPECT_FALSE(sender.PollLogin());
+    EXPECT_FALSE(sender.PollLogin());
+}
+
+TEST_F(TokenSessionMessageSenderTest, IgnoresTheAnnouncementOfTheExpiryWhileARenewalLoginIsInFlight)
+{
+    sender.SendAuth();
+    login.Finish(AFreshToken("opening-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("opening-token"))).Times(1);
+    sender.PollLogin();
+
+    sender.SendAuthRefresh();
+    sender.SendAuthRefresh();
+    sender.SendAuthRefresh();
+
+    EXPECT_EQ(login.starts, 2);
+    EXPECT_EQ(login.abandons, 0);
+    login.Finish(AFreshToken("renewed-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthRefreshWith("renewed-token"))).Times(1);
+    sender.PollLogin();
+}
+
+TEST_F(TokenSessionMessageSenderTest, RenewsAgainWhenTheAnnouncementArrivesAfterASuccessfulRenewalLogin)
+{
+    sender.SendAuth();
+    login.Finish(AFreshToken("opening-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("opening-token"))).Times(1);
+    sender.PollLogin();
+    sender.SendAuthRefresh();
+    login.Finish(AFreshToken("renewed-1"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthRefreshWith("renewed-1"))).Times(1);
+    sender.PollLogin();
+
+    sender.SendAuthRefresh();
+    login.Finish(AFreshToken("renewed-2"));
+
+    EXPECT_EQ(login.starts, 3);
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthRefreshWith("renewed-2"))).Times(1);
+    sender.PollLogin();
+}
+
+TEST_F(TokenSessionMessageSenderTest, RenewsAgainWhenTheAnnouncementArrivesAfterAFailedRenewalLogin)
+{
+    sender.SendAuth();
+    login.Finish(AFreshToken("opening-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("opening-token"))).Times(1);
+    sender.PollLogin();
+    sender.SendAuthRefresh();
+    login.Finish(ALoginThatFailed);
+    sender.PollLogin();
+
+    sender.SendAuthRefresh();
+
+    EXPECT_EQ(login.starts, 3);
+    EXPECT_TRUE(login.IsInFlight());
+}
+
+TEST_F(TokenSessionMessageSenderTest, SendsNothingWhenTheRenewalLoginEndsAfterTheConnectionClosed)
+{
+    sender.SendAuth();
+    login.Finish(AFreshToken("opening-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("opening-token"))).Times(1);
+    sender.PollLogin();
+    sender.SendAuthRefresh();
+    sender.OnConnectionClosed();
+    login.Finish(AFreshToken("late-token"));
+
+    EXPECT_FALSE(sender.PollLogin());
+}
+
+TEST_F(TokenSessionMessageSenderTest, KeepsTheFreshTokenOfARenewalLoginEndedAfterTheConnectionClosedAsTheLastKnownToken)
+{
+    sender.SendAuth();
+    login.Finish(AFreshToken("opening-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("opening-token"))).Times(1);
+    sender.PollLogin();
+    sender.SendAuthRefresh();
+    sender.OnConnectionClosed();
+    login.Finish(AFreshToken("late-token"));
+    sender.PollLogin();
+
+    sender.SendAuth();
+    login.Finish(ALoginThatFailed);
+
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("late-token"))).Times(1);
+
+    sender.PollLogin();
+}
+
+TEST_F(TokenSessionMessageSenderTest, IgnoresTheRefusalOfARenewalLoginEndedAfterTheConnectionClosed)
+{
+    sender.SendAuth();
+    login.Finish(AFreshToken("opening-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("opening-token"))).Times(1);
+    sender.PollLogin();
+    sender.SendAuthRefresh();
+    sender.OnConnectionClosed();
+    login.Finish(ARefusedLogin);
+
+    EXPECT_CALL(mockLoginRefusalListener, OnLoginRefused()).Times(0);
+
+    EXPECT_FALSE(sender.PollLogin());
+}
+
+TEST_F(TokenSessionMessageSenderTest, AbandonsTheRenewalLoginInFlightWhenANewConnectionOpensAndStartsAFreshLogin)
+{
+    sender.SendAuth();
+    login.Finish(AFreshToken("opening-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("opening-token"))).Times(1);
+    sender.PollLogin();
+    sender.SendAuthRefresh();
+    login.Finish(AFreshToken("abandoned-token"));
+    sender.OnConnectionClosed();
+
+    sender.SendAuth();
+    login.Finish(ALoginThatFailed);
+
+    EXPECT_EQ(login.abandons, 1);
+    EXPECT_EQ(login.starts, 3);
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("opening-token"))).Times(1);
+    sender.PollLogin();
+}
+
+TEST_F(TokenSessionMessageSenderTest, AbandonsTheRenewalLoginInFlightWhenTheBuzzerIsEliminated)
+{
+    sender.SendAuth();
+    login.Finish(AFreshToken("opening-token"));
+    EXPECT_CALL(mockPayloadSocketWriter, Write(AuthWith("opening-token"))).Times(1);
+    sender.PollLogin();
+    sender.SendAuthRefresh();
+    sender.OnConnectionClosed();
+
+    sender.Abandon();
+    login.Finish(AFreshToken("abandoned-token"));
+
+    EXPECT_EQ(login.abandons, 1);
+    EXPECT_FALSE(sender.PollLogin());
 }
 
 TEST(LoginRefusalHaltTest, NetworkIsNotHaltedBeforeAnyRefusal)
@@ -219,6 +635,34 @@ TEST(LoginRefusalHaltTest, ClosesTheConnectionWhenTheLoginIsRefused)
     EXPECT_CALL(mockConnectionCloser, Close()).Times(1);
 
     halt.OnLoginRefused();
+}
+
+class MockNetworkLoop : public NetworkLoop
+{
+public:
+    MOCK_METHOD(void, Loop, (), (override));
+};
+
+class MockSessionPoller : public SessionPoller
+{
+public:
+    MOCK_METHOD(void, PollSession, (), (override));
+};
+
+TEST(SessionPollingNetworkLoopTest, RunsTheNetworkThenPollsTheSessionOnEveryTurn)
+{
+    MockNetworkLoop mockNetworkLoop;
+    MockSessionPoller mockSessionPoller;
+    SessionPollingNetworkLoop loop{mockNetworkLoop, mockSessionPoller};
+    ::testing::InSequence inSequence;
+
+    EXPECT_CALL(mockNetworkLoop, Loop()).Times(1);
+    EXPECT_CALL(mockSessionPoller, PollSession()).Times(1);
+    EXPECT_CALL(mockNetworkLoop, Loop()).Times(1);
+    EXPECT_CALL(mockSessionPoller, PollSession()).Times(1);
+
+    loop.Loop();
+    loop.Loop();
 }
 
 int main(int argc, char **argv)
