@@ -1,14 +1,14 @@
 # Polices de l'écran
 
-Trois tailles d'Oswald Regular (corps 30, 38 et 48 px) au format `lgfx::GFXfont`, 1 bit par pixel, U+0020 à U+00FF (Latin-1) plus `Œ`, `œ`, `’`, `…` et `€`. `GfxScreen` les utilise : il mesure avec leurs largeurs réelles (`ReadFontMetrics`) et dessine avec la taille que choisit `TextLayout`.
+Trois tailles d'Oswald Regular (corps 30, 38 et 48 px) au format `lgfx::GFXfont`, 1 bit par pixel, U+0020 à U+00FF (Latin-1) plus `Œ`, `œ`, `–`, `—`, `’`, `“`, `”`, `…` et `€`. `GfxScreen` les utilise : il mesure avec leurs largeurs réelles (`ReadFontMetrics`) et dessine avec la taille que choisit `TextLayout`.
 
 | Fichier | Corps | Cap-height | Bitmaps | `yAdvance` |
 |---|---|---|---|---|
-| `OswaldRegular30.h` | 30 px | 24 px | 6 215 o | 44 px |
-| `OswaldRegular38.h` | 38 px | 31 px | 9 600 o | 56 px |
-| `OswaldRegular48.h` | 48 px | 39 px | 15 448 o | 71 px |
+| `OswaldRegular30.h` | 30 px | 24 px | 6 244 o | 44 px |
+| `OswaldRegular38.h` | 38 px | 31 px | 9 647 o | 56 px |
+| `OswaldRegular48.h` | 48 px | 39 px | 15 530 o | 71 px |
 
-Les trois tables de glyphes pèsent 2 748 octets chacune (229 glyphes de 12 octets : 224 de Latin-1, puis `Œ`, `œ`, `’`, `…`, `€`), plus 30 octets de plages d'encodage (`lgfx::EncodeRange`, 5 plages de 6 octets : Latin-1, U+0152-U+0153, U+2019, U+2026, U+20AC).
+Les trois tables de glyphes pèsent 2 796 octets chacune (233 glyphes de 12 octets : 224 de Latin-1, puis `Œ`, `œ`, `–`, `—`, `’`, `“`, `”`, `…`, `€`), plus 42 octets de plages d'encodage (`lgfx::EncodeRange`, 7 plages de 6 octets : Latin-1, U+0152-U+0153, U+2013-U+2014, U+2019, U+201C-U+201D, U+2026, U+20AC).
 
 ## Licence
 
@@ -45,4 +45,4 @@ La sortie est déterministe pour une version de FreeType donnée ; les en-têtes
 - Rendu monochrome (`FT_LOAD_TARGET_MONO`), pas de lissage : à ces tailles, les bords sont crénelés.
 - Un code absent de la police (les contrôles 0x7F à 0x9F) reçoit le glyphe de `?`, comme le suppose `ReadFontMetrics` (`lib/rendering/GfxFontMetrics.h`).
 - `yAdvance` est la hauteur de ligne native d'Oswald (environ 1,48 em) : l'interligne se règle à l'affichage, pas ici.
-- Hors Latin-1 : `œ`, `Œ`, `’`, `…` et `€` n'ont pas de glyphe (voir `DEBTS.md`).
+- Hors Latin-1, seuls les codes de `EXTRA_CODES` ont un glyphe ; tout autre code est dessiné par LovyanGFX comme un blanc de 7 px (voir `DEBTS.md`, « Codes sans glyphe », et US-FW-008 CA-10).

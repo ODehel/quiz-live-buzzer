@@ -4,7 +4,7 @@
 Usage : python3 scripts/generate-gfx-font.py <police.ttf> <taille en px> <nom> <sortie.h>
 Dépendance : pip install freetype-py
 
-Couvre U+0020-U+00FF (Latin-1), plus Œ, œ, ’, … et € (EXTRA_CODES) rangés après Latin-1 et
+Couvre U+0020-U+00FF (Latin-1), plus Œ, œ, –, —, ’, “, ”, … et € (EXTRA_CODES) rangés après Latin-1 et
 déclarés par des `lgfx::EncodeRange`. Un code de Latin-1 que la police ne contient pas (les
 contrôles 0x7F-0x9F) reçoit le glyphe de `?`, comme le suppose `ReadFontMetrics` (lib/rendering).
 Un code de EXTRA_CODES absent de la police est une erreur : pas de glyphe de remplacement.
@@ -17,8 +17,18 @@ import freetype
 FIRST = 0x20
 LAST = 0xFF
 FILL_CODE = ord("?")
-# Hors Latin-1, dans l'ordre des codes : Œ, œ, ’, …, €.
-EXTRA_CODES = [0x0152, 0x0153, 0x2019, 0x2026, 0x20AC]
+# Hors Latin-1, dans l'ordre des codes : Œ, œ, –, —, ’, “, ”, …, €.
+EXTRA_CODES = [
+    0x0152,  # Œ
+    0x0153,  # œ
+    0x2013,  # – tiret demi-cadratin
+    0x2014,  # — tiret cadratin
+    0x2019,  # ’
+    0x201C,  # “
+    0x201D,  # ”
+    0x2026,  # …
+    0x20AC,  # €
+]
 
 
 def read_glyph(face, code):
@@ -98,7 +108,7 @@ def encode_ranges():
 def to_header(bitmaps, glyphs, y_advance, name, ttf, size):
     lines = [
         "// Généré par scripts/generate-gfx-font.py : ne pas modifier à la main.",
-        "// Police : %s, %d px, U+0020-U+00FF et U+0152, U+0153, U+2019, U+2026, U+20AC. Licence : SIL OFL 1.1 (voir OFL.txt)." % (ttf, size),
+        "// Police : %s, %d px, U+0020-U+00FF et U+0152, U+0153, U+2013, U+2014, U+2019, U+201C, U+201D, U+2026, U+20AC. Licence : SIL OFL 1.1 (voir OFL.txt)." % (ttf, size),
         "#ifndef %s_H" % name.upper(),
         "#define %s_H" % name.upper(),
         "",
