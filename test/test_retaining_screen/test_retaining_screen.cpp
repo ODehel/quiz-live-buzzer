@@ -251,6 +251,37 @@ TEST_F(RetainingScreenTest, TheOutOfGameScreenAfterTheConnectionLostScreenIsDraw
     screen.Display(CutTopBar, outOfGame);
 }
 
+TEST_F(RetainingScreenTest, TheLastScreenIsTheLastOneDisplayedWhoeverProducedIt)
+{
+    const LastScreenReader &reader = screen;
+
+    screen.Display(TopBar::Hidden(), ZonesScreen{FourZones});
+    screen.Display(TopBar::Hidden(), TextScreen{"Trop tard"});
+
+    EXPECT_EQ(reader.LastScreen(), ScreenModel{TextScreen{"Trop tard"}});
+}
+
+TEST_F(RetainingScreenTest, AnUnchangedScreenDoesNotReplaceTheLastScreen)
+{
+    const LastScreenReader &reader = screen;
+
+    screen.Display(TopBar::Hidden(), ZonesScreen{FourZones});
+    screen.Display(TopBar::Hidden(), ScreenUnchanged{});
+
+    EXPECT_EQ(reader.LastScreen(), ScreenModel{ZonesScreen{FourZones}});
+}
+
+TEST_F(RetainingScreenTest, TheLastScreenCarriesTheZonesAndTheChosenZoneItWasForwardedWith)
+{
+    const LastScreenReader &reader = screen;
+
+    screen.Display(TopBar::Hidden(), ZonesScreen{FourZones});
+    screen.Display(TopBar::Hidden(), ChosenZoneScreen{2});
+
+    const ScreenModel chosen = ChosenZoneScreen{2, FourZones};
+    EXPECT_EQ(reader.LastScreen(), chosen);
+}
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

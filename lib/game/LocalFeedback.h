@@ -7,6 +7,7 @@ public:
     virtual ~LocalFeedback() = default;
     virtual void AcknowledgeAnswer(char value) = 0;
     virtual void AcknowledgeBuzz() = 0;
+    virtual void RestoreScreenBeforePress() = 0;
 };
 
 #endif

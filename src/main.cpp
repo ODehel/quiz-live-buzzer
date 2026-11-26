@@ -124,7 +124,7 @@ TouchZoneReader touchZoneReader{tappableZonesScreen.Zones()};
 TouchButtonReader touchButtonReader{gt911, touchZoneReader};
 // Le bandeau du haut visible, partagé : `LcdRenderer` l'écrit, `ScreenLocalFeedback` le lit (US-FW-009 CA-3).
 VisibleTopBar visibleTopBar;
-ScreenLocalFeedback localFeedback{retainingScreen, visibleTopBar};
+ScreenLocalFeedback localFeedback{retainingScreen, visibleTopBar, retainingScreen};
 ReconnectionPolicy reconnectionPolicy;
 WebSocketsClient client;
 WebSocketPayloadSocketWriter payloadSocketWriter{client};

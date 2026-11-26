@@ -698,3 +698,156 @@ TEST_F(BuzzerBehaviorTest, McqArmedBuzzerStaysMcqArmedOnBuzzLocked)
     EXPECT_TRUE(reader.IsArmed());
     buzzerBehavior.OnMcqPressed('C');
 }
+
+// Un envoi que la liaison n'a pas pu écrire, hors d'une coupure détectée, réarme le buzzer dans son mode d'origine (US-FW-002 CA-10, US-FW-003 CA-11, décision #91).
+TEST_F(BuzzerBehaviorTest, McqArmedBuzzerIsArmedAgainWhenTheAnswerIsNotSent)
+{
+    const ArmedModeReader &reader = buzzerBehavior;
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('A')).WillOnce(::testing::Return(false));
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnMcqPressed('A');
+
+    EXPECT_TRUE(reader.IsArmed());
+}
+
+TEST_F(BuzzerBehaviorTest, McqArmedBuzzerAnswersAgainWhenThePlayerPressesAfterAnAnswerThatWasNotSent)
+{
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('A')).WillOnce(::testing::Return(false));
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('B')).WillOnce(::testing::Return(true));
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeAnswer('A')).Times(1);
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeAnswer('B')).Times(1);
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnMcqPressed('A');
+    buzzerBehavior.OnMcqPressed('B');
+}
+
+TEST_F(BuzzerBehaviorTest, AnAnswerThatWasNotSentRestoresTheScreenAfterTheAcknowledgementAndTheSend)
+{
+    testing::InSequence seq;
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeAnswer('A'));
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('A')).WillOnce(::testing::Return(false));
+    EXPECT_CALL(mockLocalFeedback, RestoreScreenBeforePress()).Times(1);
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnMcqPressed('A');
+}
+
+TEST_F(BuzzerBehaviorTest, AnAnswerThatWasSentDoesNotRestoreTheScreen)
+{
+    EXPECT_CALL(mockLocalFeedback, RestoreScreenBeforePress()).Times(0);
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnMcqPressed('A');
+}
+
+TEST_F(BuzzerBehaviorTest, AnAnswerThatWasNotSentIsNotRetriedWithoutANewPress)
+{
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(1).WillOnce(::testing::Return(false));
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnMcqPressed('A');
+}
+
+TEST_F(BuzzerBehaviorTest, AnAnswerThatWasNotSentRearmsTheMcqModeAndNotTheSpeedMode)
+{
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('A')).WillOnce(::testing::Return(false));
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(0);
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnMcqPressed('A');
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, TheBuzzerStaysLockedWhileTheAnswerIsBeingSent)
+{
+    const ArmedModeReader &reader = buzzerBehavior;
+    bool wasArmedDuringTheSend = true;
+    EXPECT_CALL(mockHubMessageSender, SendAnswer('A')).WillOnce(::testing::Invoke(
+        [&](char)
+        {
+            wasArmedDuringTheSend = reader.IsArmed();
+            return false;
+        }));
+
+    buzzerBehavior.OnQuestionChoices();
+    buzzerBehavior.OnMcqPressed('A');
+
+    EXPECT_FALSE(wasArmedDuringTheSend);
+}
+
+TEST_F(BuzzerBehaviorTest, SpeedArmedBuzzerIsArmedAgainWhenTheBuzzIsNotSent)
+{
+    const ArmedModeReader &reader = buzzerBehavior;
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).WillOnce(::testing::Return(false));
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzPressed();
+
+    EXPECT_TRUE(reader.IsArmed());
+}
+
+TEST_F(BuzzerBehaviorTest, SpeedArmedBuzzerBuzzesAgainWhenThePlayerPressesAfterABuzzThatWasNotSent)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).WillOnce(::testing::Return(false)).WillOnce(::testing::Return(true));
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz()).Times(2);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzPressed();
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, ABuzzThatWasNotSentRestoresTheScreenAfterTheAcknowledgementAndTheSend)
+{
+    testing::InSequence seq;
+    EXPECT_CALL(mockLocalFeedback, AcknowledgeBuzz());
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).WillOnce(::testing::Return(false));
+    EXPECT_CALL(mockLocalFeedback, RestoreScreenBeforePress()).Times(1);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, ABuzzThatWasSentDoesNotRestoreTheScreen)
+{
+    EXPECT_CALL(mockLocalFeedback, RestoreScreenBeforePress()).Times(0);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, ABuzzThatWasNotSentIsNotRetriedWithoutANewPress)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).Times(1).WillOnce(::testing::Return(false));
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzPressed();
+}
+
+TEST_F(BuzzerBehaviorTest, ABuzzThatWasNotSentRearmsTheSpeedModeAndNotTheMcqMode)
+{
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).WillOnce(::testing::Return(false));
+    EXPECT_CALL(mockHubMessageSender, SendAnswer(::testing::_)).Times(0);
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzPressed();
+    buzzerBehavior.OnMcqPressed('A');
+}
+
+TEST_F(BuzzerBehaviorTest, TheBuzzerStaysLockedWhileTheBuzzIsBeingSent)
+{
+    const ArmedModeReader &reader = buzzerBehavior;
+    bool wasArmedDuringTheSend = true;
+    EXPECT_CALL(mockHubMessageSender, SendBuzz()).WillOnce(::testing::Invoke(
+        [&]()
+        {
+            wasArmedDuringTheSend = reader.IsArmed();
+            return false;
+        }));
+
+    buzzerBehavior.OnQuestionOpen();
+    buzzerBehavior.OnBuzzPressed();
+
+    EXPECT_FALSE(wasArmedDuringTheSend);
+}

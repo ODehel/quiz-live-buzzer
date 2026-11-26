@@ -5,13 +5,14 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include "LastScreenReader.h"
 #include "Overloaded.h"
 #include "Screen.h"
 
 // Décorateur de `Screen` partagé par les deux producteurs d'écran (`LcdRenderer` et `ScreenLocalFeedback`) : il retient le dernier écran
 // effectivement affiché, quel qu'en soit le producteur, pour que l'écran de coupure l'atténue (US-FW-015 CA-2). Il retient aussi les dernières
 // propositions et la zone choisie, et les transmet aux écrans qui s'y redessinent : l'adaptateur n'en garde plus aucun état.
-class RetainingScreen : public Screen
+class RetainingScreen : public Screen, public LastScreenReader
 {
 private:
     Screen &screen;
@@ -19,10 +20,16 @@ private:
     std::optional<size_t> chosenZone;
     DimmedScreen dimmed;
     bool connectionLostIsShown = false;
+    ScreenModel lastScreen = ScreenUnchanged{};
 
 public:
     RetainingScreen(Screen &screen) : screen(screen)
     {
+    }
+
+    const ScreenModel &LastScreen() const override
+    {
+        return lastScreen;
     }
 
     // Un `ScreenUnchanged` ne remplace pas l'écran retenu et n'est pas transmis.
@@ -37,41 +44,49 @@ public:
                        [this, &topBar](const TextScreen &textScreen)
                        {
                            dimmed = DimmedScreen{textScreen.text, {}, std::nullopt};
-                           screen.Display(topBar, textScreen);
+                           Forward(topBar, textScreen);
                        },
                        [this, &topBar](const ZonesScreen &zonesScreen)
                        {
                            zoneTexts = zonesScreen.zoneTexts;
                            chosenZone = std::nullopt;
                            dimmed = DimmedScreen{"", zoneTexts, std::nullopt};
-                           screen.Display(topBar, zonesScreen);
+                           Forward(topBar, zonesScreen);
                        },
                        [this, &topBar](const HighlightedZoneScreen &highlightedZoneScreen)
                        {
                            dimmed = DimmedScreen{"", zoneTexts, highlightedZoneScreen.zoneIndex};
-                           screen.Display(topBar, HighlightedZoneScreen{highlightedZoneScreen.zoneIndex, highlightedZoneScreen.bannerText, zoneTexts});
+                           Forward(topBar, HighlightedZoneScreen{highlightedZoneScreen.zoneIndex, highlightedZoneScreen.bannerText, zoneTexts});
                        },
                        [this, &topBar](const ChosenZoneScreen &chosenZoneScreen)
                        {
                            chosenZone = chosenZoneScreen.zoneIndex;
                            dimmed = DimmedScreen{"", zoneTexts, chosenZone};
-                           screen.Display(topBar, ChosenZoneScreen{chosenZoneScreen.zoneIndex, zoneTexts});
+                           Forward(topBar, ChosenZoneScreen{chosenZoneScreen.zoneIndex, zoneTexts});
                        },
                        [this, &topBar](const BannerScreen &bannerScreen)
                        {
                            dimmed = DimmedScreen{"", zoneTexts, chosenZone};
-                           screen.Display(topBar, BannerScreen{bannerScreen.bannerText, zoneTexts, chosenZone});
+                           Forward(topBar, BannerScreen{bannerScreen.bannerText, zoneTexts, chosenZone});
                        },
-                       [this, &topBar](const OutOfGameScreen &outOfGameScreen) { screen.Display(topBar, outOfGameScreen); },
-                       [this, &topBar](const LoginRefusedScreen &loginRefusedScreen) { screen.Display(topBar, loginRefusedScreen); },
+                       [this, &topBar](const OutOfGameScreen &outOfGameScreen) { Forward(topBar, outOfGameScreen); },
+                       [this, &topBar](const LoginRefusedScreen &loginRefusedScreen) { Forward(topBar, loginRefusedScreen); },
                        [this, &topBar, wasConnectionLostShown](const ConnectionLostScreen &connectionLostScreen)
                        {
                            ConnectionLostScreen completed = connectionLostScreen;
                            completed.dimmed = dimmed;
                            completed.bannerOnly = wasConnectionLostShown;
-                           screen.Display(topBar, completed);
+                           Forward(topBar, completed);
                        }},
                    screenModel);
+    }
+
+private:
+    // Tout écran transmis est retenu tel qu'il part, complété (US-FW-002 CA-10 : l'écran d'avant un appui est restitué à l'identique).
+    void Forward(const TopBar &topBar, const ScreenModel &screenModel)
+    {
+        lastScreen = screenModel;
+        screen.Display(topBar, screenModel);
     }
 };
 
