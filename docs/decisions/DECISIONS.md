@@ -1734,3 +1734,27 @@ Alternatives écartées :
 - Specs : US-FW-010 CA-4 « implémenté, testé en natif » pour `auth_success` et `game_resumed`, CA-5 pour l'écran ; statut de l'US inchangé (« Partielle » : dessin jamais constaté, hub sans émetteur) ; index (README) à jour.
 - Dettes : « Table de rendu §8.2 incomplète », « Écrans d'init et d'attente : preuves manquantes » (mutant survivant consigné) et « Attente du maître du jeu et présentation de la partie : preuves manquantes et tests à écrire » (même dessin à constater pour `game_resumed`) tenues à jour du réel. `game_resumed` **jamais constaté sur la dalle** (le hub ne l'émet pas : à constater avec `scripts/fake-hub.ps1` s'il l'émet, non vérifié).
 - Vérifications : suites compilées à la main (g++, C++17, googletest et ArduinoJson hors dépôt), 23 mutants : 22 tués, 1 survivant (ci-dessus). `pio test -e native` et `pio run -e esp32` non exécutés (registre PlatformIO bloqué) ; aucun fichier de `src/` ni `main.cpp` modifié : la CI de la PR fait foi pour `native`.
+
+## #83 — docs(specs): settle the space before the ellipsis of a truncated top bar name
+
+**Contexte** — Le `feat(rendering): truncate a long name in the top bar` (US-FW-009 CA-5) s'est arrêté avant d'écrire du code : CA-5 dit que le nom est tronqué par « … » et tient dans la colonne de gauche, mais ne dit pas ce qui arrive quand la coupure tombe juste après une espace (« Jean-Baptiste Dupont-Martin » : « Jean-Baptiste… » ou « Jean-Baptiste … » ?). US-FW-008 CA-1, US-FW-017 CA-3, US-FW-018 CA-3, `DECISIONS.md` et `DEBTS.md` ne le disaient pas non plus. Dernier numéro du journal relu avant d'écrire : #82, donc #83 (aucun écart). Session de cadrage seule : aucun code, aucun test.
+
+**Décision** (validée par Olivier, 2026-11-26) —
+- **Quand la troncature du nom du bandeau tombe juste après une espace, l'espace est gardée** : le rendu est le plus long début du nom qui tient avec « … », espace comprise, puis « … ». « Jean-Baptiste Dupont-Martin », trop large, donne « Jean-Baptiste … » (et non « Jean-Baptiste… »).
+- Raison donnée par Olivier : c'est le rendu de la maquette (`docs/mockups/mockup.css`, `text-overflow: ellipsis` sur `.who .name`) et la règle la plus simple, sans cas particulier.
+- Écarté : retirer l'espace avant « … ».
+- **Périmètre : le nom du bandeau du haut seulement** (US-FW-009 CA-5).
+
+**Choix de Claude, à relire en PR** (aucun ne vient d'Olivier) —
+- **Formulation du CA-5** : « le plus long début du nom qui tient avec « … » », reprise de la décision ; l'exemple est donné sous condition (« si « Jean-Baptiste » et l'espace tiennent avec « … » mais pas le « D » suivant ») car aucune largeur n'est mesurée ici ; je n'invente pas de pixels. La colonne « Preuve » reste « à écrire » et gagne « dont une coupure juste après une espace » ; le statut reste « Non implémenté ».
+- **US-FW-017 CA-3 et US-FW-018 CA-3 ne sont pas modifiés** (hors périmètre) : ils disent « tronqué par « … » » sans préciser le cas de l'espace ; la maquette utilise aussi `text-overflow: ellipsis` pour les lignes du classement (`.row .nm`) et les marches du podium (`.pod .nm`), donc la même lecture est probable, mais **non décidée** : à trancher pour ces deux écrans avant leur `feat`.
+- **En-tête de US-FW-009 et index (README) inchangés** : le statut « Partielle » et sa liste « restent non implémentés : … CA-5 (troncature) » restent vrais ; l'historique de l'en-tête rend compte des sessions de code, pas des décisions de cadrage seules.
+- **Cas non tranchés, laissés** : un nom dont la partie qui tient n'a aucun caractère avec « … », et un nom qui commence par des espaces ; aucun n'est décidé par Olivier ni par le CDC.
+
+**Alternatives écartées** — retirer l'espace avant « … » (un cas particulier de plus, et un écart avec la maquette).
+
+**Conséquences** —
+- US-FW-009 : CA-5 complété (une phrase et un cas de preuve) ; rien d'autre.
+- `DEBTS.md` : la dette « Bandeau du haut : nom du participant, troncature, habillage et écran de refus » mentionne la règle ; elle reste ouverte (la troncature n'est pas implémentée).
+- Code à écrire plus tard : `feat(rendering): truncate a long name in the top bar`, avec ce CA-5 complet.
+- Pas de code, pas de test, pas de smoke test (type `docs`) ; ni `pio test` ni `pio run` : sans objet.
