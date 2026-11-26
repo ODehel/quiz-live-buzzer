@@ -7,6 +7,7 @@
 #include "GfxFontMetrics.h"
 #include "ProportionalTextMeasurer.h"
 #include "TextLayout.h"
+#include "TopBarName.h"
 #include "../fixtures/OswaldRegular30Advances.h"
 #include "../fixtures/OswaldRegular38Advances.h"
 #include "../fixtures/OswaldRegular48Advances.h"
@@ -788,4 +789,77 @@ TEST(TextLayoutRealFontTest, EmojiInATextShouldTakeTheRoomOfItsQuestionMarksWhen
 
     // Un drapeau (deux codes) devient « ?? » : la ligne tient pile, avec la largeur de deux `?`.
     EXPECT_EQ(layout.Compute("Brésil \U0001F1E7\U0001F1F7").lines, (Lines{"Brésil ??"}));
+}
+
+// Le nom du bandeau du haut (US-FW-009 CA-5, décision #83) : largeurs réelles d'Oswald 30 px, la police du bandeau (taille 2 de
+// `ThreeRealFonts`, comme `GfxScreen`), dalle de 800 px. « Buzz’O’Live » y mesure 119 px : la colonne de gauche fait (800 − 119) ÷ 2 − 10 = 330 px.
+static const int TopBarFontSize = 2;
+static const int PanelWidth = 800;
+
+static std::string FitTheTopBarName(const std::string &name, int panelWidth = PanelWidth)
+{
+    const ProportionalTextMeasurer measurer = ThreeRealFonts();
+    return TopBarName::Fit(measurer, TopBarFontSize, name, panelWidth);
+}
+
+TEST(TopBarNameTest, TheLeftColumnIsHalfTheRoomLeftByTheTitleMinusTheMargin)
+{
+    const ProportionalTextMeasurer measurer = ThreeRealFonts();
+
+    EXPECT_EQ(measurer.Width(TopBarName::Title, TopBarFontSize), 119);
+    EXPECT_EQ(TopBarName::ColumnWidth(measurer, TopBarFontSize, PanelWidth), 330);
+}
+
+TEST(TopBarNameTest, ANameThatFitsIsShownWhole)
+{
+    EXPECT_EQ(FitTheTopBarName("quiz_buzzer_01"), "quiz_buzzer_01");
+    EXPECT_EQ(FitTheTopBarName("Jean-Baptiste Dupont-Martin"), "Jean-Baptiste Dupont-Martin"); // 310 px
+}
+
+TEST(TopBarNameTest, AnEmptyNameStaysEmpty)
+{
+    EXPECT_EQ(FitTheTopBarName(""), "");
+}
+
+// « Camille » mesure 81 px : la colonne vaut 81 px sur une dalle de 301 px, 80 px sur une dalle de 299 px.
+TEST(TopBarNameTest, ANameExactlyAsWideAsTheColumnIsShownWhole)
+{
+    EXPECT_EQ(FitTheTopBarName("Camille", 301), "Camille");
+}
+
+TEST(TopBarNameTest, ANameOnePixelWiderThanTheColumnIsTruncated)
+{
+    EXPECT_EQ(FitTheTopBarName("Camille", 299), "Camil…");
+}
+
+TEST(TopBarNameTest, ATooWideNameIsTheLongestBeginningThatFitsWithTheEllipsis)
+{
+    // « Marie-Charlotte Delacroix d… » mesure 318 px, « …de… » 331 px : une lettre de plus ne tient pas.
+    EXPECT_EQ(FitTheTopBarName("Marie-Charlotte Delacroix de Villeneuve"), "Marie-Charlotte Delacroix d…");
+}
+
+// Un début qui, avec « … », mesure exactement la colonne (330 px) tient : la limite est incluse.
+TEST(TopBarNameTest, ABeginningThatWithTheEllipsisIsExactlyAsWideAsTheColumnFits)
+{
+    EXPECT_EQ(FitTheTopBarName("Jean-Baptiste Alexandre de La Fontaine"), "Jean-Baptiste Alexandre de L…");
+}
+
+// Décision #83 : la coupure tombe juste après une espace, l'espace est gardée (« … Du … », pas « … Du… »).
+// « Jean-Baptiste Alexandre Du … » mesure 321 px ; le « W » suivant le porte à 343 px.
+TEST(TopBarNameTest, ACutRightAfterASpaceKeepsTheSpaceBeforeTheEllipsis)
+{
+    EXPECT_EQ(FitTheTopBarName("Jean-Baptiste Alexandre Du Wolf"), "Jean-Baptiste Alexandre Du …");
+}
+
+// Un caractère UTF-8 de deux octets n'est jamais coupé en deux (« Éléonore-Marie Delacroix de… » mesure 324 px).
+TEST(TopBarNameTest, AnAccentedCharacterIsNeverCutInTwo)
+{
+    EXPECT_EQ(FitTheTopBarName("Éléonore-Marie Delacroix de Villeneuve"), "Éléonore-Marie Delacroix de…");
+}
+
+// Un caractère de trois octets que la coupure ne laisse pas passer disparaît en entier : le « — » (31 px) ne tient pas après « … Du »
+// (297 px, 314 px avec « … »), alors que son premier octet seul, lu comme « â », tiendrait.
+TEST(TopBarNameTest, ACharacterThatDoesNotFitIsDroppedWholeNotLeftAsItsFirstByte)
+{
+    EXPECT_EQ(FitTheTopBarName("Jean-Baptiste Alexandre Du—Wolf"), "Jean-Baptiste Alexandre Du…");
 }
