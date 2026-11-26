@@ -1913,3 +1913,25 @@ Alternatives écartées :
 - Un `auth_success` injecté après le refus affiche un écran texte : non testé, impossible en réel (client fermé, réseau arrêté) ; non considéré comme un trou du CDC.
 
 **Conséquences** — `DEBTS.md` : la partie « remplacement » de « Écrans de coupure : preuves manquantes » est soldée ; statut de CA-10 mis à jour. Aucun fichier de `lib/`, `src/` ni `platformio.ini` modifié.
+
+## #91 — docs(specs): decide what the buzzer does when a send fails
+
+**Contexte** — `BuzzerBehavior` pose le verrou, déclenche le feedback local, puis appelle `SendAnswer` ou `SendBuzz` ; `WebSocketMessageSender` ignore le retour de `sendTXT`. Un envoi qui échoue hors d'une coupure détectée laisse le joueur devant « Réponse envoyée » alors que le hub n'a rien reçu. Le CDC est muet ; la décision #49 l'a consigné en constat sans CA. Dernier numéro relu : #90.
+
+**Décision** (cadrage validé par Olivier, 2026-11-26) —
+- **Appui** : un envoi dont `sendTXT` signale l'échec réarme le buzzer, dans son mode d'origine : le joueur peut rappuyer. Un message qui n'est pas parti n'a pas pu être enregistré par le hub, donc pas de doublon.
+- **Écran** : retour silencieux à l'écran de la question tel qu'avant l'appui (zones actives, rien de sélectionné, aucun texte d'échec). Aucune maquette ni texte n'est inventé.
+- **MCQ et SPEED** : même règle (US-FW-002 CA-10, US-FW-003 CA-11).
+- **Réessai** : aucun réessai automatique ; le joueur rappuie s'il le veut.
+- **Coupure** : indépendant. Seul l'événement de déconnexion gère l'écran de coupure et le compteur d'élimination (US-FW-015, US-FW-006 inchangées).
+
+**Choix de Claude, à relire en PR** (aucun ne vient d'Olivier) —
+- Le CA est écrit avec le « verrou posé en premier » (CA-3) conservé jusqu'au retour de l'envoi ; le réarmement est une exception qui ne le contredit pas. La forme du port (`SendAnswer` rend un booléen, ou autre) n'est pas observable : laissée au `fix(game)`.
+- US-FW-003 passe de « Implémentée » à « Partielle » (CA-11 décidé, non implémenté), et la ligne de l'index `docs/specs/README.md` suit.
+- `WebSocketPayloadSocketWriter` a le même défaut pour les autres envois : non décidé ici (hors périmètre), laissé en dette.
+- Les constats « Appui pendant une coupure » de US-FW-002 et US-FW-003 sont reformulés pour renvoyer aux décisions #58 et #91.
+
+**Conséquences** —
+- Specs : US-FW-002 CA-10 et US-FW-003 CA-11 (« Décidé, non implémenté »), constats reportés de US-FW-002, 003, 004 et 006, index des US.
+- `DEBTS.md` : « Retour de `sendTXT` non lu… » passe de « à décider » à « décidé, non implémenté », avec le `fix(game)` à venir.
+- Pas de code, pas de test, pas de smoke test (type `docs`).
