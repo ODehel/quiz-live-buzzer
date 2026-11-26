@@ -1839,3 +1839,61 @@ Alternatives écartées :
 - Dettes : « Écran de login refusé en texte seul » **soldée (supprimée)** ; « Écrans de coupure : preuves manquantes et tests à réécrire » perd le point du test des trois lignes à une seule taille et le *pas séparé* `test(rendering)` (garde le remplacement de l'écran de coupure par le refus, CA-5, le dessin non constaté).
 - **Non constaté sur la dalle** : aucun résultat de smoke test n'est consigné dans ce commit ; le dessin de l'anneau et du cadenas n'a jamais été vu à l'écran.
 - Vérifications : suites compilées à la main (g++ 13, C++17, `-Wall -Werror=switch`, googletest 1.14 et ArduinoJson 7.4.3 clonés hors dépôt) : 28 suites vertes, 844 tests. `src/GfxScreen.h` : contrôle de syntaxe (`g++ -fsyntax-only -Wall -Wextra`, `c++17` et `gnu++17`, `-DLGFX_LINUX_FB`) contre les en-têtes réels de LovyanGFX à `dd228d1` (1.3.0), backend framebuffer Linux, **pas** la cible `esp32` : aucune erreur ni avertissement dans `GfxScreen.h`. `pio test -e native` et `pio run -e esp32` non exécutés ici (plateforme `native` non téléchargeable) ; la CI de la PR fait foi.
+
+## #87 — docs(specs): settle the ring colour and refresh the login refusal statuses of US-FW-015
+
+**Contexte** — US-FW-015 disait deux choses de la couleur de l'anneau des écrans « Hors jeu » (CA-8) et « Connexion refusée » (CA-9) : « anneau **rouge** » dans la prose de CA-8 et CA-9 (reprise du CDC §8.2), `#ff8fa6` (rose) dans CA-12 et CA-13, et la maquette dessine l'anneau et le cadenas en `--wrong-soft` (rose). Le code dessine du rose (décision #86). Le smoke test du 2026-11-26 l'a noté sans le trancher (trou T01, handoff `2026-11-26-1107`). Le 2026-11-24, l'anneau de « Hors jeu » avait été vu « rouge ou rose » (handoff `2026-11-24-1330`, OBS-05 à OBS-09). Dernier numéro du journal relu avant d'écrire : #86 (aucun écart).
+
+**Décision** (validée par Olivier, 2026-11-26) —
+- **L'anneau et le cadenas de « Hors jeu » et de « Connexion refusée » sont roses, `#ff8fa6`.** Le mot « rouge » de la prose de US-FW-015 CA-8 et CA-9 est corrigé en « rose » ; les valeurs chiffrées de CA-12 et CA-13 et la maquette sont inchangées.
+- Le rouge `#e8174f` reste celui du bandeau « Connexion perdue » (CA-1, CA-11).
+- Écarté : l'anneau rouge (rien ne le chiffre ; la maquette et le code sont roses).
+
+**Choix de Claude, à relire en PR** (aucun ne vient d'Olivier) —
+- **CA-10 n'a pas de mot « rouge »** : il dit « le même écran que CA-9 » ; rien à corriger, aucune phrase ajoutée.
+- **Le symbole marche/arrêt de « Hors jeu » suit l'anneau** (rose, « même trait » en CA-12 ; `colorPink` dans le code) : CA-12 ne nomme pas sa couleur, ce n'est pas écrit ailleurs que dans cette décision.
+- **« (rouge, gris) » devient « (rouge, rose, gris) »** dans la phrase de US-FW-015 sur la sortie du monochrome, pour qu'elle ne contredise plus le rose ; la phrase « seul le rouge dit « coupure » » est gardée (elle parle du bandeau).
+- **Divergences laissées** : le CDC §8.2 (lecture seule) dit « Anneau rouge » aux deux lignes `(réseau : …)` de « Hors jeu » et du refus `401` ; les notes des maquettes `fail-02-out.html` et `fail-03-refused.html` disent « anneau rouge ». Ni l'un ni les autres ne sont modifiés ici ; le dessin des maquettes est déjà rose.
+
+**Alternatives écartées** — corriger le CDC dans cette session (lecture seule) ; corriger le texte des notes de maquette (hors périmètre, le dessin est déjà juste).
+
+**Conséquences** —
+- Specs : US-FW-015 CA-8, CA-9 (prose), CA-13 (la mention « écart non tranché » devient un renvoi à cette décision), « Couleurs et atténuation » ; statuts de CA-9, CA-10 et CA-13 mis sur le smoke test du 2026-11-26 : constatés sur la dalle (forme, disposition, trois lignes, pile sous le bandeau, écran fixe et insensible au toucher) **sauf les couleurs, les mesures en pixels et les messages série (A03, A09 non exécutés)** ; le remplacement de l'écran de coupure par le refus est vu sur la dalle (O10-X) mais n'a pas de test natif de bout en bout.
+- **Le rose n'est toujours pas constaté sur la dalle** : le smoke test du 2026-11-26 n'a posé aucune question de couleur.
+- `DEBTS.md` : l'écart « rouge » contre « rose » est soldé ; « Écrans de coupure : habillage de la maquette reporté » dit que le rose n'est pas constaté ; « Écrans de coupure : preuves manquantes… » et « Bandeau du haut… » (point 3) prennent les constats du 2026-11-26.
+- Pas de code, pas de test, pas de smoke test (type `docs`) : comportement observable inchangé, le code dessine déjà ce qui est décidé.
+
+## #88 — docs(specs): settle the ring colour and refresh the login refusal statuses of US-FW-015
+
+**Contexte** — Les lignes de texte de « Hors jeu » et de « Connexion refusée » sont blanches dans le code et dans CA-12 et CA-13 (titre en 48 px, deux lignes en 38 px). La maquette dessine la ligne de cause (« Connexion perdue après 3 tentatives », « Le hub n’a pas accepté ce buzzer ») en lavande `#d9ccff` (`.speed-sub` de `mockup.css`) ; le titre et la dernière ligne (« Redémarre le buzzer pour revenir », « Préviens le maître du jeu », `.fail-hint`) y sont en blanc (`--text`). Le CDC §8.2 ne dit rien de la couleur de ces lignes (« lavande » n'y apparaît que pour la réaction R10). Trou T02 du smoke test du 2026-11-26. Dernier numéro relu : #87.
+
+**Décision** (validée par Olivier, 2026-11-26) —
+- **Le titre et les deux lignes de « Hors jeu » et de « Connexion refusée » sont blancs** (le code actuel). Le CDC et la note de la maquette s'alignent sur le blanc : le CDC n'a rien à changer, la maquette garde son lavande.
+- **Le fichier de maquette n'est pas modifié** : l'écart (la ligne de cause en lavande dans `mockup.css`) est consigné ici et dans `DEBTS.md`.
+
+**Choix de Claude, à relire en PR** (aucun ne vient d'Olivier) —
+- **Précision sur la maquette** : l'écart ne porte que sur la ligne de cause, pas sur « des lignes en lavande » comme le disait la dette ; la dette est réécrite en ce sens.
+- **Le texte de US-FW-015** (CA-12, CA-13 : « blanc ») n'est pas modifié : il disait déjà blanc ; seul « Couleurs et atténuation » change, pour renvoyer à cette décision.
+
+**Conséquences** —
+- Specs : US-FW-015 « Couleurs et atténuation » (blanc, décision #88, écart de maquette assumé).
+- `DEBTS.md` : « Écrans de coupure : habillage de la maquette reporté » nomme l'écart de la ligne de cause.
+- Le blanc des lignes n'est pas constaté sur la dalle au sens d'une question de couleur (aucune posée le 2026-11-26) ; le smoke test du 2026-11-24 avait noté « textes blancs » pour « Hors jeu » (handoff `2026-11-24-1330`, OBS-05 à OBS-09).
+- Pas de code, pas de test, pas de smoke test (type `docs`).
+
+## #89 — docs(specs): settle the ring colour and refresh the login refusal statuses of US-FW-015
+
+**Contexte** — US-FW-009 CA-8 disait l'icône de liaison coupée du bandeau du haut « barrée et rouge » ; la maquette (`.link.lost`, `--wrong-soft`) la dessine rose `#ff8fa6`, la géométrie de US-FW-015 aussi, et le code (`GfxScreen::DrawLinkIcon`) trace le trait et le point en `#ff8fa6` et les ondes à 55 % de ce rose sur noir, `#8C4E5B`. Trou T04 du smoke test du 2026-11-26. Le CDC §8.2 (lecture seule) dit « barrée et rouge ». Dernier numéro relu : #88.
+
+**Décision** (validée par Olivier, 2026-11-26) —
+- **L'icône de liaison coupée du bandeau du haut est rose `#ff8fa6`, pas rouge** ; les ondes sont à 55 % de ce rose sur noir, soit `#8C4E5B`. Le mot « rouge » de US-FW-009 CA-8 est corrigé.
+- **Le rouge `#e8174f` reste celui du bandeau « Connexion perdue »** (US-FW-015 CA-1, CA-11).
+
+**Choix de Claude, à relire en PR** (aucun ne vient d'Olivier) —
+- **Le statut de US-FW-009 CA-8 n'est pas touché** : il dit « jamais vu sur la dalle », alors que le handoff `2026-11-24-1426` (O04, O10, O15) relève la liaison « barrée et rose pendant la coupure (arcs grisés, trait plein) » et que `DEBTS.md` (« Bandeau : preuves manquantes ») le reprend. Incohérence relevée, non corrigée : le statut de CA-8 est hors du périmètre fixé (CA-9, CA-10, CA-13 de US-FW-015) ; à trancher en revue.
+- **Divergences laissées** : le CDC §8.2 (« icône barrée et rouge si coupée », habillage commun, et « Anneau rouge » des deux lignes réseau, voir #87) ; la note de `fail-03-refused.html` (« liaison barrée en rouge »). Non modifiés ici.
+
+**Conséquences** —
+- Specs : US-FW-009 CA-8 (critère et statut : « Rose, pas rouge »).
+- `DEBTS.md` : « Écrans de coupure : habillage de la maquette reporté » ne parle plus d'un écart de couleur de l'icône.
+- Pas de code, pas de test, pas de smoke test (type `docs`).
