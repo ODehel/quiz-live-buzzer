@@ -7,6 +7,7 @@
 #include "Screen.h"
 #include "ScreenModel.h"
 #include "TextLayout.h"
+#include "TopBarName.h"
 #include "ZoneGrid.h"
 #include "fonts/OswaldRegular30.h"
 #include "fonts/OswaldRegular38.h"
@@ -154,16 +155,20 @@ private:
     }
 
     // Le nom du joueur à gauche, « Buzz’O’Live » au centre, la liaison à droite, un trait dessous ; en petite police, sur une seule ligne.
+    // Un nom plus large que la colonne de gauche est tronqué par « … » avant d'être dessiné (US-FW-009 CA-5, `TopBarName`) : il ne touche pas le titre.
+    // La taille mesurée (2) est celle de la police choisie ci-dessous (`fonts[2]`, Oswald 30 px).
     void DrawTopBar(const TopBar &topBar)
     {
-        lcd.setFont(fonts[2]);
+        const int barFontSize = 2;
+        lcd.setFont(fonts[barFontSize]);
         lcd.setTextSize(1);
         lcd.setTextColor(colorWhite);
         const int middle = (topBarHeight - 1) / 2;
         lcd.setTextDatum(middle_left);
-        lcd.drawString(topBar.playerName.c_str(), margin, middle);
+        const std::string shownName = TopBarName::Fit(measurer, barFontSize, topBar.playerName, lcd.width());
+        lcd.drawString(shownName.c_str(), TopBarName::Margin, middle);
         lcd.setTextDatum(middle_center);
-        lcd.drawString("Buzz’O’Live", lcd.width() / 2, middle);
+        lcd.drawString(TopBarName::Title, lcd.width() / 2, middle);
         DrawLinkIcon(topBar.linkCut);
         lcd.drawFastHLine(0, topBarHeight - 1, lcd.width(), colorWhite);
     }
