@@ -223,7 +223,8 @@ TEST(ScreenPresenterStartupTest, ARefusedLoginPresentsTheReasonAndWhoToWarn)
 
     const ScreenModel screen = presenter.ScreenForLoginRefused();
 
-    EXPECT_EQ(ScreenModel{TextScreen{"Connexion refusée\nLe hub n’a pas accepté ce buzzer\nPréviens le maître du jeu"}}, screen);
+    const ScreenModel expected = LoginRefusedScreen{"Connexion refusée", "Le hub n’a pas accepté ce buzzer", "Préviens le maître du jeu"};
+    EXPECT_EQ(expected, screen);
 }
 
 TEST(ScreenPresenterStartupTest, TheInitScreenPresentsTheLogoAndTheConnectionLabelOnThreeLines)
