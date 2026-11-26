@@ -61,7 +61,7 @@ public:
 
     ScreenModel ScreenForLoginRefused() const
     {
-        return TextScreen{displayState.LcdTextForLoginRefused()};
+        return LoginRefusedScreen{displayState.LoginRefusedTitle(), displayState.LoginRefusedCause(), displayState.LoginRefusedWayOut()};
     }
 
     ScreenModel ScreenForOutOfGame() const

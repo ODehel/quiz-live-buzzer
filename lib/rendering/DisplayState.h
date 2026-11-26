@@ -93,9 +93,20 @@ public:
         return "Partie en cours\nEn attente d’une question";
     }
 
-    std::string LcdTextForLoginRefused() const
+    // L'écran « Connexion refusée » (US-FW-015 CA-9, CA-13) : le titre, la cause, puis qui prévenir, chacun sur sa ligne et à sa taille.
+    std::string LoginRefusedTitle() const
     {
-        return "Connexion refusée\nLe hub n’a pas accepté ce buzzer\nPréviens le maître du jeu";
+        return "Connexion refusée";
+    }
+
+    std::string LoginRefusedCause() const
+    {
+        return "Le hub n’a pas accepté ce buzzer";
+    }
+
+    std::string LoginRefusedWayOut() const
+    {
+        return "Préviens le maître du jeu";
     }
 
     std::string ConnectionLostTitle() const

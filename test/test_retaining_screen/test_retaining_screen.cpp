@@ -49,6 +49,14 @@ TEST_F(RetainingScreenTest, ForwardsTheOutOfGameScreenAsItIs)
     screen.Display(CutTopBar, outOfGame);
 }
 
+TEST_F(RetainingScreenTest, ForwardsTheLoginRefusedScreenAsItIs)
+{
+    const ScreenModel loginRefused = LoginRefusedScreen{"Connexion refusée", "cause", "sortie"};
+    EXPECT_CALL(inner, Display(CutTopBar, loginRefused)).Times(1);
+
+    screen.Display(CutTopBar, loginRefused);
+}
+
 TEST_F(RetainingScreenTest, AnUnchangedScreenIsNotForwarded)
 {
     EXPECT_CALL(inner, Display(_, _)).Times(0);

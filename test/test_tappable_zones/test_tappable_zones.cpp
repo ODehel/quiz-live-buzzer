@@ -157,6 +157,17 @@ TEST_F(TappableZonesScreenTest, AnOutOfGameScreenDeactivatesTheZonesAndForwardsI
     EXPECT_EQ(TouchedAt(100, 100), ButtonInput::Unknown);
 }
 
+TEST_F(TappableZonesScreenTest, ALoginRefusedScreenDeactivatesTheZonesAndForwardsItsTopBar)
+{
+    ShowTheFourZones();
+    const ScreenModel loginRefused = LoginRefusedScreen{"Connexion refusée", "cause", "sortie"};
+
+    EXPECT_CALL(inner, Display(TopBar::ForPlayer("Camille"), loginRefused));
+    screen.Display(TopBar::ForPlayer("Camille"), loginRefused);
+
+    EXPECT_EQ(TouchedAt(100, 100), ButtonInput::Unknown);
+}
+
 TEST_F(TappableZonesScreenTest, AChosenZoneScreenDeactivatesTheZones)
 {
     ShowTheFourZones();

@@ -91,6 +91,19 @@ struct OutOfGameScreen
     }
 };
 
+// « Connexion refusée » (US-FW-015 CA-9, CA-10, CA-13) : un anneau avec un cadenas, le titre, la cause et qui prévenir, sans zones.
+struct LoginRefusedScreen
+{
+    std::string title;
+    std::string cause;
+    std::string wayOut;
+
+    bool operator==(const LoginRefusedScreen &other) const
+    {
+        return title == other.title && cause == other.cause && wayOut == other.wayOut;
+    }
+};
+
 // Ce que l'écran de coupure atténue : le dernier écran affiché, sans son texte d'en-tête (le bandeau rouge en prend la place).
 // Un texte plein écran, ou des propositions dont l'une peut être en évidence ; tout vide : rien à atténuer.
 struct DimmedScreen
@@ -124,6 +137,6 @@ struct ConnectionLostScreen
     }
 };
 
-using ScreenModel = std::variant<ScreenUnchanged, TextScreen, ZonesScreen, HighlightedZoneScreen, BannerScreen, ChosenZoneScreen, OutOfGameScreen, ConnectionLostScreen>;
+using ScreenModel = std::variant<ScreenUnchanged, TextScreen, ZonesScreen, HighlightedZoneScreen, BannerScreen, ChosenZoneScreen, OutOfGameScreen, LoginRefusedScreen, ConnectionLostScreen>;
 
 #endif

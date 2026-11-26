@@ -63,6 +63,7 @@ public:
                            screen.Display(topBar, BannerScreen{bannerScreen.bannerText, zoneTexts, chosenZone});
                        },
                        [this, &topBar](const OutOfGameScreen &outOfGameScreen) { screen.Display(topBar, outOfGameScreen); },
+                       [this, &topBar](const LoginRefusedScreen &loginRefusedScreen) { screen.Display(topBar, loginRefusedScreen); },
                        [this, &topBar, wasConnectionLostShown](const ConnectionLostScreen &connectionLostScreen)
                        {
                            ConnectionLostScreen completed = connectionLostScreen;

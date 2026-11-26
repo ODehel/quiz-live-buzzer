@@ -51,6 +51,17 @@ private:
     static const int lineBoxHeight = 50;     // boîte d'encre d'une ligne en 38 px
     static const int outOfGameStackHeight = ringDiameter + stackGap + titleBoxHeight + stackGap + lineBoxHeight + stackGap + lineBoxHeight;
 
+    // Le cadenas de « Connexion refusée » (US-FW-015 CA-13), lu dans `fail-03-refused.html` (viewBox 36, échelle 128/36) : un corps plein de 46 × 34 px
+    // aux coins arrondis (rayon 8 px) et, au-dessus, un arceau en arc (jambes de 27 px d'entraxe, demi-cercle de rayon 13,5 px, trait de 8 px, bouts ronds).
+    // Les positions sont relatives au centre de l'anneau.
+    static const int padlockBodyWidth = 46;
+    static const int padlockBodyHeight = 34;
+    static const int padlockBodyTop = -5;       // bord haut du corps, sous le centre de l'anneau : 16,5 − 18 en unités de la maquette
+    static const int padlockBodyRadius = 8;
+    static const int padlockShackleStroke = 8;
+    static constexpr float padlockShackleLegX = 13.5f;  // axe de chaque jambe, de part et d'autre du centre
+    static constexpr float padlockShackleCenterY = -14.2f; // centre du demi-cercle de l'arceau
+
     lgfx::LGFX_Device &lcd;
     const lgfx::GFXfont *fonts[3]; // de la plus grande taille (0) à la plus petite
     ProportionalTextMeasurer measurer;
@@ -79,6 +90,7 @@ public:
                        [this, &topBar](const ChosenZoneScreen &chosenZoneScreen) { HighlightChosenZone(topBar, chosenZoneScreen.zoneTexts, chosenZoneScreen.zoneIndex); },
                        [this, &topBar](const BannerScreen &bannerScreen) { ShowBanner(topBar, bannerScreen); },
                        [this, &topBar](const OutOfGameScreen &outOfGameScreen) { ShowOutOfGame(topBar, outOfGameScreen); },
+                       [this, &topBar](const LoginRefusedScreen &loginRefusedScreen) { ShowLoginRefused(topBar, loginRefusedScreen); },
                        [this, &topBar](const ConnectionLostScreen &connectionLostScreen) { ShowConnectionLost(topBar, connectionLostScreen); }},
                    screenModel);
     }
@@ -96,9 +108,23 @@ private:
         DrawTextIn(text, 0, topBarHeight, lcd.width(), lcd.height() - topBarHeight);
     }
 
-    // Fond noir, bandeau du haut, puis la pile centrée dans le reste de la dalle : anneau rose `#ff8fa6` avec le symbole marche/arrêt,
-    // le titre en 48 px, la cause et la sortie en 38 px, en blanc, une ligne chacun.
+    // « Hors jeu » : la pile commune, avec le symbole marche/arrêt dans l'anneau.
     void ShowOutOfGame(const TopBar &topBar, const OutOfGameScreen &screen)
+    {
+        const int ringCenterY = DrawRingStack(topBar, screen.title, screen.cause, screen.wayOut);
+        DrawPowerSymbol(lcd.width() / 2, ringCenterY);
+    }
+
+    // « Connexion refusée » (US-FW-015 CA-13) : la même pile, avec un cadenas dans l'anneau.
+    void ShowLoginRefused(const TopBar &topBar, const LoginRefusedScreen &screen)
+    {
+        const int ringCenterY = DrawRingStack(topBar, screen.title, screen.cause, screen.wayOut);
+        DrawPadlock(lcd.width() / 2, ringCenterY);
+    }
+
+    // Fond noir, bandeau du haut, puis la pile centrée dans le reste de la dalle : anneau rose `#ff8fa6` (vide), le titre en 48 px, la cause et la sortie
+    // en 38 px, en blanc, une ligne chacun. Rend l'ordonnée du centre de l'anneau : le symbole s'y dessine ensuite.
+    int DrawRingStack(const TopBar &topBar, const std::string &title, const std::string &cause, const std::string &wayOut)
     {
         lcd.fillScreen(TFT_BLACK);
         int areaTop = 0;
@@ -110,7 +136,7 @@ private:
         const int stackTop = areaTop + (lcd.height() - areaTop - outOfGameStackHeight) / 2;
         const int centerX = lcd.width() / 2;
         const int ringCenterY = stackTop + ringDiameter / 2;
-        DrawPowerRing(centerX, ringCenterY);
+        DrawRing(centerX, ringCenterY);
 
         const int titleTop = stackTop + ringDiameter + stackGap;
         const int causeTop = titleTop + titleBoxHeight + stackGap;
@@ -119,22 +145,27 @@ private:
         lcd.setTextColor(colorWhite);
         lcd.setTextDatum(middle_center);
         lcd.setFont(fonts[0]);
-        lcd.drawString(screen.title.c_str(), centerX, titleTop + titleBoxHeight / 2);
+        lcd.drawString(title.c_str(), centerX, titleTop + titleBoxHeight / 2);
         lcd.setFont(fonts[1]);
-        lcd.drawString(screen.cause.c_str(), centerX, causeTop + lineBoxHeight / 2);
-        lcd.drawString(screen.wayOut.c_str(), centerX, wayOutTop + lineBoxHeight / 2);
+        lcd.drawString(cause.c_str(), centerX, causeTop + lineBoxHeight / 2);
+        lcd.drawString(wayOut.c_str(), centerX, wayOutTop + lineBoxHeight / 2);
+        return ringCenterY;
     }
 
-    // L'anneau de 128 px (trait de 9 px) et, dedans, le symbole marche/arrêt de la maquette `fail-02-out.html` (viewBox 36, échelle
-    // 128/36) : un arc ouvert en haut (rayon 29 px, centre 3 px sous celui de l'anneau, ouverture de 86°) et une barre verticale de 30 px
-    // qui part du haut du centre ; même trait, bouts ronds. Dessinés au pinceau rond (des disques), sans dépendre du sens des angles de `fillArc`.
-    void DrawPowerRing(int centerX, int centerY)
+    // L'anneau de 128 px (trait de 9 px), rose `#ff8fa6`, dessiné au pinceau plein (deux disques), sans dépendre du sens des angles de `fillArc`.
+    void DrawRing(int centerX, int centerY)
     {
-        const uint32_t ringColor = lcd.color888(0xff, 0x8f, 0xa6);
         const int outerRadius = ringDiameter / 2;
-        lcd.fillCircle(centerX, centerY, outerRadius, ringColor);
+        lcd.fillCircle(centerX, centerY, outerRadius, colorPink);
         lcd.fillCircle(centerX, centerY, outerRadius - ringStroke, TFT_BLACK);
+    }
 
+    // Le symbole marche/arrêt de la maquette `fail-02-out.html` (viewBox 36, échelle 128/36) : un arc ouvert en haut (rayon 29 px, centre 3 px sous
+    // celui de l'anneau, ouverture de 86°) et une barre verticale de 30 px qui part du haut du centre ; même trait que l'anneau, bouts ronds.
+    // Dessinés au pinceau rond (des disques), sans dépendre du sens des angles de `fillArc`.
+    void DrawPowerSymbol(int centerX, int centerY)
+    {
+        const uint32_t ringColor = colorPink;
         const int brushRadius = ringStroke / 2;
         const int arcRadius = 29;
         const int arcCenterY = centerY + 3;
@@ -152,6 +183,28 @@ private:
         lcd.fillRect(centerX - brushRadius, barTop, ringStroke, centerY - barTop, ringColor);
         lcd.fillCircle(centerX, barTop, brushRadius, ringColor);
         lcd.fillCircle(centerX, centerY, brushRadius, ringColor);
+    }
+
+    // Le cadenas de la maquette `fail-03-refused.html`, rose `#ff8fa6`, centré sur l'anneau : le corps plein (46 × 34 px, coins arrondis) et l'arceau
+    // (deux jambes verticales jusqu'au centre du demi-cercle, puis le demi-cercle), au pinceau rond de 8 px. L'arceau est dessiné d'abord : le corps
+    // recouvre le pied des jambes.
+    void DrawPadlock(int centerX, int centerY)
+    {
+        const int brushRadius = padlockShackleStroke / 2;
+        const float legTop = static_cast<float>(centerY) + padlockShackleCenterY;
+        const float legBottom = static_cast<float>(centerY + padlockBodyTop);
+        for (float y = legTop; y <= legBottom; y += 1.0f)
+        {
+            Brush(centerX - padlockShackleLegX, y, brushRadius, colorPink);
+            Brush(centerX + padlockShackleLegX, y, brushRadius, colorPink);
+        }
+        const float degreesToRadians = 3.14159265f / 180.0f;
+        for (float degrees = -90.0f; degrees <= 90.0f; degrees += 1.0f)
+        {
+            const float radians = degrees * degreesToRadians;
+            Brush(centerX + padlockShackleLegX * sinf(radians), legTop - padlockShackleLegX * cosf(radians), brushRadius, colorPink);
+        }
+        lcd.fillRoundRect(centerX - padlockBodyWidth / 2, centerY + padlockBodyTop, padlockBodyWidth, padlockBodyHeight, padlockBodyRadius, colorPink);
     }
 
     // Le nom du joueur à gauche, « Buzz’O’Live » au centre, la liaison à droite, un trait dessous ; en petite police, sur une seule ligne.
