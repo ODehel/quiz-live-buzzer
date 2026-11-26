@@ -617,7 +617,7 @@ TEST(LoginRefusalHaltTest, HaltsTheNetworkAndShowsTheRefusalScreenWhenTheLoginIs
     NetworkHalt networkHalt{mockConnectionCloser};
     LoginRefusalHalt halt{loginOutcomeDisplay, networkHalt};
 
-    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{ScreenPresenter{}.ScreenForLoginRefused()})).Times(1);
+    EXPECT_CALL(mockScreen, Display(ScreenPresenter{}.TopBarForInit(), ScreenModel{ScreenPresenter{}.ScreenForLoginRefused()})).Times(1);
 
     halt.OnLoginRefused();
 

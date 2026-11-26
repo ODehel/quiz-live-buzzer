@@ -4,9 +4,8 @@
 #include "LoginResult.h"
 #include "Screen.h"
 #include "ScreenPresenter.h"
-#include "TopBar.h"
 
-// Dit au joueur pourquoi le buzzer ne se connecte pas : seul un login refusé (`401`) a un écran (CDC §8.2).
+// Dit au joueur pourquoi le buzzer ne se connecte pas : seul un login refusé (`401`) a un écran (CDC §8.2), sous le bandeau de l'init (US-FW-015 CA-9 et CA-10).
 class LoginOutcomeDisplay
 {
 private:
@@ -21,7 +20,7 @@ public:
     void Show(const LoginResult &login)
     {
         if (login.status == LoginStatus::InvalidCredentials)
-            screen.Display(TopBar::Hidden(), presenter.ScreenForLoginRefused());
+            screen.Display(presenter.TopBarForInit(), presenter.ScreenForLoginRefused());
     }
 };
 
