@@ -1024,7 +1024,7 @@ TEST_F(ConnectionLostRenderingTest, EachCountedFailureRepaintsOnlyTheBannerWithT
 
 TEST_F(ConnectionLostRenderingTest, TheLocalFeedbackOfAPressIsTheLastScreenTheConnectionLostScreenDims)
 {
-    ScreenLocalFeedback localFeedback{retainingScreen, visibleTopBar};
+    ScreenLocalFeedback localFeedback{retainingScreen, visibleTopBar, retainingScreen};
     handler.OnMessageReceived(AuthSuccessOfQuizBuzzer01);
     handler.OnMessageReceived("{\"type\":\"question_choices\",\"choices\":[\"un\",\"deux\",\"trois\",\"quatre\"]}");
     localFeedback.AcknowledgeAnswer('C');
@@ -1040,7 +1040,7 @@ TEST_F(ConnectionLostRenderingTest, TheLocalFeedbackOfAPressIsTheLastScreenTheCo
 class SharedTopBarRenderingTest : public ConnectionLostRenderingTest
 {
 protected:
-    ScreenLocalFeedback localFeedback{retainingScreen, visibleTopBar};
+    ScreenLocalFeedback localFeedback{retainingScreen, visibleTopBar, retainingScreen};
 };
 
 TEST_F(SharedTopBarRenderingTest, TheLocalFeedbackOfAnMcqPressKeepsTheNameOfTheAuthSuccess)
@@ -1764,6 +1764,92 @@ TEST(NetworkHaltTest, ClosesTheConnectionOnlyOnceWhenHaltedAgain)
 
     networkHalt.Halt();
     networkHalt.Halt();
+}
+
+namespace
+{
+// Le câblage de `main.cpp` pour un envoi qui échoue : le feedback local réel, `RetainingScreen` et `TappableZonesScreen` sous l'écran factice
+// (US-FW-002 CA-10, US-FW-003 CA-11). Le joueur appuie par `BuzzerBehavior` ; l'envoi échoue sans coupure signalée.
+class UnsentPressRenderingTest : public ::testing::Test
+{
+protected:
+    ::testing::NiceMock<MockHubMessageSender> mockHubMessageSender;
+    ::testing::NiceMock<MockSessionMessageSender> mockSessionMessageSender;
+    ::testing::NiceMock<MockScreen> mockScreen;
+    TappableZonesScreen tappableZonesScreen{mockScreen, 800, 480};
+    RetainingScreen retainingScreen{tappableZonesScreen};
+    VisibleTopBar visibleTopBar;
+    ScreenLocalFeedback localFeedback{retainingScreen, visibleTopBar, retainingScreen};
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, localFeedback};
+    LcdRenderer lcdRenderer{retainingScreen, buzzerBehavior, visibleTopBar};
+    HubMessageDispatcher dispatcher{buzzerBehavior};
+    ReconnectionPolicy policy;
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    ConnectionEventHandler handler{policy, dispatcher, mockSessionMessageSender, lcdRenderer, lcdRenderer, lcdRenderer, networkHalt};
+
+    const TopBar topBar = TopBar::ForPlayer("quiz_buzzer_01");
+    const std::vector<std::string> fourZones{"A : un", "B : deux", "C : trois", "D : quatre"};
+
+    void ArmAnMcqQuestion()
+    {
+        handler.OnMessageReceived(AuthSuccessOfQuizBuzzer01);
+        handler.OnMessageReceived("{\"type\":\"question_choices\",\"choices\":[\"un\",\"deux\",\"trois\",\"quatre\"]}");
+    }
+};
+}
+
+TEST_F(UnsentPressRenderingTest, AnAnswerThatIsNotSentBringsTheQuestionZonesBackActiveWithNothingChosenAndNoFailureText)
+{
+    ArmAnMcqQuestion();
+    ON_CALL(mockHubMessageSender, SendAnswer('C')).WillByDefault(::testing::Return(false));
+
+    ::testing::InSequence inSequence;
+    EXPECT_CALL(mockScreen, Display(topBar, ScreenModel{ChosenZoneScreen{2, fourZones}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(topBar, ScreenModel{ZonesScreen{fourZones}})).Times(1);
+
+    buzzerBehavior.OnMcqPressed('C');
+
+    EXPECT_EQ(tappableZonesScreen.Zones().size(), 4u);
+    EXPECT_TRUE(buzzerBehavior.IsArmed());
+}
+
+TEST_F(UnsentPressRenderingTest, AnAnswerThatIsSentLeavesTheChosenZoneAndTheZonesInactive)
+{
+    ArmAnMcqQuestion();
+
+    buzzerBehavior.OnMcqPressed('C');
+
+    EXPECT_TRUE(tappableZonesScreen.Zones().empty());
+    EXPECT_FALSE(buzzerBehavior.IsArmed());
+}
+
+TEST_F(UnsentPressRenderingTest, ABuzzThatIsNotSentBringsTheOpenQuestionScreenBackWithNoFailureText)
+{
+    handler.OnMessageReceived(AuthSuccessOfQuizBuzzer01);
+    handler.OnMessageReceived("{\"type\":\"question_open\",\"title\":\"Quel est le plus long fleuve ?\"}");
+    ON_CALL(mockHubMessageSender, SendBuzz()).WillByDefault(::testing::Return(false));
+
+    ::testing::InSequence inSequence;
+    EXPECT_CALL(mockScreen, Display(topBar, ScreenModel{TextScreen{"Buzz envoyé"}})).Times(1);
+    EXPECT_CALL(mockScreen, Display(topBar, ScreenModel{TextScreen{"Quel est le plus long fleuve ?"}})).Times(1);
+
+    buzzerBehavior.OnBuzzPressed();
+
+    EXPECT_TRUE(buzzerBehavior.IsArmed());
+}
+
+TEST_F(UnsentPressRenderingTest, TheConnectionLostScreenAfterAnUnsentAnswerDimsTheQuestionAsItWasAndCountsTheFirstAttempt)
+{
+    ArmAnMcqQuestion();
+    ON_CALL(mockHubMessageSender, SendAnswer('C')).WillByDefault(::testing::Return(false));
+    buzzerBehavior.OnMcqPressed('C');
+
+    ConnectionLostScreen lost = std::get<ConnectionLostScreen>(ScreenPresenter{}.ScreenForConnectionLost(1));
+    lost.dimmed = DimmedScreen{"", fourZones, std::nullopt};
+    EXPECT_CALL(mockScreen, Display(topBar.WithLinkCut(), ScreenModel{lost})).Times(1);
+
+    handler.OnConnectionLost();
 }
 
 int main(int argc, char **argv)

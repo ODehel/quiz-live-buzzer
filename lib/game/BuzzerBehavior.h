@@ -26,6 +26,14 @@ private:
             mode = armedMode;
     }
 
+    // Le verrou est resté posé jusqu'au retour de l'envoi (US-FW-002 CA-3) ; un message qui n'est pas parti est réarmé dans le mode d'origine,
+    // l'écran de la question revient, sans réessai : le joueur rappuie s'il le veut (US-FW-002 CA-10, US-FW-003 CA-11, décision #91).
+    void RearmAfterUnsentPress(Mode pressedMode)
+    {
+        mode = pressedMode;
+        localFeedback.RestoreScreenBeforePress();
+    }
+
 public:
     BuzzerBehavior(HubMessageSender &hubMessageSender, LocalFeedback &localFeedback) : hubMessageSender(hubMessageSender), localFeedback(localFeedback)
     {
@@ -45,7 +53,8 @@ public:
         {
             mode = Mode::Inert;
             localFeedback.AcknowledgeAnswer(value);
-            hubMessageSender.SendAnswer(value);
+            if (!hubMessageSender.SendAnswer(value))
+                RearmAfterUnsentPress(Mode::McqArmed);
         }
     }
 
@@ -58,7 +67,8 @@ public:
         {
             mode = Mode::Inert;
             localFeedback.AcknowledgeBuzz();
-            hubMessageSender.SendBuzz();
+            if (!hubMessageSender.SendBuzz())
+                RearmAfterUnsentPress(Mode::SpeedArmed);
         }
     }
 

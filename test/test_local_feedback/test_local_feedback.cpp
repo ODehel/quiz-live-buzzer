@@ -14,7 +14,8 @@ TEST_P(AcknowledgeAnswerTest, AcknowledgeAnswerHighlightsTheChosenZoneWithoutTex
     MockScreen mockScreen;
     VisibleTopBar visibleTopBar;
     visibleTopBar.Set(TopBar::ForPlayer("Camille"));
-    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar};
+    FakeLastScreen lastScreen;
+    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar, lastScreen};
 
     EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("Camille"), ScreenModel{ChosenZoneScreen{GetParam().second}})).Times(1);
 
@@ -30,7 +31,8 @@ TEST(ScreenLocalFeedbackTest, AcknowledgeAnswerWithAnUnknownLetterLeavesTheScree
 {
     MockScreen mockScreen;
     VisibleTopBar visibleTopBar;
-    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar};
+    FakeLastScreen lastScreen;
+    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar, lastScreen};
 
     EXPECT_CALL(mockScreen, Display(testing::_, testing::_)).Times(0);
 
@@ -42,7 +44,8 @@ TEST(ScreenLocalFeedbackTest, AcknowledgeBuzzShowsBuzzEnvoyeOnScreen)
     MockScreen mockScreen;
     VisibleTopBar visibleTopBar;
     visibleTopBar.Set(TopBar::ForPlayer("Camille"));
-    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar};
+    FakeLastScreen lastScreen;
+    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar, lastScreen};
 
     EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("Camille"), ScreenModel{TextScreen{"Buzz envoyé"}})).Times(1);
 
@@ -54,7 +57,8 @@ TEST(ScreenLocalFeedbackTest, AcknowledgeBuzzKeepsTheCutLinkOfTheVisibleTopBar)
     MockScreen mockScreen;
     VisibleTopBar visibleTopBar;
     visibleTopBar.Set(TopBar::ForPlayer("Camille").WithLinkCut());
-    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar};
+    FakeLastScreen lastScreen;
+    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar, lastScreen};
 
     EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("Camille").WithLinkCut(), ScreenModel{TextScreen{"Buzz envoyé"}})).Times(1);
 
@@ -65,7 +69,8 @@ TEST(ScreenLocalFeedbackTest, TheTopBarBeforeAnyAuthSuccessIsTheInitTopBar)
 {
     MockScreen mockScreen;
     VisibleTopBar visibleTopBar;
-    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar};
+    FakeLastScreen lastScreen;
+    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar, lastScreen};
 
     EXPECT_CALL(mockScreen, Display(ScreenPresenter{}.TopBarForInit(), ScreenModel{TextScreen{"Buzz envoyé"}})).Times(1);
 
@@ -76,12 +81,48 @@ TEST(ScreenLocalFeedbackTest, ATopBarChangedAfterConstructionIsTheOneShownByTheN
 {
     MockScreen mockScreen;
     VisibleTopBar visibleTopBar;
-    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar};
+    FakeLastScreen lastScreen;
+    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar, lastScreen};
     visibleTopBar.Set(TopBar::ForPlayer("Camille"));
 
     EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("Camille"), ScreenModel{ChosenZoneScreen{0}})).Times(1);
 
     screenLocalFeedback.AcknowledgeAnswer('A');
+}
+
+TEST(ScreenLocalFeedbackTest, RestoreScreenBeforePressShowsTheQuestionZonesAgainAfterAnAnswerPress)
+{
+    MockScreen mockScreen;
+    VisibleTopBar visibleTopBar;
+    visibleTopBar.Set(TopBar::ForPlayer("Camille"));
+    const ScreenModel zones = ZonesScreen{{"A : un", "B : deux", "C : trois", "D : quatre"}};
+    FakeLastScreen lastScreen;
+    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar, lastScreen};
+    lastScreen.Set(zones);
+
+    screenLocalFeedback.AcknowledgeAnswer('C');
+    lastScreen.Set(ChosenZoneScreen{2, {"A : un", "B : deux", "C : trois", "D : quatre"}});
+
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("Camille"), zones)).Times(1);
+
+    screenLocalFeedback.RestoreScreenBeforePress();
+}
+
+TEST(ScreenLocalFeedbackTest, RestoreScreenBeforePressShowsTheOpenQuestionAgainAfterABuzzPress)
+{
+    MockScreen mockScreen;
+    VisibleTopBar visibleTopBar;
+    visibleTopBar.Set(TopBar::ForPlayer("Camille"));
+    FakeLastScreen lastScreen;
+    ScreenLocalFeedback screenLocalFeedback{mockScreen, visibleTopBar, lastScreen};
+    lastScreen.Set(TextScreen{"Quel est le plus long fleuve ?"});
+
+    screenLocalFeedback.AcknowledgeBuzz();
+    lastScreen.Set(TextScreen{"Buzz envoyé"});
+
+    EXPECT_CALL(mockScreen, Display(TopBar::ForPlayer("Camille"), ScreenModel{TextScreen{"Quel est le plus long fleuve ?"}})).Times(1);
+
+    screenLocalFeedback.RestoreScreenBeforePress();
 }
 
 int main(int argc, char **argv)

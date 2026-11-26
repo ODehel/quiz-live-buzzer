@@ -16,8 +16,8 @@ public:
     {
     }
     
-    void SendAnswer(char value) override;
-    void SendBuzz() override;
+    bool SendAnswer(char value) override;
+    bool SendBuzz() override;
 };
 
 #endif
