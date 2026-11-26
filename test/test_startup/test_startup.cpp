@@ -138,12 +138,12 @@ TEST(InitScreenDisplayTest, HidesTheTappableZonesWhenItGoesThroughTheTappableZon
     EXPECT_TRUE(tappableZonesScreen.Zones().empty());
 }
 
-TEST(LoginOutcomeDisplayTest, ShowsTheRefusalScreenWithoutTopBarWhenTheCredentialsAreRefused)
+TEST(LoginOutcomeDisplayTest, ShowsTheRefusalScreenUnderTheInitTopBarWhenTheCredentialsAreRefused)
 {
     MockScreen mockScreen;
     LoginOutcomeDisplay loginOutcomeDisplay{mockScreen};
 
-    EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{ScreenPresenter{}.ScreenForLoginRefused()})).Times(1);
+    EXPECT_CALL(mockScreen, Display(ScreenPresenter{}.TopBarForInit(), ScreenModel{ScreenPresenter{}.ScreenForLoginRefused()})).Times(1);
 
     loginOutcomeDisplay.Show(LoginResult{LoginStatus::InvalidCredentials, ""});
 }
@@ -240,7 +240,7 @@ protected:
 
     void ExpectTheRefusalScreen()
     {
-        EXPECT_CALL(mockScreen, Display(TopBar::Hidden(), ScreenModel{ScreenPresenter{}.ScreenForLoginRefused()})).Times(1);
+        EXPECT_CALL(mockScreen, Display(ScreenPresenter{}.TopBarForInit(), ScreenModel{ScreenPresenter{}.ScreenForLoginRefused()})).Times(1);
     }
 };
 

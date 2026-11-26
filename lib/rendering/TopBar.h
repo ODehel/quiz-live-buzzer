@@ -6,7 +6,7 @@
 
 // Le bandeau du haut d'un écran (CDC §8.2, habillage commun) : dit *quoi* montrer, jamais comment le dessiner.
 // Le nom du joueur à gauche, « Buzz’O’Live » au centre, la liaison avec le hub à droite (US-FW-009 CA-8) : « liée », ou « coupée » (`linkCut`).
-// Il est visible sur chaque écran qui s'affiche (US-FW-009 CA-3) ; `Hidden()` reste pour l'écran de refus du login (US-FW-015 CA-9).
+// Il est visible sur chaque écran qui s'affiche (US-FW-009 CA-3), l'écran de refus du login compris (US-FW-015 CA-9) ; `Hidden()` n'est plus produit par le code, seuls les adaptateurs savent encore dessiner sans bandeau.
 struct TopBar
 {
     // Hauteur du bandeau, trait de séparation compris : la dalle moins cette hauteur est la place du contenu (US-FW-009 CA-6 et CA-7).
