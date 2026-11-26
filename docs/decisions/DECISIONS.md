@@ -1897,3 +1897,19 @@ Alternatives écartées :
 - Specs : US-FW-009 CA-8 (critère et statut : « Rose, pas rouge »).
 - `DEBTS.md` : « Écrans de coupure : habillage de la maquette reporté » ne parle plus d'un écart de couleur de l'icône.
 - Pas de code, pas de test, pas de smoke test (type `docs`).
+
+## #90 — test(session): prove the login refusal replaces the cut-off screen
+
+**Contexte** — US-FW-015 CA-10 : le refus du login d'une reconnexion remplace l'écran de coupure. `LoginOutcomeDisplay` passe par `TappableZonesScreen`, pas par `RetainingScreen` ; ce remplacement n'avait aucun test natif de bout en bout (vu sur la dalle le 2026-11-26, O10-X). Dernier numéro relu : #89.
+
+**Décision** — Deux tests dans `test/test_connection/test_connection.cpp` (`LoginRefusalOverTheConnectionLostScreenTest`), sur la chaîne de `main.cpp` : `LcdRenderer`, `RetainingScreen`, `TappableZonesScreen`, `LoginOutcomeDisplay`, `TokenSessionMessageSender`, `LoginRefusalHalt`, `NetworkHalt`, `ConnectionEventHandler` réels ; doublures : écran physique, login asynchrone, horloge, socket, fermeture du client.
+- Une coupure est à l'écran, le login redemandé rend `401` : l'écran physique reçoit **une seule** image, le refus plein sous `TopBarForInit()`, aucune autre ; zones inactives.
+- Terminal et hors compteur : la déconnexion émise par la fermeture du client ne produit ni écran, ni « Hors jeu », ni élimination, et la tentative reste la 1ʳᵉ.
+
+**Choix de Claude, à relire en PR** (non issus du CDC) —
+- Fichier et suite : `test_connection` (les doublures de coupure y sont déjà), plutôt que `test_session` qui n'a pas `RetainingScreen`.
+- Découpage en deux tests, noms libres (non observables).
+- Les tests sont nés verts : mutés avant commit (voir le handoff).
+- Un `auth_success` injecté après le refus affiche un écran texte : non testé, impossible en réel (client fermé, réseau arrêté) ; non considéré comme un trou du CDC.
+
+**Conséquences** — `DEBTS.md` : la partie « remplacement » de « Écrans de coupure : preuves manquantes » est soldée ; statut de CA-10 mis à jour. Aucun fichier de `lib/`, `src/` ni `platformio.ini` modifié.

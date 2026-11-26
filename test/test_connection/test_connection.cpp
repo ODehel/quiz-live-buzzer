@@ -20,6 +20,8 @@
 #include "MessageRenderer.h"
 #include "LcdRenderer.h"
 #include "RetainingScreen.h"
+#include "TappableZonesScreen.h"
+#include "LoginOutcomeDisplay.h"
 #include "../mocks/ScreenMocks.h"
 #include "ScreenLocalFeedback.h"
 
@@ -1120,6 +1122,82 @@ TEST_F(ConnectionLostRenderingTest, NoLinkLostScreenReplacesTheRefusalOfAHaltedN
     EXPECT_CALL(mockScreen, Display(::testing::_, ::testing::_)).Times(0);
 
     handler.OnConnectionAttemptFailed();
+}
+
+namespace
+{
+// Le câblage de `main.cpp` de bout en bout pour le refus du login d'une reconnexion : le rendu passe par `RetainingScreen` puis `TappableZonesScreen`,
+// le refus par `LoginOutcomeDisplay` sur `TappableZonesScreen` (hors `RetainingScreen`), et le `401` arrive par le vrai `TokenSessionMessageSender`.
+// Seuls l'écran physique, le login asynchrone, l'horloge, la socket et la fermeture du client sont des doublures.
+class LoginRefusalOverTheConnectionLostScreenTest : public ::testing::Test
+{
+protected:
+    ::testing::NiceMock<MockHubMessageSender> mockHubMessageSender;
+    ::testing::NiceMock<MockLocalFeedback> mockLocalFeedback;
+    ::testing::NiceMock<MockPayloadSocketWriter> mockPayloadSocketWriter;
+    ::testing::NiceMock<MockScreen> mockScreen;
+    TappableZonesScreen tappableZonesScreen{mockScreen, 800, 480};
+    RetainingScreen retainingScreen{tappableZonesScreen};
+    BuzzerBehavior buzzerBehavior{mockHubMessageSender, mockLocalFeedback};
+    VisibleTopBar visibleTopBar;
+    LcdRenderer lcdRenderer{retainingScreen, buzzerBehavior, visibleTopBar};
+    LoginOutcomeDisplay loginOutcomeDisplay{tappableZonesScreen};
+    FakeAsyncLogin login;
+    FakeClock clock;
+    ::testing::NiceMock<MockConnectionCloser> mockConnectionCloser;
+    NetworkHalt networkHalt{mockConnectionCloser};
+    LoginRefusalHalt loginRefusalHalt{loginOutcomeDisplay, networkHalt};
+    TokenSessionMessageSender tokenSessionMessageSender{mockPayloadSocketWriter, MessageSerializer{}, login, clock, 5000, loginRefusalHalt};
+    HubMessageDispatcher dispatcher{buzzerBehavior};
+    ReconnectionPolicy policy;
+    ConnectionEventHandler handler{policy, dispatcher, tokenSessionMessageSender, lcdRenderer, lcdRenderer, lcdRenderer, networkHalt};
+
+    // Une question QCM à l'écran, puis la perte de la connexion établie : l'écran de coupure est affiché, sa tentative est la 1ʳᵉ.
+    void LoseTheConnectionWhileTheQuestionIsOnScreen()
+    {
+        handler.OnMessageReceived(AuthSuccessOfQuizBuzzer01);
+        handler.OnMessageReceived("{\"type\":\"question_choices\",\"choices\":[\"un\",\"deux\",\"trois\",\"quatre\"]}");
+        handler.OnConnectionLost();
+    }
+
+    // La connexion se rouvre, le login redemandé est refusé (`401`) et `loop()` en recueille le résultat.
+    void ReconnectAndGetTheLoginRefused()
+    {
+        handler.OnConnectionEstablished();
+        login.Finish(LoginResult{LoginStatus::InvalidCredentials, ""});
+        handler.PollSession();
+    }
+};
+}
+
+TEST_F(LoginRefusalOverTheConnectionLostScreenTest, TheRefusalOfTheLoginOfAReconnectionReplacesTheConnectionLostScreenWithTheFullRefusalScreenUnderTheInitTopBar)
+{
+    LoseTheConnectionWhileTheQuestionIsOnScreen();
+
+    ::testing::InSequence inSequence;
+    EXPECT_CALL(mockScreen, Display(ScreenPresenter{}.TopBarForInit(), ScreenModel{ScreenPresenter{}.ScreenForLoginRefused()})).Times(1);
+    EXPECT_CALL(mockScreen, Display(::testing::_, ::testing::_)).Times(0);
+
+    ReconnectAndGetTheLoginRefused();
+
+    EXPECT_TRUE(tappableZonesScreen.Zones().empty());
+}
+
+TEST_F(LoginRefusalOverTheConnectionLostScreenTest, TheRefusalReplacingTheConnectionLostScreenIsTerminalAndNeitherCountedNorOutOfGame)
+{
+    LoseTheConnectionWhileTheQuestionIsOnScreen();
+    // La bibliothèque émet la déconnexion pendant la fermeture du client.
+    ON_CALL(mockConnectionCloser, Close()).WillByDefault([this]() { handler.OnConnectionLost(); });
+    ReconnectAndGetTheLoginRefused();
+    ASSERT_TRUE(networkHalt.IsHalted());
+
+    EXPECT_CALL(mockScreen, Display(::testing::_, ::testing::_)).Times(0);
+
+    handler.OnConnectionLost();
+    handler.OnConnectionLost();
+
+    EXPECT_FALSE(policy.IsEliminated());
+    EXPECT_EQ(policy.CurrentAttempt(), 1);
 }
 
 TEST(ConnectionEventHandlerSessionTest, ReconnectionSendsAFreshTokenAfterTheHubConfirmedTheAuthentication)
