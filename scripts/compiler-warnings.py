@@ -26,11 +26,12 @@ CLASSES_EXEMPTED_BY_THE_FRAMEWORK = [
     "-Werror=maybe-uninitialized",
     "-Werror=array-bounds",
     "-Werror=extra",
-    "-Wunused-parameter",
     "-Wsign-compare",
     "-Wmissing-field-initializers",
 ]
-WARNING_FLAGS = ["-Wall", "-Wextra"] + [f.replace("-Werror=", "-W") for f in CLASSES_EXEMPTED_BY_THE_FRAMEWORK] + ["-Wno-error"]  # TEMP inventory
+# -Wunused-parameter n'est pas forcé : sur esp32, les en-têtes de LovyanGFX inclus par src/main.cpp (non -isystem)
+# en déclenchent 33 ; le -Wno-unused-parameter du framework reste donc, -Wextra ne le réactive pas. Natif : actif.
+WARNING_FLAGS = ["-Wall", "-Wextra", "-Werror"] + CLASSES_EXEMPTED_BY_THE_FRAMEWORK
 
 
 def is_our_source(env, node):
