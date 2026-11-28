@@ -14,9 +14,17 @@ OUR_FOLDERS = ("src", "lib", "test")
 WARNING_FLAGS = ["-Wall", "-Wextra", "-Werror"]
 
 
+def probe(env, node):
+    print("DEBUG-CW seen", node.srcnode().get_path(), node.srcnode().abspath)  # TEMP
+    return node
+
+
 def with_warnings_as_errors(env, node):
+    print("DEBUG-CW applied", node.srcnode().get_path())  # TEMP
     return env.Object(node, CCFLAGS=env["CCFLAGS"] + WARNING_FLAGS)
 
 
+print("DEBUG-CW loaded")  # TEMP
+env.AddBuildMiddleware(probe)  # TEMP
 for folder in OUR_FOLDERS:
     env.AddBuildMiddleware(with_warnings_as_errors, f"{folder}/*")  # noqa: F821
