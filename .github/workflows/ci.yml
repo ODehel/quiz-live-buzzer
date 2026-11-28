@@ -39,12 +39,14 @@ jobs:
 
       - name: Measure the coverage of lib/
         run: |
-          pip install gcovr
+          pip install gcovr==8.8
           gcovr --version
           gcovr --root . --filter 'lib/' --exclude 'test/' \
             --object-directory .pio/build/native \
             --print-summary \
             --xml coverage.xml \
-            --json-summary coverage-summary.json
+            --json-summary coverage-summary.json \
+            --fail-under-line 96 || status=$?
           line_percent=$(jq '.line_percent' coverage-summary.json)
-          echo "Taux de couverture des lignes de lib/ : ${line_percent} %" >> "$GITHUB_STEP_SUMMARY"
+          echo "Taux de couverture des lignes de lib/ : ${line_percent} % (seuil : 96 %)" >> "$GITHUB_STEP_SUMMARY"
+          exit "${status:-0}"
