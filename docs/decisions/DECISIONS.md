@@ -1973,3 +1973,22 @@ Alternatives écartées :
 **Condition de réouverture** — une montée de PlatformIO, du runner ou de LovyanGFX voulue (relever à la main, après un run vert) ; l'image `ubuntu-26.04` retirée par GitHub ; le build `esp32` en CI échoue sur 1.3.0.
 
 **À challenger** — 26.04 au lieu de 24.04 ; PlatformIO 6.2.0 lue dans le log et non vérifiée contre l'index PyPI ; comparaison faite sur les fichiers de rendu et le diff de `Panel_FrameBufferBase` et `LGFX_Sprite`, non sur l'ensemble des 74 fichiers modifiés.
+
+## #94 — chore(ci): build the esp32 environment
+
+**Contexte** — La CI ne lançait que `pio test -e native` : l'env `[env:esp32]` (dont LovyanGFX 1.3.0, épinglée par la décision #93 et jamais compilée) n'était construit qu'en local, un build cassé ne se voyait qu'au smoke test. `src/main.cpp` inclut `src/secrets.h`, ignoré par git : seul le modèle `src/secrets.h.example` (quatre macros factices) est versionné. Aucun CA de CDC (outillage). Dernier numéro relu : #93.
+
+**Décision** (périmètre validé par Olivier, 2026-11-28) —
+- **Job séparé** `esp32-build` (mêmes déclencheurs, permissions, runner et Python que `native-tests`, `timeout-minutes: 30` pour un premier run à froid) : les deux jobs tournent en parallèle et un échec de l'un n'efface pas le verdict de l'autre.
+- **`secrets.h` tiré du modèle factice** : une étape `cp src/secrets.h.example src/secrets.h` avant `pio run -e esp32`. Le build ne contient aucun secret réel et prouve la compilation, pas la connexion.
+- **Cache `~/.platformio` distinct** : clé `pio-esp32-<os>-<hash de platformio.ini>`, préfixe qui ne chevauche pas celui de `native-tests` (`pio-<os>-`) : ni restauration croisée ni course à l'écriture entre les deux jobs.
+- **DRY** : la version de PlatformIO (`6.2.0`) est une variable d'environnement du workflow (`PLATFORMIO_VERSION`), lue par les deux jobs ; seule la ligne d'installation de `native-tests` change.
+- **Écartés** : un seul job qui enchaîne natif puis `esp32` (un échec masquerait l'autre, durées additionnées) ; une matrice sur `-e native` / `-e esp32` (les étapes de couverture et de secrets n'ont rien en commun, matrice artificielle pour deux entrées) ; un secret GitHub pour `secrets.h` (un secret réel pour un build qui n'en a pas besoin) ; un cache `~/.platformio` partagé (clés disputées, ~centaines de Mo de toolchain restaurées inutilement par le job natif).
+
+**Conséquences** —
+- `DEBTS.md` : « Env `esp32` hors CI » soldée (supprimée) ; deux phrases qui disaient que la CI ne compile pas l'env `esp32` sont mises à jour.
+- Le build `esp32` est prouvé par la CI, y compris LovyanGFX 1.3.0 ; le comportement sur la dalle reste constaté au smoke test seulement. Comportement du firmware inchangé. Pas de smoke test.
+
+**Condition de réouverture** — `secrets.h.example` gagne une macro ou un format que `cp` ne couvre plus ; le cache `~/.platformio` approche la limite du dépôt ; un deuxième env construit en CI (alors reconsidérer la matrice) ; le job `esp32-build` devient trop lent.
+
+**À challenger** — job séparé plutôt qu'étape de `native-tests` (coût : une seconde installation de PlatformIO) ; `timeout-minutes: 30` choisi sans mesure, à resserrer après le premier run ; le cache `pip` (`setup-python`) reste partagé entre les deux jobs, même clé.
