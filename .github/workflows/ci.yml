@@ -20,7 +20,10 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
+      # L'historique complet est exigé par le scanner SonarQube Cloud sur une pull request.
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v6
         with:
@@ -48,10 +51,31 @@ jobs:
             --object-directory .pio/build/native \
             --print-summary \
             --json-summary coverage-summary.json \
+            --sonarqube coverage-sonar.xml --sonarqube-metric line \
             --fail-under-line 96 || status=$?
           line_percent=$(jq '.line_percent' coverage-summary.json)
           echo "Taux de couverture des lignes de lib/ : ${line_percent} % (seuil : 96 %)" | tee -a "$GITHUB_STEP_SUMMARY"
           exit "${status:-0}"
+
+      # Un `if` ne lit pas `secrets` : cette étape le lit dans son `env` et publie un booléen.
+      - name: SonarQube Cloud token available
+        id: sonar-token
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -n "$SONAR_TOKEN" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::SONAR_TOKEN is empty (pull request from a fork, or secret not set yet): the SonarQube Cloud analysis is skipped."
+          fi
+
+      # Informatif (décision #95) : aucune étape qui échoue à cause de Sonar, pas de `sonar.qualitygate.wait`.
+      - name: Analyse with SonarQube Cloud
+        if: steps.sonar-token.outputs.present == 'true' && github.event.pull_request.head.repo.fork != true
+        continue-on-error: true
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   esp32-build:
     runs-on: ubuntu-26.04
@@ -66,7 +90,7 @@ jobs:
           cache: pip
           cache-dependency-path: platformio.ini
 
-      # Préfixe propre à ce job : native-tests ne partage pas sa clé (la toolchain esp32 pèse plusieurs centaines de Mo).
+      # Préfixe propre à ce job : native-tests ne partage pas sa clé (la toolchain esp32 pèse 2 294 Mo).
       - uses: actions/cache@v5
         with:
           path: ~/.platformio
