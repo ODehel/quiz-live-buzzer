@@ -39,7 +39,7 @@ jobs:
 
       - name: Measure the coverage of lib/
         run: |
-          pip install gcovr==8.8
+          pip install --only-binary :all: gcovr==8.8
           gcovr --version
           gcovr --root . --filter 'lib/' --exclude 'test/' \
             --object-directory .pio/build/native \
