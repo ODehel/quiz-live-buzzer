@@ -36,3 +36,15 @@ jobs:
 
       - name: Run native tests
         run: pio test -e native
+
+      - name: Measure the coverage of lib/
+        run: |
+          pip install gcovr
+          gcovr --version
+          gcovr --root . --filter 'lib/' --exclude 'test/' \
+            --object-directory .pio/build/native \
+            --print-summary \
+            --xml coverage.xml \
+            --json-summary coverage-summary.json
+          line_percent=$(jq '.line_percent' coverage-summary.json)
+          echo "Taux de couverture des lignes de lib/ : ${line_percent} %" >> "$GITHUB_STEP_SUMMARY"
