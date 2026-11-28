@@ -5,26 +5,28 @@ tourner avant que PlatformIO collecte les sources. Un `-Werror` dans `build_flag
 bibliothèques tierces (`.pio/libdeps/`) et le framework, que PlatformIO compile avec les mêmes flags ;
 `build_src_flags` ne couvre que `src/`, alors que `lib/` est compilé comme des bibliothèques.
 
-Le motif est comparé au chemin du fichier source relatif à la racine du projet (`src/main.cpp`,
-`lib/game/X.cpp`, `test/test_x/y.cpp`) : liste blanche de nos dossiers, tout le reste est inchangé.
+Le premier dossier du chemin du fichier source, relatif à la racine du projet, est comparé à la liste
+blanche de nos dossiers ; tout le reste (`.pio/libdeps/`, framework hors du projet) est inchangé.
+Le chemin est recalculé ici : `node.srcnode().get_path()`, sur lequel le motif de `AddBuildMiddleware`
+est comparé, est absolu sous PlatformIO 6.2.0 (constaté en CI, run 46144333770).
 """
+import os
+
 Import("env")  # noqa: F821  (fourni par SCons)
 
 OUR_FOLDERS = ("src", "lib", "test")
 WARNING_FLAGS = ["-Wall", "-Wextra", "-Werror"]
 
 
-def probe(env, node):
-    print("DEBUG-CW seen", node.srcnode().get_path(), node.srcnode().abspath)  # TEMP
-    return node
+def is_our_source(env, node):
+    relative_path = os.path.relpath(node.srcnode().abspath, env.subst("$PROJECT_DIR"))
+    return relative_path.split(os.sep)[0] in OUR_FOLDERS
 
 
 def with_warnings_as_errors(env, node):
-    print("DEBUG-CW applied", node.srcnode().get_path())  # TEMP
+    if not is_our_source(env, node):
+        return node
     return env.Object(node, CCFLAGS=env["CCFLAGS"] + WARNING_FLAGS)
 
 
-print("DEBUG-CW loaded")  # TEMP
-env.AddBuildMiddleware(probe)  # TEMP
-for folder in OUR_FOLDERS:
-    env.AddBuildMiddleware(with_warnings_as_errors, f"{folder}/*")  # noqa: F821
+env.AddBuildMiddleware(with_warnings_as_errors)  # noqa: F821
