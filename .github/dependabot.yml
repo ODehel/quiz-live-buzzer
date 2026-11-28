@@ -1,0 +1,23 @@
+# Mises à jour de version des actions de .github/workflows/ci.yml (décision #97).
+# Ne couvre pas PlatformIO, gcovr, Python ni le runner : voir DEBTS.md, « Dépendances flottantes ».
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    groups:
+      actions-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(ci)"
+    cooldown:
+      default-days: 7
