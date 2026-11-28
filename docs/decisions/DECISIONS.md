@@ -1955,3 +1955,21 @@ Alternatives écartées :
 **Condition de réouverture** — un adaptateur de `src/` gagne une branche et un test natif ; le taux de branches devient un objectif ; un outil doit lire un rapport (il faudra alors choisir le format et l'archiver) ; une montée de version de gcovr casse le job.
 
 **À challenger** — gcovr plutôt que lcov (une seule commande, seuil intégré, JSON natif) ; seuil sur les lignes seulement (les branches à 67,1 % n'ont pas été analysées : leur cause, par exemple les chemins implicites générés par le compilateur, n'est pas établie) ; taux lu dans `coverage-summary.json` (JSON de gcovr) plutôt qu'un rapport XML ; `-O0` ajouté pour des lignes fidèles.
+
+## #93 — chore(ci): build with the same tool and library versions on every run
+
+**Contexte** — La CI installait PlatformIO sans version, tournait sur `ubuntu-latest` (devenu Ubuntu 26.04) et l'env `esp32` tirait LovyanGFX sans révision : un build pouvait changer sans changement de code. Aucun CA de CDC (outillage). Dernier numéro relu : #92.
+
+**Décision** (périmètre validé par Olivier, 2026-11-28) —
+- **PlatformIO** : `pip install platformio==6.2.0`, version lue dans le log du run vert de `main` 46135362046 (`platformio-6.2.0`).
+- **Runner** : `runs-on: ubuntu-26.04`. Le log « Set up job » du même run donne l'image `ubuntu-26.04` (version 20261122.9.1) : le brief supposait 24.04, mais épingler 24.04 aurait changé la chaîne de compilation de la mesure de couverture ; on épingle l'image qui a donné le vert.
+- **LovyanGFX** : `[env:esp32]` référence `https://github.com/lovyan03/LovyanGFX.git#1.3.0` (commit `dd228d15a03900ce658fd62e120dc7cc489915dd`), choix d'Olivier.
+- **Comparaison 1.2.36 (`fb494c6`) → 1.3.0** : texte, polices, `drawChar`, `qrcode`, `drawBmp`, `drawJpg` et `drawPng` ne changent pas (aucun fichier de rendu de texte, de police ni de `lgfx_tjpgd`/PNG touché ; seul `lgfx_qoi.c` bouge). Les décisions de US-FW-008 (CA-10, CA-13), US-FW-016, 020 et 022 tiennent donc. Écarts à connaître : `Panel_FrameBufferBase` (base de `Panel_RGB`) corrige le calcul de la zone modifiée (rotations, retournements), et `pushSprite` laisse désormais le bus choisir un DMA direct, avec un `waitDMA()` à appeler avant de modifier le tampon source ; `Bus_RGB.inl` gagne seulement un `#pragma GCC diagnostic` qui masque `-Wvolatile` (sans effet sur le comportement).
+
+**Conséquences** —
+- `DEBTS.md` : « PlatformIO non épinglé en CI » soldée (supprimée) ; « Runner et actions non épinglés » devient « Actions non épinglées » ; « Dépendances flottantes » ne garde que ArduinoJson et WebSockets (et `ESP32-audioI2S`).
+- Le build `esp32` n'est pas prouvé par la CI (session 2 du lot) : le tag 1.3.0 n'est donc pas compilé à ce jour. Comportement du firmware et des tests natifs inchangé. Pas de smoke test.
+
+**Condition de réouverture** — une montée de PlatformIO, du runner ou de LovyanGFX voulue (relever à la main, après un run vert) ; l'image `ubuntu-26.04` retirée par GitHub ; le build `esp32` en CI échoue sur 1.3.0.
+
+**À challenger** — 26.04 au lieu de 24.04 ; PlatformIO 6.2.0 lue dans le log et non vérifiée contre l'index PyPI ; comparaison faite sur les fichiers de rendu et le diff de `Panel_FrameBufferBase` et `LGFX_Sprite`, non sur l'ensemble des 74 fichiers modifiés.
