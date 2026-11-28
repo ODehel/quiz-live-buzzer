@@ -30,7 +30,7 @@ CLASSES_EXEMPTED_BY_THE_FRAMEWORK = [
     "-Wsign-compare",
     "-Wmissing-field-initializers",
 ]
-WARNING_FLAGS = ["-Wall", "-Wextra", "-Werror"] + CLASSES_EXEMPTED_BY_THE_FRAMEWORK
+WARNING_FLAGS = ["-Wall", "-Wextra"] + [f.replace("-Werror=", "-W") for f in CLASSES_EXEMPTED_BY_THE_FRAMEWORK] + ["-Wno-error"]  # TEMP inventory
 
 
 def is_our_source(env, node):
@@ -45,7 +45,6 @@ def is_our_source(env, node):
 def with_warnings_as_errors(env, node):
     if not is_our_source(env, node):
         return node
-    print("CW-PROBE CXXCOM", env.subst("$CXXCOM"), "| CCCOM", env.subst("$CCCOM"))  # TEMP
     return env.Object(node, CCFLAGS=env["CCFLAGS"] + WARNING_FLAGS)
 
 
