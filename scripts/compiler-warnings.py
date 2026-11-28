@@ -19,7 +19,11 @@ WARNING_FLAGS = ["-Wall", "-Wextra", "-Werror"]
 
 
 def is_our_source(env, node):
-    relative_path = os.path.relpath(node.srcnode().abspath, env.subst("$PROJECT_DIR"))
+    try:
+        relative_path = os.path.relpath(node.srcnode().abspath, env.subst("$PROJECT_DIR"))
+    except ValueError:
+        # Windows : fichier et projet sur deux lecteurs (framework sous %USERPROFILE%) : pas à nous.
+        return False
     return relative_path.split(os.sep)[0] in OUR_FOLDERS
 
 
