@@ -8,6 +8,9 @@ on:
 permissions:
   contents: read
 
+env:
+  PLATFORMIO_VERSION: "6.2.0"
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -32,7 +35,7 @@ jobs:
           restore-keys: pio-${{ runner.os }}-
 
       - name: Install PlatformIO
-        run: pip install platformio==6.2.0
+        run: pip install platformio==${{ env.PLATFORMIO_VERSION }}
 
       - name: Run native tests
         run: pio test -e native
@@ -49,3 +52,34 @@ jobs:
           line_percent=$(jq '.line_percent' coverage-summary.json)
           echo "Taux de couverture des lignes de lib/ : ${line_percent} % (seuil : 96 %)" | tee -a "$GITHUB_STEP_SUMMARY"
           exit "${status:-0}"
+
+  esp32-build:
+    runs-on: ubuntu-26.04
+    # Premier run à froid : toolchain espressif32, framework Arduino et bibliothèques à télécharger.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: platformio.ini
+
+      # Préfixe propre à ce job : native-tests ne partage pas sa clé (la toolchain esp32 pèse plusieurs centaines de Mo).
+      - uses: actions/cache@v5
+        with:
+          path: ~/.platformio
+          key: pio-esp32-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: pio-esp32-${{ runner.os }}-
+
+      - name: Install PlatformIO
+        run: pip install platformio==${{ env.PLATFORMIO_VERSION }}
+
+      # src/secrets.h est ignoré par git (identifiants réels) mais main.cpp l'inclut : on le tire du modèle,
+      # dont les valeurs sont factices. Le build n'embarque donc aucun secret réel et ne peut pas se connecter.
+      - name: Create secrets.h from the dummy template
+        run: cp src/secrets.h.example src/secrets.h
+
+      - name: Build the esp32 environment
+        run: pio run -e esp32
