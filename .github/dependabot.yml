@@ -1,7 +1,5 @@
 # Mises à jour de version des actions de .github/workflows/ci.yml (décision #97).
-# Ne couvre pas : les lib_deps et `platform` de platformio.ini, PlatformIO et gcovr
-# (installés par `pip install` dans une étape `run:`), la version de Python, le runner.
-# Voir DEBTS.md, « Dépendances flottantes ».
+# Ne couvre pas PlatformIO, gcovr, Python ni le runner : voir DEBTS.md, « Dépendances flottantes ».
 version: 2
 updates:
   - package-ecosystem: "github-actions"
