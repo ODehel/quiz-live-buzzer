@@ -6,6 +6,7 @@ namespace
 inline void UnusedProbe()
 {
     int unusedProbe = 0;
+    0;
 }
 
 // Lit le texte octet par octet pour savoir où ArduinoJson s'arrête : il ignore ce qui suit l'objet.
