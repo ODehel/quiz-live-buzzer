@@ -15,7 +15,22 @@ import os
 Import("env")  # noqa: F821  (fourni par SCons)
 
 OUR_FOLDERS = ("src", "lib", "test")
-WARNING_FLAGS = ["-Wall", "-Wextra", "-Werror"]
+# Le framework Arduino exempte ces classes (-Wno-error=<classe>, -Wno-<classe>) dans CFLAGS/CXXFLAGS : on les
+# force après lui (le dernier flag gagne en GCC ; SCons place $CCFLAGS après $CXXFLAGS et $CFLAGS).
+CLASSES_EXEMPTED_BY_THE_FRAMEWORK = [
+    "-Werror=unused-variable",
+    "-Werror=unused-function",
+    "-Werror=unused-but-set-variable",
+    "-Werror=deprecated-declarations",
+    "-Werror=uninitialized",
+    "-Werror=maybe-uninitialized",
+    "-Werror=array-bounds",
+    "-Werror=extra",
+    "-Wunused-parameter",
+    "-Wsign-compare",
+    "-Wmissing-field-initializers",
+]
+WARNING_FLAGS = ["-Wall", "-Wextra", "-Werror"] + CLASSES_EXEMPTED_BY_THE_FRAMEWORK
 
 
 def is_our_source(env, node):
@@ -30,6 +45,7 @@ def is_our_source(env, node):
 def with_warnings_as_errors(env, node):
     if not is_our_source(env, node):
         return node
+    print("CW-PROBE CXXCOM", env.subst("$CXXCOM"), "| CCCOM", env.subst("$CCCOM"))  # TEMP
     return env.Object(node, CCFLAGS=env["CCFLAGS"] + WARNING_FLAGS)
 
 
