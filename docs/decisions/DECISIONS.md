@@ -1954,5 +1954,5 @@ Alternatives écartées :
 
 **Condition de réouverture** — un adaptateur de `src/` gagne une branche et un test natif ; le taux de branches devient un objectif ; un autre outil doit lire le rapport ; une montée de version de gcovr casse le job.
 
-**À challenger** — gcovr plutôt que lcov (une seule commande, seuil intégré, JSON et Cobertura natifs) ; seuil sur les lignes seulement (les branches à 67,1 % comptent les chemins internes des gabarits et de gTest, non analysés) ; Cobertura plutôt qu'un autre format ; `-O0` ajouté pour des lignes fidèles.
+**À challenger** — gcovr plutôt que lcov (une seule commande, seuil intégré, JSON et Cobertura natifs) ; seuil sur les lignes seulement (les branches à 67,1 % n'ont pas été analysées : leur cause, par exemple les chemins implicites générés par le compilateur, n'est pas établie) ; Cobertura plutôt qu'un autre format ; `-O0` ajouté pour des lignes fidèles.
 
