@@ -26,7 +26,6 @@ def is_our_source(env, node):
 def with_warnings_as_errors(env, node):
     if not is_our_source(env, node):
         return node
-    print("CW-PROBE CXXFLAGS", env.get("CXXFLAGS"), "CFLAGS", env.get("CFLAGS"))  # TEMP
     return env.Object(node, CCFLAGS=env["CCFLAGS"] + WARNING_FLAGS)
 
 
