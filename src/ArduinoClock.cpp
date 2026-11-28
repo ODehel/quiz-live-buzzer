@@ -3,5 +3,6 @@
 
 unsigned long ArduinoClock::NowMilliseconds()
 {
+    int unusedProbe = 0;
     return millis();
 }

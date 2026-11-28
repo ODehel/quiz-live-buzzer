@@ -5,6 +5,11 @@
 
 using Codes = std::vector<uint32_t>;
 
+static void UnusedProbe()
+{
+    int unusedProbe = 0;
+}
+
 TEST(Utf8Test, AsciiCharacterShouldDecodeToItsOwnCode)
 {
     EXPECT_EQ(Utf8::CodePoints("a"), (Codes{0x61}));
