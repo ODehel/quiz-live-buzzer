@@ -366,7 +366,9 @@ TEST(LcdRendererTest, AnswerReceivedShowsItsTextInABannerKeepingTheZones)
     lcdRenderer.Apply(HubMessage{"answer_received"});
 }
 
-namespace
+// Hors de l'espace de noms anonyme : le paramètre d'un test paramétré est un champ d'une classe de gTest
+// à liaison externe, et GCC avertit (-Wsubobject-linkage) quand ce champ a un type à liaison interne.
+namespace lcd_renderer_test
 {
 struct ChangingScreenCase
 {
@@ -374,7 +376,12 @@ struct ChangingScreenCase
     ScreenModel screen;
     bool armed;
 };
+}
 
+using lcd_renderer_test::ChangingScreenCase;
+
+namespace
+{
 const std::vector<std::string> FourChoices = {"A : Paris", "B : Lyon", "C : Nice", "D : Lille"};
 }
 
