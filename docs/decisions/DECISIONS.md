@@ -1935,3 +1935,24 @@ Alternatives écartées :
 - Specs : US-FW-002 CA-10 et US-FW-003 CA-11 (« Décidé, non implémenté »), constats reportés de US-FW-002, 003, 004 et 006, index des US.
 - `DEBTS.md` : « Retour de `sendTXT` non lu… » passe de « à décider » à « décidé, non implémenté », avec le `fix(game)` à venir.
 - Pas de code, pas de test, pas de smoke test (type `docs`).
+
+## #92 — chore(ci): measure the test coverage of the native tests
+
+**Contexte** — La CI lançait `pio test -e native` sans rapporter les tests à un taux ; la dette « Aucune mesure de couverture » le disait. Aucun CA de CDC (outillage). Dernier numéro relu : #91.
+
+**Décision** (périmètre validé par Olivier, 2026-11-28) —
+- **Mécanisme** : `[env:native]` compile et lie avec `--coverage -lgcov -O0` (en gardant `${env.build_flags}`, donc `-Werror=switch`) ; `[env:esp32]` n'est pas touché. Après `pio test -e native`, l'étape « Measure the coverage of lib/ » lance `gcovr` (installé par pip, version épinglée `8.8`) depuis la racine, avec `--object-directory .pio/build/native`.
+- **Périmètre** : `lib/` seulement (`--filter 'lib/'`, `test/` exclu). `src/` n'est pas compilé en natif : ce sont les adaptateurs Arduino, validés par smoke test (dette déjà assumée), donc hors de la mesure plutôt que comptés à zéro ou exclus pour faire monter le taux.
+- **Seuil** : cliquet au niveau constaté, appliqué par `--fail-under-line 96`. La CI de la PR a mesuré 96,9 % des lignes de `lib/` (1075 sur 1109), arrondi vers le bas : 96. Constatés aussi, sans seuil : fonctions 99,6 % (258 sur 259), branches 67,1 % (810 sur 1208). Le seuil se relève à la main quand le taux monte (arrondi vers le bas) ; il ne baisse pas pour faire passer une PR.
+- **Rapport** : le taux de lignes est écrit dans le résumé du job (`$GITHUB_STEP_SUMMARY`) avant la sortie en erreur, donc lisible aussi quand le seuil échoue. Le job produit en plus `coverage.xml` (Cobertura, format que d'autres outils lisent) et `coverage-summary.json` ; ni l'un ni l'autre n'est publié ou archivé : ils vivent le temps du job.
+
+**Conséquences** —
+- `DEBTS.md` : « Aucune mesure de couverture » est soldée (supprimée) ; trois dettes ajoutées (`src/` hors mesure, aucun seuil de branches, rapports non conservés).
+- La CI peut maintenant échouer sur une baisse de couverture de `lib/` ; un test retiré ou une branche ajoutée sans test se voit.
+- Les bibliothèques de `.pio/libdeps` sont compilées avec `--coverage` aussi, mais le filtre `lib/` les écarte.
+- Pas de code de production touché, pas de smoke test.
+
+**Condition de réouverture** — un adaptateur de `src/` gagne une branche et un test natif ; le taux de branches devient un objectif ; un autre outil doit lire le rapport ; une montée de version de gcovr casse le job.
+
+**À challenger** — gcovr plutôt que lcov (une seule commande, seuil intégré, JSON et Cobertura natifs) ; seuil sur les lignes seulement (les branches à 67,1 % comptent les chemins internes des gabarits et de gTest, non analysés) ; Cobertura plutôt qu'un autre format ; `-O0` ajouté pour des lignes fidèles.
+
