@@ -1964,7 +1964,7 @@ Alternatives écartées :
 - **PlatformIO** : `pip install platformio==6.2.0`, version lue dans le log du run vert de `main` 46135362046 (`platformio-6.2.0`).
 - **Runner** : `runs-on: ubuntu-26.04`. Le log « Set up job » du même run donne l'image `ubuntu-26.04` (version 20261122.9.1) : le brief supposait 24.04, mais épingler 24.04 aurait changé la chaîne de compilation de la mesure de couverture ; on épingle l'image qui a donné le vert.
 - **LovyanGFX** : `[env:esp32]` référence `https://github.com/lovyan03/LovyanGFX.git#1.3.0` (commit `dd228d15a03900ce658fd62e120dc7cc489915dd`), choix d'Olivier.
-- **Comparaison 1.2.36 (`fb494c6`) → 1.3.0** : texte, polices, `drawChar`, `qrcode`, `drawBmp`, `drawJpg` et `drawPng` ne changent pas (aucun fichier de rendu de texte, de police ni de `lgfx_tjpgd`/PNG touché ; seul `lgfx_qoi.c` bouge). Les décisions de US-FW-008 (CA-10, CA-13), US-FW-016, 020 et 022 tiennent donc. Écarts à connaître : `Panel_FrameBufferBase` (base de `Panel_RGB`) corrige le calcul de la zone modifiée (rotations, retournements), et `pushSprite` laisse désormais le bus choisir un DMA direct, avec un `waitDMA()` à appeler avant de modifier le tampon source ; `Bus_RGB.inl` gagne 5 lignes, non analysées.
+- **Comparaison 1.2.36 (`fb494c6`) → 1.3.0** : texte, polices, `drawChar`, `qrcode`, `drawBmp`, `drawJpg` et `drawPng` ne changent pas (aucun fichier de rendu de texte, de police ni de `lgfx_tjpgd`/PNG touché ; seul `lgfx_qoi.c` bouge). Les décisions de US-FW-008 (CA-10, CA-13), US-FW-016, 020 et 022 tiennent donc. Écarts à connaître : `Panel_FrameBufferBase` (base de `Panel_RGB`) corrige le calcul de la zone modifiée (rotations, retournements), et `pushSprite` laisse désormais le bus choisir un DMA direct, avec un `waitDMA()` à appeler avant de modifier le tampon source ; `Bus_RGB.inl` gagne seulement un `#pragma GCC diagnostic` qui masque `-Wvolatile` (sans effet sur le comportement).
 
 **Conséquences** —
 - `DEBTS.md` : « PlatformIO non épinglé en CI » soldée (supprimée) ; « Runner et actions non épinglés » devient « Actions non épinglées » ; « Dépendances flottantes » ne garde que ArduinoJson et WebSockets (et `ESP32-audioI2S`).
@@ -1972,4 +1972,4 @@ Alternatives écartées :
 
 **Condition de réouverture** — une montée de PlatformIO, du runner ou de LovyanGFX voulue (relever à la main, après un run vert) ; l'image `ubuntu-26.04` retirée par GitHub ; le build `esp32` en CI échoue sur 1.3.0.
 
-**À challenger** — 26.04 au lieu de 24.04 ; PlatformIO 6.2.0 lue dans le log et non vérifiée contre l'index PyPI ; les 5 lignes de `Bus_RGB.inl` non lues.
+**À challenger** — 26.04 au lieu de 24.04 ; PlatformIO 6.2.0 lue dans le log et non vérifiée contre l'index PyPI ; comparaison faite sur les fichiers de rendu et le diff de `Panel_FrameBufferBase` et `LGFX_Sprite`, non sur l'ensemble des 74 fichiers modifiés.
