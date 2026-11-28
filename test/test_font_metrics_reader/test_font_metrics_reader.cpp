@@ -24,8 +24,8 @@ struct FakeFont
     uint16_t first;
     uint16_t last;
     uint8_t yAdvance;
-    uint16_t range_num;
-    const FakeEncodeRange *range;
+    uint16_t range_num = 0;
+    const FakeEncodeRange *range = nullptr;
 };
 
 // Avance du glyphe d'indice i : une valeur différente pour chaque indice, jamais nulle.
